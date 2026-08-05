@@ -1,20 +1,23 @@
 :root {
-  --color-bg: #f4f5f7;
+  --color-bg: #eef2ef;
   --color-surface: #ffffff;
-  --color-border: #d7dae0;
-  --color-text: #1f2430;
-  --color-text-muted: #5b6472;
+  --color-border: #d5ddd7;
+  --color-text: #1a221c;
+  --color-text-muted: #5a675e;
   --color-accent: #1f6f43;
   --color-accent-contrast: #ffffff;
   --color-danger: #b3261e;
   --color-warning: #8a6100;
 
-  --font-sans: system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-display: "Fraunces", "Times New Roman", serif;
   --font-mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
 
   color-scheme: light;
   color: var(--color-text);
-  background: var(--color-bg);
+  background:
+    radial-gradient(ellipse at top left, #e3efe6 0%, transparent 50%),
+    var(--color-bg);
   font: 16px/1.45 var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }

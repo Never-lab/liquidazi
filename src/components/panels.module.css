@@ -1,18 +1,113 @@
 .panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 16px 20px;
   flex: 1 1 280px;
 }
 
+.panelWide {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  flex: 1 1 100%;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
 .panelTitle {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-muted);
   margin-bottom: 10px;
+}
+
+.panelHead .panelTitle {
+  margin-bottom: 0;
+}
+
+.badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent);
+  background: #e7f3ec;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.deal {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fbfcfb;
+}
+
+.dealTitle {
+  font-size: 15px;
+  margin: 0;
+}
+
+.dealMeta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.dealActions {
+  display: flex;
+  gap: 8px;
+}
+
+.feed {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  flex: 1 1 280px;
+}
+
+.feedList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.feedList li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.feedList li:last-child {
+  border-bottom: none;
+}
+
+.feedList li[data-tone="good"] {
+  color: var(--color-accent);
+}
+
+.feedList li[data-tone="bad"] {
+  color: var(--color-danger);
 }
 
 .row {
@@ -35,8 +130,8 @@
   background: var(--color-accent);
   color: var(--color-accent-contrast);
   border: none;
-  border-radius: 4px;
-  padding: 7px 12px;
+  border-radius: 6px;
+  padding: 8px 12px;
   font-size: 14px;
   font-weight: 600;
 }
@@ -50,8 +145,8 @@
   background: var(--color-surface);
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 7px 12px;
+  border-radius: 6px;
+  padding: 8px 12px;
   font-size: 14px;
 }
 
@@ -59,8 +154,8 @@
   background: var(--color-danger);
   color: #fff;
   border: none;
-  border-radius: 4px;
-  padding: 7px 12px;
+  border-radius: 6px;
+  padding: 8px 12px;
   font-size: 14px;
   font-weight: 600;
 }

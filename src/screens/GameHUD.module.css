@@ -3,56 +3,103 @@
   flex-wrap: wrap;
   align-items: stretch;
   gap: 16px;
-  padding: 24px;
+  padding: 20px 24px 40px;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
-.card {
-  flex: 1 1 160px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 16px 20px;
+.hero {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  border-radius: 14px;
+  color: #f4f7f5;
+  background:
+    radial-gradient(circle at 90% 10%, rgba(255, 255, 255, 0.18), transparent 40%),
+    linear-gradient(135deg, #163d2a 0%, #1f6f43 55%, #2f8f58 100%);
+  box-shadow: 0 12px 30px rgba(22, 61, 42, 0.25);
 }
 
-.cardLabel {
+.kicker {
+  margin: 0 0 4px;
   font-size: 12px;
-  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
-  margin-bottom: 8px;
+  opacity: 0.8;
 }
 
-.cardValue {
+.heroTitle {
   margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-.cardHint {
+.heroSub {
   margin: 8px 0 0;
-  font-size: 13px;
-  color: var(--color-text-muted);
-  line-height: 1.4;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+.heroStats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 18px;
+}
+
+.statLabel {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+}
+
+.statValue {
+  display: block;
+  font-size: 22px;
+  margin-top: 2px;
 }
 
 .advanceButton {
-  flex: 0 0 auto;
-  align-self: center;
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: #f4f7f5;
+  color: #163d2a;
   border: none;
-  border-radius: 6px;
-  padding: 14px 24px;
+  border-radius: 999px;
+  padding: 12px 18px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .advanceButton:hover {
-  filter: brightness(1.08);
+  transform: translateY(-1px);
 }
 
-.advanceButton:active {
-  filter: brightness(0.95);
+.opsToggle {
+  flex: 1 1 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.linkish {
+  background: transparent;
+  border: none;
+  color: var(--color-accent);
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ops {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
 }

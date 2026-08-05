@@ -1,5 +1,8 @@
-import { InvoicesPanel } from "../components/InvoicesPanel";
+import { useState } from "react";
+import { ChartsPanel } from "../components/Charts";
+import { EventFeed } from "../components/EventFeed";
 import { LoanPanel } from "../components/LoanPanel";
+import { OpportunitiesPanel } from "../components/OpportunitiesPanel";
 import { PayrollPanel } from "../components/PayrollPanel";
 import { ReportPanel } from "../components/ReportPanel";
 import { TaxPanel } from "../components/TaxPanel";
@@ -15,51 +18,60 @@ const MESI = [
 ];
 
 export const GameHUD = () => {
-  const company = useGameStore((s) => s.game.company);
-  const calendar = useGameStore((s) => s.game.calendar);
+  const game = useGameStore((s) => s.game);
   const doAdvanceMonth = useGameStore((s) => s.advanceMonth);
-  const city = cityById(company.city);
-  const mods = marketModifiersFromIndex(company.densityIndex);
+  const setScreen = useGameStore((s) => s.setScreen);
+  const [opsOpen, setOpsOpen] = useState(false);
+  const city = cityById(game.company.city);
+  const mods = marketModifiersFromIndex(game.company.densityIndex);
+  const due = game.liabilities.filter((l) => !l.paid).reduce((s, l) => s + l.amount, 0);
 
   return (
     <div className={styles.hud}>
-      <section className={styles.card}>
-        <h2 className={styles.cardLabel}>Azienda</h2>
-        <p className={styles.cardValue}>{company.name}</p>
-      </section>
+      <header className={styles.hero}>
+        <div>
+          <p className={styles.kicker}>{city.label} · {city.regionLabel}</p>
+          <h2 className={styles.heroTitle}>{game.company.name}</h2>
+          <p className={styles.heroSub}>
+            {MESI[game.calendar.month - 1]} {game.calendar.year}
+            {" · "}mese {game.monthsPlayed + 1}/24
+            {" · "}pressione {mods.pressureLabel}
+          </p>
+        </div>
+        <div className={styles.heroStats}>
+          <div>
+            <span className={styles.statLabel}>Cassa</span>
+            <strong className={styles.statValue}>{formatCash(game.company.cash)}</strong>
+          </div>
+          <div>
+            <span className={styles.statLabel}>F24 aperti</span>
+            <strong className={styles.statValue}>{formatCash(due)}</strong>
+          </div>
+          <button className={styles.advanceButton} onClick={doAdvanceMonth}>
+            Chiudi il mese →
+          </button>
+        </div>
+      </header>
 
-      <section className={styles.card}>
-        <h2 className={styles.cardLabel}>Cassa</h2>
-        <p className={styles.cardValue}>{formatCash(company.cash)}</p>
-      </section>
+      <ChartsPanel history={game.history} />
+      <OpportunitiesPanel />
+      <EventFeed />
 
-      <section className={styles.card}>
-        <h2 className={styles.cardLabel}>Periodo</h2>
-        <p className={styles.cardValue}>
-          {MESI[calendar.month - 1]} {calendar.year}
-        </p>
-      </section>
+      <div className={styles.opsToggle}>
+        <button className={styles.linkish} onClick={() => setOpsOpen((v) => !v)}>
+          {opsOpen ? "Nascondi operazioni" : "Personale · Fisco · Credito · Bilancio"}
+        </button>
+        <button className={styles.linkish} onClick={() => setScreen("menu")}>Menu</button>
+      </div>
 
-      <section className={styles.card}>
-        <h2 className={styles.cardLabel}>Mercato</h2>
-        <p className={styles.cardValue}>
-          {city.label} ({city.provinceCode})
-        </p>
-        <p className={styles.cardHint}>
-          {city.regionLabel} · {company.firmsInSector.toLocaleString("it-IT")} imprese in provincia
-          · {mods.pressureLabel} · affitto {formatCash(company.monthlyRent)}/mese
-        </p>
-      </section>
-
-      <button className={styles.advanceButton} onClick={doAdvanceMonth}>
-        Avanza 1 mese
-      </button>
-
-      <InvoicesPanel />
-      <PayrollPanel />
-      <TaxPanel />
-      <LoanPanel />
-      <ReportPanel />
+      {opsOpen && (
+        <div className={styles.ops}>
+          <PayrollPanel />
+          <TaxPanel />
+          <LoanPanel />
+          <ReportPanel />
+        </div>
+      )}
     </div>
   );
 };

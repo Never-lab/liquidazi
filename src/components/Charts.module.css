@@ -1,0 +1,38 @@
+.wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  flex: 1 1 100%;
+}
+
+.chart {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background-image: linear-gradient(160deg, #fff 0%, #f3f7f4 100%);
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.svg {
+  width: 100%;
+  height: 120px;
+  display: block;
+}
+
+.caption {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.legGood { color: var(--color-accent); font-weight: 600; }
+.legBad { color: var(--color-danger); font-weight: 600; }

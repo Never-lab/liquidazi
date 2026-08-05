@@ -27,13 +27,17 @@ const addInvoice = (state: GameState, kind: InvoiceKind, net: number): GameState
   return next;
 };
 
-/** Emetti fattura cliente (AR): incasso lordo al mese successivo. */
-export const issueCustomerInvoice = (state: GameState, net: number): GameState =>
-  addInvoice(state, "AR", net);
+/** Emetti fattura cliente (AR): solo via opportunità; netto già entro tetto. */
+export const issueCustomerInvoice = (state: GameState, net: number): GameState => {
+  if (!(net > 0) || net > 18000) return state;
+  return addInvoice(state, "AR", net);
+};
 
-/** Registra costo fornitore (AP): pagamento lordo al mese successivo. */
-export const recordSupplierCost = (state: GameState, net: number): GameState =>
-  addInvoice(state, "AP", net);
+/** Registra costo fornitore (AP). */
+export const recordSupplierCost = (state: GameState, net: number): GameState => {
+  if (!(net > 0) || net > 18000) return state;
+  return addInvoice(state, "AP", net);
+};
 
 /** Ruoli assumibili nel MVP (retribuzioni di gioco, non tabelle CCNL). */
 export const PRESET_ROLES = [

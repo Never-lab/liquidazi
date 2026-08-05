@@ -1,4 +1,5 @@
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
+import { applyRandomEvent, refreshMarketBoard } from "./events";
 import { euriborAt } from "./actions";
 import {
   LOSE_MONTHS_BELOW_ZERO,
@@ -207,7 +208,20 @@ export const advanceMonth = (state: GameState): GameState => {
     next.accontiCharged = { ires: 0, irap: 0 };
   }
 
-  // 7. calendar
+  // 7. close books snapshot, then calendar
+  const monthRevenue = issuedNow.filter((i) => i.kind === "AR").reduce((s, i) => s + i.net, 0);
+  const monthPurchases = issuedNow.filter((i) => i.kind === "AP").reduce((s, i) => s + i.net, 0);
+  const monthCosts = round2(
+    monthPurchases +
+      (next.lastPayroll?.totalNet ?? 0) +
+      next.company.monthlyRent +
+      (next.loan?.lastInstallment
+        ? next.loan.lastInstallment.interest + next.loan.lastInstallment.principal
+        : 0),
+  );
+  const closedLabel = `${next.calendar.month}/${next.calendar.year}`;
+  const closedIdx = idx;
+
   const isDecember = next.calendar.month === 12;
   next.calendar = {
     month: isDecember ? 1 : next.calendar.month + 1,
@@ -221,6 +235,22 @@ export const advanceMonth = (state: GameState): GameState => {
     next.status = "lost";
   } else if (next.monthsPlayed >= WIN_MONTHS && next.company.cash >= 0) {
     next.status = "won";
+  }
+
+  next.history = [
+    ...next.history,
+    {
+      monthIdx: closedIdx,
+      label: closedLabel,
+      cash: next.company.cash,
+      revenue: round2(monthRevenue),
+      costs: monthCosts,
+    },
+  ].slice(-24);
+
+  if (next.status === "running") {
+    const afterEvents = next.quietMode ? next : applyRandomEvent(next);
+    return refreshMarketBoard(afterEvents);
   }
 
   return next;
