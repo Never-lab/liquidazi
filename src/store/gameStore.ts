@@ -384,7 +384,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: "liquidazi-save",
-      version: 9,
+      version: 10,
       partialize: (state) => ({
         game: state.game,
         screen: state.screen === "auth" ? "auth" : state.screen,

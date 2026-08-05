@@ -7,6 +7,7 @@ import {
   euriborAt,
   FIDO_SPREAD_BPS,
   complianceSpreadPenaltyBps,
+  frenchPayment,
   treasuryAnnualRate,
 } from "./actions";
 import { applySubsidiaryMonth, refreshAcquisitionBoard } from "./acquisitions";
@@ -37,10 +38,12 @@ import {
   grossWithSeniority,
   MAX_SENIORITY_STEPS,
   SENIORITY_MONTHS,
+  STAFF_ROLES,
   type StaffRole,
 } from "../config/staffPay";
 
 const YEAR_REPORTS_MAX = 8;
+const STAFF_ROLE_NAMES: ReadonlySet<string> = new Set(STAFF_ROLES.map((r) => r.role));
 
 const pushLiability = (
   state: GameState,
@@ -137,6 +140,25 @@ export const advanceMonth = (state: GameState): GameState => {
   next.activeContracts ??= [];
   next.quarterPressure ??= null;
   if (!next.rival) next.rival = seedRival(next);
+  // Defensive defaults: fields added after some saves were created should
+  // never resurrect as undefined/NaN on load (see persist migration above).
+  if (next.loan) {
+    const loanAnnualRate =
+      next.loan.rateType === "fixed"
+        ? (next.loan.fixedAnnualRate ?? euriborAt(next.monthsPlayed) + next.loan.spreadBps / 10000)
+        : euriborAt(next.monthsPlayed) + next.loan.spreadBps / 10000;
+    next.loan.monthlyPayment ??= frenchPayment(
+      next.loan.outstanding,
+      loanAnnualRate,
+      Math.max(1, next.loan.tenorMonths - next.loan.monthsPaid),
+    );
+  }
+  for (const emp of next.employees) {
+    emp.senioritySteps ??= 0;
+  }
+  if (next.fido) {
+    next.fido.lastInterest ??= 0;
+  }
   const cashBefore = next.company.cash;
   const lines: { label: string; amount: number }[] = [];
   const note = (label: string, before: number) => {
@@ -281,20 +303,22 @@ export const advanceMonth = (state: GameState): GameState => {
     );
     if (steps !== emp.senioritySteps) {
       emp.senioritySteps = steps;
-      emp.grossMonthly = grossWithSeniority(
-        baseGrossFor(next.company.sector, emp.role as StaffRole),
-        steps,
-      );
+      // Unknown/legacy roles (e.g. test fixtures) have no CCNL entry — leave
+      // their gross unchanged rather than recomputing from an undefined base.
+      if (STAFF_ROLE_NAMES.has(emp.role)) {
+        emp.grossMonthly = grossWithSeniority(
+          baseGrossFor(next.company.sector, emp.role as StaffRole),
+          steps,
+        );
+      }
     }
   }
 
-  // 2c. Responsabile: tiene a bada il fisco (+compliance) e il rivale (−heat)
+  // 2c. Responsabile: tiene a bada il fisco (+compliance); l'effetto sul
+  // rivale (−heat) è applicato dopo tickRivalHeat, a fine mese.
   const nResp = next.employees.filter((e) => e.role === "Responsabile").length;
   if (nResp > 0) {
     next.compliance = Math.min(100, next.compliance + 2 * nResp);
-    if (next.rival) {
-      next.rival = { ...next.rival, heat: Math.max(0, next.rival.heat - nResp) };
-    }
   }
 
   // 3. payroll (+ 13ª in dicembre)
@@ -368,6 +392,9 @@ export const advanceMonth = (state: GameState): GameState => {
       next.fido.drawn = round2(next.fido.drawn - repay);
     }
     note("Fido", b);
+  }
+  if (next.fido && next.fido.drawn === 0) {
+    next.fido.lastInterest = 0;
   }
 
   // 6. annual events
@@ -543,6 +570,11 @@ export const advanceMonth = (state: GameState): GameState => {
   {
     const heated = tickRivalHeat(next, salesClosed, Math.max(1, monthlyCapacity(next)));
     next.rival = heated.rival;
+  }
+
+  // Responsabile: tiene a bada il rivale (−heat), applicato dopo la deriva mensile.
+  if (nResp > 0 && next.rival) {
+    next.rival = { ...next.rival, heat: Math.max(0, next.rival.heat - nResp) };
   }
 
   next.lastCloseSummary = {
