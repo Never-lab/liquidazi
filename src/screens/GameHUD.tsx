@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CashSparkline, ChartsPanel } from "../components/Charts";
 import { CoachBanner } from "../components/CoachBanner";
 import { EventChoiceBanner } from "../components/EventChoiceBanner";
@@ -44,6 +44,16 @@ export const GameHUD = () => {
   const [auxOpen, setAuxOpen] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 720px)").matches : false,
   );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 960px)");
+    const sync = () => {
+      if (mq.matches) setAuxOpen(true);
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const [cashPulse, setCashPulse] = useState(0);
   const city = cityById(game.company.city);
   const openTax = game.liabilities.filter((l) => !l.paid).reduce((s, l) => s + l.amount, 0);
@@ -203,38 +213,42 @@ export const GameHUD = () => {
         )}
       </div>
 
-      <OpportunitiesPanel />
-      <SchedulePanel compact />
+      <div className={styles.deskBody}>
+        <div className={styles.deskMain}>
+          <OpportunitiesPanel />
+          <SchedulePanel compact />
 
-      <div className={styles.toolbar}>
-        <Button variant="secondary" onClick={() => setOpsOpen(true)}>
-          Operazioni
-        </Button>
-        <button
-          type="button"
-          className={styles.auxToggle}
-          onClick={() => setAuxOpen((v) => !v)}
-        >
-          {auxOpen ? "Nascondi grafici / feed" : "Grafici e cronologia"}
-        </button>
-        <div className={styles.toolbarRight}>
-          {!coachOn && (
-            <Button variant="ghost" onClick={enableCoach}>
-              Guide
+          <div className={styles.toolbar}>
+            <Button variant="secondary" onClick={() => setOpsOpen(true)}>
+              Operazioni
             </Button>
-          )}
-          <Button variant="ghost" onClick={() => setScreen("menu")}>
-            Menu
-          </Button>
+            <button
+              type="button"
+              className={styles.auxToggle}
+              onClick={() => setAuxOpen((v) => !v)}
+            >
+              {auxOpen ? "Nascondi grafici / feed" : "Grafici e cronologia"}
+            </button>
+            <div className={styles.toolbarRight}>
+              {!coachOn && (
+                <Button variant="ghost" onClick={enableCoach}>
+                  Guide
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setScreen("menu")}>
+                Menu
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {auxOpen && (
-        <div className={styles.aux}>
-          <ChartsPanel history={game.history} />
-          <EventFeed />
-        </div>
-      )}
+        {auxOpen && (
+          <aside className={styles.deskSide}>
+            <ChartsPanel history={game.history} />
+            <EventFeed />
+          </aside>
+        )}
+      </div>
 
       <Sheet open={opsOpen} title="Operazioni" onClose={() => setOpsOpen(false)}>
         <div className={styles.opsTabs}>

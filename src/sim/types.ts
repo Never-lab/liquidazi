@@ -320,6 +320,8 @@ export interface GameState {
   activeContracts: ActiveContract[];
   /** Local rival (heat 0–100) */
   rival: Rival | null;
+  /** monthsPlayed when last forced shock was queued (cooldown) */
+  lastShockAt: number | null;
 }
 
 export type MilestoneId =
@@ -454,5 +456,6 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     quarterPressure: null,
     activeContracts: [],
     rival: null,
+    lastShockAt: null,
   };
 };

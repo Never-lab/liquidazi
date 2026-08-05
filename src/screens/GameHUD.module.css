@@ -4,7 +4,28 @@
   gap: 14px;
   padding: 0 16px 48px;
   max-width: var(--desk-max);
+  width: 100%;
   margin: 0 auto;
+}
+
+.deskBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.deskMain {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.deskSide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
 .sticky {
@@ -323,6 +344,38 @@
   gap: 12px;
 }
 
+@media (min-width: 960px) {
+  .deskBody {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+    align-items: start;
+    gap: 20px;
+  }
+
+  .deskSide {
+    position: sticky;
+    top: 88px;
+  }
+
+  .auxToggle {
+    display: none;
+  }
+}
+
+@media (min-width: 720px) {
+  .desk {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .sticky {
+    margin-left: -24px;
+    margin-right: -24px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
 .opsTabs {
   display: flex;
   flex-wrap: wrap;
@@ -389,18 +442,4 @@
   line-height: 1.45;
   max-width: 42rem;
   color: var(--color-text);
-}
-
-@media (min-width: 720px) {
-  .desk {
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-
-  .sticky {
-    margin-left: -24px;
-    margin-right: -24px;
-    padding-left: 24px;
-    padding-right: 24px;
-  }
 }
