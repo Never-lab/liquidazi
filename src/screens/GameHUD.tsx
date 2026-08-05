@@ -1,4 +1,5 @@
 import { InvoicesPanel } from "../components/InvoicesPanel";
+import { LoanPanel } from "../components/LoanPanel";
 import { PayrollPanel } from "../components/PayrollPanel";
 import { ReportPanel } from "../components/ReportPanel";
 import { TaxPanel } from "../components/TaxPanel";
@@ -42,6 +43,7 @@ export const GameHUD = () => {
       <InvoicesPanel />
       <PayrollPanel />
       <TaxPanel />
+      <LoanPanel />
       <ReportPanel />
     </div>
   );

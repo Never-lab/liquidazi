@@ -1,8 +1,14 @@
 import { DisclaimerFooter } from "./components/DisclaimerFooter";
+import { EndScreen } from "./screens/EndScreen";
 import { GameHUD } from "./screens/GameHUD";
+import { MenuScreen } from "./screens/MenuScreen";
+import { TutorialScreen } from "./screens/TutorialScreen";
+import { useGameStore } from "./store/gameStore";
 import styles from "./App.module.css";
 
 function App() {
+  const screen = useGameStore((s) => s.screen);
+
   return (
     <div className={styles.app}>
       <header className={styles.header}>
@@ -10,7 +16,11 @@ function App() {
       </header>
 
       <main className={styles.main}>
-        <GameHUD />
+        {screen === "menu" && <MenuScreen />}
+        {screen === "tutorial" && <TutorialScreen />}
+        {screen === "game" && <GameHUD />}
+        {screen === "gameover" && <EndScreen outcome="gameover" />}
+        {screen === "win" && <EndScreen outcome="win" />}
       </main>
 
       <DisclaimerFooter />

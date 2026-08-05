@@ -63,6 +63,23 @@ export interface PayrollRun {
   tfrAccrued: number;
 }
 
+export type LoanGuarantee = "none" | "fondo_garanzia_pmi" | "fideiussione";
+
+export interface Loan {
+  principal: number;
+  outstanding: number;
+  tenorMonths: number;
+  monthsPaid: number;
+  rateType: "fixed" | "floating";
+  /** total annual rate locked at origination; null for floating */
+  fixedAnnualRate: number | null;
+  spreadBps: number;
+  guarantee: LoanGuarantee;
+  lastInstallment: { interest: number; principal: number } | null;
+}
+
+export type GameStatus = "running" | "won" | "lost";
+
 /** P&L accumulator for the current fiscal year (competenza). */
 export interface YearToDate {
   revenue: number;
@@ -98,8 +115,18 @@ export interface GameState {
   /** acconti already charged (as liabilities) against the current year */
   accontiCharged: { ires: number; irap: number };
   lastYearReport: YearReport | null;
+  loan: Loan | null;
+  monthsPlayed: number;
+  /** consecutive months closed with negative cash */
+  monthsBelowZero: number;
+  status: GameStatus;
   nextId: number;
 }
+
+/** Game-over rule: this many consecutive months with cash < 0 loses. */
+export const LOSE_MONTHS_BELOW_ZERO = 3;
+/** Win rule: survive this many months with cash >= 0 at the end. */
+export const WIN_MONTHS = 24;
 
 /** Absolute month index: comparable across year boundaries. */
 export const toMonthIndex = (c: Calendar): number => c.year * 12 + (c.month - 1);
@@ -126,5 +153,9 @@ export const createInitialGameState = (): GameState => ({
   priorYearTax: null,
   accontiCharged: { ires: 0, irap: 0 },
   lastYearReport: null,
+  loan: null,
+  monthsPlayed: 0,
+  monthsBelowZero: 0,
+  status: "running",
   nextId: 1,
 });

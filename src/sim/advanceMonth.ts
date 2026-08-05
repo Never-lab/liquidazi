@@ -1,5 +1,13 @@
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
-import { round2, toMonthIndex, type GameState, type LiabilityKind } from "./types";
+import { euriborAt } from "./actions";
+import {
+  LOSE_MONTHS_BELOW_ZERO,
+  WIN_MONTHS,
+  round2,
+  toMonthIndex,
+  type GameState,
+  type LiabilityKind,
+} from "./types";
 
 const pushLiability = (
   state: GameState,
@@ -26,11 +34,15 @@ const pushLiability = (
  *   3. payroll: pay net salaries, accrue IRPEF/INPS liabilities + TFR
  *   4. liquidate month IVA (output - input - credit) → liability due next
  *      month; cash untouched until the F24 is paid
- *   5. annual events: diritto camerale (June), acconti IRES/IRAP (May/Oct
+ *   5. loan installment (constant principal share + interest)
+ *   6. annual events: diritto camerale (June), acconti IRES/IRAP (May/Oct
  *      close → due June/November), year close (December) → saldo next June
- *   6. advance calendar
+ *   7. advance calendar
+ *   8. win/lose check
  */
 export const advanceMonth = (state: GameState): GameState => {
+  if (state.status !== "running") return state;
+
   const next = structuredClone(state);
   const idx = toMonthIndex(next.calendar);
 
@@ -119,7 +131,23 @@ export const advanceMonth = (state: GameState): GameState => {
     next.ytd.purchases + issuedNow.filter((i) => i.kind === "AP").reduce((s2, i) => s2 + i.net, 0),
   );
 
-  // 5. annual events
+  // 5. loan installment: constant principal share + interest on outstanding
+  if (next.loan && next.loan.outstanding > 0) {
+    const loan = next.loan;
+    const annualRate =
+      loan.rateType === "fixed"
+        ? loan.fixedAnnualRate!
+        : euriborAt(next.monthsPlayed) + loan.spreadBps / 10000;
+    const interest = round2((loan.outstanding * annualRate) / 12);
+    const principalShare = Math.min(round2(loan.principal / loan.tenorMonths), loan.outstanding);
+    next.company.cash = round2(next.company.cash - interest - principalShare);
+    loan.outstanding = round2(loan.outstanding - principalShare);
+    loan.monthsPaid += 1;
+    loan.lastInstallment = { interest, principal: principalShare };
+    next.ytd.interest = round2(next.ytd.interest + interest);
+  }
+
+  // 6. annual events
   const month = next.calendar.month;
 
   // June close: diritto camerale (flat CCIAA fee), paid cash
@@ -173,12 +201,21 @@ export const advanceMonth = (state: GameState): GameState => {
     next.accontiCharged = { ires: 0, irap: 0 };
   }
 
-  // 6. calendar
+  // 7. calendar
   const isDecember = next.calendar.month === 12;
   next.calendar = {
     month: isDecember ? 1 : next.calendar.month + 1,
     year: isDecember ? next.calendar.year + 1 : next.calendar.year,
   };
+
+  // 8. win/lose check
+  next.monthsPlayed += 1;
+  next.monthsBelowZero = next.company.cash < 0 ? next.monthsBelowZero + 1 : 0;
+  if (next.monthsBelowZero >= LOSE_MONTHS_BELOW_ZERO) {
+    next.status = "lost";
+  } else if (next.monthsPlayed >= WIN_MONTHS && next.company.cash >= 0) {
+    next.status = "won";
+  }
 
   return next;
 };

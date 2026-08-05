@@ -30,6 +30,16 @@ export interface FiscalYearSnapshot {
   euribor_3m_path: number[];
   fondo_garanzia_coverage_investment: number;
   fondo_garanzia_coverage_liquidity: number;
+  /** bank spread over Euribor without guarantees, in basis points */
+  loan_base_spread_bps: number;
+  /** spread discount when backed by Fondo di Garanzia PMI (guarantee, NOT a grant) */
+  fondo_garanzia_spread_discount_bps: number;
+  /** spread discount with a personal fideiussione */
+  fideiussione_spread_discount_bps: number;
+  /** max principal the bank approves without Fondo di Garanzia */
+  loan_max_principal_base: number;
+  /** max principal with Fondo di Garanzia PMI backing */
+  loan_max_principal_fondo: number;
   disclaimer: string;
 }
 
@@ -55,5 +65,10 @@ export const fiscalYearSnapshot: FiscalYearSnapshot = {
   euribor_3m_path: [0.035, 0.035, 0.034, 0.034, 0.033, 0.033, 0.032, 0.032, 0.031, 0.031, 0.030, 0.030],
   fondo_garanzia_coverage_investment: 0.8,
   fondo_garanzia_coverage_liquidity: 0.5,
+  loan_base_spread_bps: 300,
+  fondo_garanzia_spread_discount_bps: 100,
+  fideiussione_spread_discount_bps: 50,
+  loan_max_principal_base: 25000,
+  loan_max_principal_fondo: 50000,
   disclaimer: "Modello educativo semplificato. Non costituisce consulenza fiscale.",
 };
