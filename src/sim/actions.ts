@@ -259,6 +259,7 @@ export const loanRefusalReason = (
   guarantee: LoanGuarantee,
 ): string | null => {
   if (state.loan && state.loan.outstanding > 0) return "Hai già un mutuo attivo";
+  if (principal <= 0) return "Inserisci un importo positivo";
   const max =
     guarantee === "fondo_garanzia_pmi"
       ? snap.loan_max_principal_fondo

@@ -98,6 +98,12 @@ describe("loanRefusalReason", () => {
     );
     expect(loanRefusalReason(s, 40000, "fondo_garanzia_pmi")).toBeNull();
   });
+
+  it("importo non positivo → rifiuto", () => {
+    const s = createInitialGameState();
+    expect(loanRefusalReason(s, 0, "none")).toBe("Inserisci un importo positivo");
+    expect(loanRefusalReason(s, -1000, "none")).toBe("Inserisci un importo positivo");
+  });
 });
 
 describe("buildLoanOffers", () => {
