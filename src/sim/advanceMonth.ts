@@ -361,6 +361,7 @@ export const advanceMonth = (state: GameState): GameState => {
     const interest = round2((next.fido.drawn * annual) / 12);
     next.company.cash = round2(next.company.cash - interest);
     next.ytd.interest = round2(next.ytd.interest + interest);
+    next.fido.lastInterest = interest;
     if (next.company.cash > 0 && next.fido.drawn > 0) {
       const repay = round2(Math.min(next.company.cash, next.fido.drawn));
       next.company.cash = round2(next.company.cash - repay);

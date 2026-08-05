@@ -131,6 +131,8 @@ export interface LoanOffer {
 export interface Fido {
   limit: number;
   drawn: number;
+  /** interessi addebitati nell'ultimo mese (null se mai usato) */
+  lastInterest?: number;
 }
 
 export type OpportunityKind = "sale" | "supply";

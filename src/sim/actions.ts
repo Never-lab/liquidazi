@@ -131,7 +131,8 @@ export const fireEmployee = (state: GameState, id: number): GameState => {
   return next;
 };
 
-const spreadForGuarantee = (guarantee: LoanGuarantee): number => {
+/** Spread (bps) applicato dalla banca in base alla garanzia scelta. */
+export const spreadForGuarantee = (guarantee: LoanGuarantee): number => {
   if (guarantee === "fondo_garanzia_pmi")
     return snap.loan_base_spread_bps - snap.fondo_garanzia_spread_discount_bps;
   if (guarantee === "fideiussione")
