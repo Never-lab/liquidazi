@@ -9,8 +9,9 @@ import {
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { round2 } from "./types";
 import { hireEmployee } from "./actions";
+import { advanceMonth } from "./advanceMonth";
 import { generateOpportunities, monthlyCapacity, staffCapacityPoints } from "./events";
-import { createInitialGameState } from "./types";
+import { createInitialGameState, toMonthIndex } from "./types";
 
 describe("staffPay config", () => {
   it("tre ruoli con punti distinti", () => {
@@ -74,5 +75,33 @@ describe("ruoli differenziati", () => {
     const salesOp = generateOpportunities(op).ops.filter((o) => o.kind === "sale").length;
     const salesImp = generateOpportunities(imp).ops.filter((o) => o.kind === "sale").length;
     expect(salesImp).toBeGreaterThanOrEqual(salesOp);
+  });
+});
+
+describe("advanceMonth: scatti anzianità + tick Responsabile", () => {
+  it("dopo 24 mesi di servizio scatta +4% lordo", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s = hireEmployee(s, "Operaio");
+    const emp = s.employees[0]!;
+    emp.hireMonthIdx = toMonthIndex(s.calendar) - 24;
+    s.quietMode = true;
+    s.company.cash = 100000;
+    s = advanceMonth(s);
+    expect(s.employees[0]!.senioritySteps).toBe(1);
+    expect(s.employees[0]!.grossMonthly).toBeCloseTo(1650 * 1.04);
+  });
+
+  it("Responsabile: +2 compliance e −1 heat (al netto della deriva mensile del rivale)", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s = hireEmployee(s, "Responsabile");
+    s.compliance = 50;
+    s.rival = { name: "Rival SA", heat: 40 };
+    s.quietMode = true;
+    s.company.cash = 100000;
+    // No sales close this month, so the existing salesTaken===0 rival drift (+5)
+    // still applies after our −1 tick: 40 − 1 + 5 = 44.
+    s = advanceMonth(s);
+    expect(s.compliance).toBe(52);
+    expect(s.rival!.heat).toBe(44);
   });
 });

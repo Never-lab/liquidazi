@@ -32,6 +32,13 @@ import {
   type GameState,
   type LiabilityKind,
 } from "./types";
+import {
+  baseGrossFor,
+  grossWithSeniority,
+  MAX_SENIORITY_STEPS,
+  SENIORITY_MONTHS,
+  type StaffRole,
+} from "../config/staffPay";
 
 const YEAR_REPORTS_MAX = 8;
 
@@ -262,6 +269,31 @@ export const advanceMonth = (state: GameState): GameState => {
         0,
         next.compliance - snap.compliance_malus_late * inspectionMalusMult(next),
       );
+    }
+  }
+
+  // 2b. scatti anzianità (ogni SENIORITY_MONTHS mesi di servizio, cap MAX_SENIORITY_STEPS)
+  for (const emp of next.employees) {
+    const months = idx - emp.hireMonthIdx;
+    const steps = Math.min(
+      MAX_SENIORITY_STEPS,
+      Math.max(0, Math.floor(months / SENIORITY_MONTHS)),
+    );
+    if (steps !== emp.senioritySteps) {
+      emp.senioritySteps = steps;
+      emp.grossMonthly = grossWithSeniority(
+        baseGrossFor(next.company.sector, emp.role as StaffRole),
+        steps,
+      );
+    }
+  }
+
+  // 2c. Responsabile: tiene a bada il fisco (+compliance) e il rivale (−heat)
+  const nResp = next.employees.filter((e) => e.role === "Responsabile").length;
+  if (nResp > 0) {
+    next.compliance = Math.min(100, next.compliance + 2 * nResp);
+    if (next.rival) {
+      next.rival = { ...next.rival, heat: Math.max(0, next.rival.heat - nResp) };
     }
   }
 
