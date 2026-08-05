@@ -9,6 +9,11 @@ export const TutorialScreen = () => {
       <h2 className={styles.title}>Come funziona l&apos;Italia in questo gioco</h2>
       <ol className={styles.bullets}>
         <li>
+          <strong>Zona e concorrenza contano.</strong> Più rivali nello stesso
+          settore e nella stessa zona: prezzi di vendita più bassi e costi più
+          alti. L&apos;affitto mensile dipende dalla regione.
+        </li>
+        <li>
           <strong>Cassa ≠ utile.</strong> Le fatture incassano (e pagano) il
           mese dopo l&apos;emissione: puoi essere in utile e restare senza soldi.
         </li>

@@ -30,6 +30,13 @@
   color: var(--color-text);
 }
 
+.cardHint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
 .advanceButton {
   flex: 0 0 auto;
   align-self: center;

@@ -2,7 +2,6 @@ import { useGameStore } from "../store/gameStore";
 import styles from "./MenuScreen.module.css";
 
 export const MenuScreen = () => {
-  const newGame = useGameStore((s) => s.newGame);
   const setScreen = useGameStore((s) => s.setScreen);
   const game = useGameStore((s) => s.game);
 
@@ -15,7 +14,9 @@ export const MenuScreen = () => {
         Gestisci una SRL italiana per 24 mesi senza finire a secco di cassa.
       </p>
       <div className={styles.actions}>
-        <button className={styles.primary} onClick={newGame}>Nuova partita</button>
+        <button className={styles.primary} onClick={() => setScreen("setup")}>
+          Nuova partita
+        </button>
         {canResume && (
           <button className={styles.secondary} onClick={() => setScreen("game")}>
             Riprendi partita

@@ -53,7 +53,8 @@ export const InvoicesPanel = () => {
       </div>
 
       <p className={styles.muted}>
-        Importi al netto IVA. Incasso/pagamento del lordo il mese successivo.
+        Importi al netto IVA, poi scalati dalla concorrenza locale (prezzi/costi).
+        Incasso/pagamento del lordo il mese successivo.
       </p>
 
       {open.length > 0 && (

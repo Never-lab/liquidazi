@@ -56,6 +56,12 @@ export const advanceMonth = (state: GameState): GameState => {
     }
   }
 
+  // 1b. monthly zone rent / locale
+  if (next.company.monthlyRent > 0) {
+    next.company.cash = round2(next.company.cash - next.company.monthlyRent);
+    next.ytd.otherCosts = round2(next.ytd.otherCosts + next.company.monthlyRent);
+  }
+
   // 2. skipped F24s: one-shot penalty + interest + compliance malus.
   // Runs before new liabilities are pushed (those are due next month).
   for (const l of next.liabilities) {
