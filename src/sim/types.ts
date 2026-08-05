@@ -1,7 +1,7 @@
 /**
  * Core simulation types for Liquidazi.
- * Phase 1: only what the shell UI needs (company + calendar).
- * Fiscal entities (Invoice, VatAccount, TaxLiability, Loan, ...) land in later phases.
+ * Fiscal entities grow phase by phase; all rates come from
+ * src/config/fiscalYearSnapshot.ts — never hardcoded here.
  */
 
 export interface Company {
@@ -15,10 +15,51 @@ export interface Calendar {
   year: number;
 }
 
+export type InvoiceKind = "AR" | "AP";
+
+export interface Invoice {
+  id: number;
+  kind: InvoiceKind;
+  net: number;
+  vat: number;
+  gross: number;
+  /** absolute month index of issue (competenza) */
+  issuedIdx: number;
+  /** settles when advancing a month with index >= dueIdx */
+  dueIdx: number;
+  settled: boolean;
+}
+
+export interface VatAccount {
+  /** IVA credit carried over to next liquidation */
+  credit: number;
+}
+
+export type LiabilityKind = "IVA" | "IRPEF" | "INPS" | "IRES" | "IRAP";
+
+export interface TaxLiability {
+  id: number;
+  kind: LiabilityKind;
+  amount: number;
+  /** month index in which payment is expected (F24 flavor: competence + 1) */
+  dueIdx: number;
+  paid: boolean;
+  penalized: boolean;
+}
+
 export interface GameState {
   company: Company;
   calendar: Calendar;
+  invoices: Invoice[];
+  vat: VatAccount;
+  liabilities: TaxLiability[];
+  nextId: number;
 }
+
+/** Absolute month index: comparable across year boundaries. */
+export const toMonthIndex = (c: Calendar): number => c.year * 12 + (c.month - 1);
+
+export const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 export const createInitialGameState = (): GameState => ({
   company: {
@@ -29,4 +70,8 @@ export const createInitialGameState = (): GameState => ({
     month: 1,
     year: 2024,
   },
+  invoices: [],
+  vat: { credit: 0 },
+  liabilities: [],
+  nextId: 1,
 });

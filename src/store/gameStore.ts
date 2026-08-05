@@ -1,16 +1,18 @@
 import { create } from "zustand";
 import { advanceMonth } from "../sim/advanceMonth";
+import { issueCustomerInvoice, recordSupplierCost } from "../sim/actions";
 import { createInitialGameState, type GameState } from "../sim/types";
 
-interface GameStore extends GameState {
+interface GameStore {
+  game: GameState;
   advanceMonth: () => void;
+  issueCustomerInvoice: (net: number) => void;
+  recordSupplierCost: (net: number) => void;
 }
 
 export const useGameStore = create<GameStore>()((set, get) => ({
-  ...createInitialGameState(),
-  advanceMonth: () => {
-    const { company, calendar } = get();
-    const next = advanceMonth({ company, calendar });
-    set(next);
-  },
+  game: createInitialGameState(),
+  advanceMonth: () => set({ game: advanceMonth(get().game) }),
+  issueCustomerInvoice: (net) => set({ game: issueCustomerInvoice(get().game, net) }),
+  recordSupplierCost: (net) => set({ game: recordSupplierCost(get().game, net) }),
 }));

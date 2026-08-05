@@ -1,3 +1,6 @@
+import { InvoicesPanel } from "../components/InvoicesPanel";
+import { TaxPanel } from "../components/TaxPanel";
+import { formatCash } from "../components/formatCash";
 import { useGameStore } from "../store/gameStore";
 import styles from "./GameHUD.module.css";
 
@@ -6,12 +9,9 @@ const MESI = [
   "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
 ];
 
-const formatCash = (cash: number) =>
-  cash.toLocaleString("it-IT", { style: "currency", currency: "EUR" });
-
 export const GameHUD = () => {
-  const company = useGameStore((s) => s.company);
-  const calendar = useGameStore((s) => s.calendar);
+  const company = useGameStore((s) => s.game.company);
+  const calendar = useGameStore((s) => s.game.calendar);
   const doAdvanceMonth = useGameStore((s) => s.advanceMonth);
 
   return (
@@ -36,6 +36,9 @@ export const GameHUD = () => {
       <button className={styles.advanceButton} onClick={doAdvanceMonth}>
         Avanza 1 mese
       </button>
+
+      <InvoicesPanel />
+      <TaxPanel />
     </div>
   );
 };
