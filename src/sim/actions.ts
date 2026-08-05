@@ -286,7 +286,7 @@ const LOAN_OFFER_TEMPLATES: ReadonlyArray<{
   {
     id: "fondo",
     label: "Fondo PMI",
-    principal: Math.min(40000, snap.loan_max_principal_fondo),
+    principal: 40000,
     tenorMonths: 36,
     guarantee: "fondo_garanzia_pmi",
   },
