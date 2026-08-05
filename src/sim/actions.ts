@@ -235,15 +235,7 @@ export const canRequestLoan = (
   state: GameState,
   principal: number,
   guarantee: LoanGuarantee,
-): boolean => {
-  if (state.loan && state.loan.outstanding > 0) return false;
-  if (principal <= 0) return false;
-  const max =
-    guarantee === "fondo_garanzia_pmi"
-      ? snap.loan_max_principal_fondo
-      : snap.loan_max_principal_base;
-  return principal <= max;
-};
+): boolean => loanRefusalReason(state, principal, guarantee) === null;
 
 export interface LoanRequest {
   principal: number;

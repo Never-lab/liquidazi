@@ -64,17 +64,24 @@ describe("ruoli differenziati", () => {
     expect(monthlyCapacity(withImp) - cap0).toBe(0);
   });
 
-  it("Impiegato alza i lead sale vs solo Operaio a parità di nextId seed", () => {
-    let op = createInitialGameState({ city: "058091", sector: "servizi" });
-    op = hireEmployee(op, "Operaio");
+  it("Impiegato alza i lead sale vs baseline zero-staff a parità di seed", () => {
+    // 1 Impiegato doesn't move monthlyCapacity (0.35 pt floors to 0 extra
+    // slots), so any extra sale lead must come from the explicit "+impiegati"
+    // bump in generateOpportunities' saleTarget — this isolates that effect.
+    const base = createInitialGameState({ city: "058091", sector: "servizi" });
     let imp = createInitialGameState({ city: "058091", sector: "servizi" });
     imp = hireEmployee(imp, "Impiegato");
-    // Force same board seed inputs
-    op = { ...op, nextId: 50, monthsPlayed: 2 };
-    imp = { ...imp, nextId: 50, monthsPlayed: 2 };
-    const salesOp = generateOpportunities(op).ops.filter((o) => o.kind === "sale").length;
-    const salesImp = generateOpportunities(imp).ops.filter((o) => o.kind === "sale").length;
-    expect(salesImp).toBeGreaterThanOrEqual(salesOp);
+    // Force same board seed inputs (nextId/monthsPlayed feed the RNG seed).
+    const baseSeeded = { ...base, nextId: 50, monthsPlayed: 2 };
+    const impSeeded = { ...imp, nextId: 50, monthsPlayed: 2 };
+    expect(monthlyCapacity(impSeeded)).toBe(monthlyCapacity(baseSeeded));
+    const salesBase = generateOpportunities(baseSeeded).ops.filter(
+      (o) => o.kind === "sale",
+    ).length;
+    const salesImp = generateOpportunities(impSeeded).ops.filter(
+      (o) => o.kind === "sale",
+    ).length;
+    expect(salesImp).toBeGreaterThan(salesBase);
   });
 });
 

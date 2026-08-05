@@ -86,7 +86,8 @@ const ticketCeiling = (state: GameState): number => {
   const staff = state.employees.length;
   const impiegati = countRole(state, "Impiegato");
   const growthBump = Math.min(6000, (state.growthCapacityBonus ?? 0) * 2000);
-  const base = 18000 + Math.min(12000, staff * 800) + impiegati * 1200 + growthBump;
+  const base =
+    18000 + Math.min(12000, staff * 800) + Math.min(6000, impiegati * 1200) + growthBump;
   return hasUpgrade(state.upgrades, "commerciale") ? base + 4000 : base;
 };
 
