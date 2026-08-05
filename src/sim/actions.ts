@@ -251,6 +251,75 @@ export interface LoanRequest {
   guarantee: LoanGuarantee;
 }
 
+/** Perché la banca rifiuterebbe questo mutuo, o null se approvabile. */
+export const loanRefusalReason = (
+  state: GameState,
+  principal: number,
+  guarantee: LoanGuarantee,
+): string | null => {
+  if (state.loan && state.loan.outstanding > 0) return "Hai già un mutuo attivo";
+  const max =
+    guarantee === "fondo_garanzia_pmi"
+      ? snap.loan_max_principal_fondo
+      : snap.loan_max_principal_base;
+  if (principal > max) return "Importo oltre il tetto: serve una garanzia / Fondo PMI";
+  return null;
+};
+
+export type LoanOfferCard = LoanRequest & {
+  id: string;
+  label: string;
+  annualRate: number;
+  monthlyPayment: number;
+  disabledReason: string | null;
+};
+
+const LOAN_OFFER_TEMPLATES: ReadonlyArray<{
+  id: string;
+  label: string;
+  principal: number;
+  tenorMonths: number;
+  guarantee: LoanGuarantee;
+}> = [
+  { id: "small", label: "Piccolo", principal: 10000, tenorMonths: 12, guarantee: "none" },
+  { id: "medium", label: "Medio", principal: 25000, tenorMonths: 24, guarantee: "none" },
+  {
+    id: "fondo",
+    label: "Fondo PMI",
+    principal: Math.min(40000, snap.loan_max_principal_fondo),
+    tenorMonths: 36,
+    guarantee: "fondo_garanzia_pmi",
+  },
+];
+
+/** Le 3 offerte precalcolate mostrate in Credito, con rata e motivo di rifiuto. */
+export const buildLoanOffers = (state: GameState): LoanOfferCard[] =>
+  LOAN_OFFER_TEMPLATES.map((tpl) => {
+    // Il template "medio" prova prima senza garanzia; se il tetto lo blocca,
+    // ripiega su fideiussione (stesso tetto oggi, ma a prova di futuri snapshot).
+    const guarantee =
+      tpl.guarantee === "none" &&
+      loanRefusalReason(state, tpl.principal, "none") !== null &&
+      loanRefusalReason(state, tpl.principal, "fideiussione") === null
+        ? "fideiussione"
+        : tpl.guarantee;
+    const spreadBps =
+      spreadForGuarantee(guarantee) + complianceSpreadPenaltyBps(state.compliance);
+    const annualRate = euriborAt(state.monthsPlayed) + spreadBps / 10000;
+    const monthlyPayment = frenchPayment(tpl.principal, annualRate, tpl.tenorMonths);
+    return {
+      id: tpl.id,
+      label: tpl.label,
+      principal: tpl.principal,
+      tenorMonths: tpl.tenorMonths,
+      rateType: "fixed",
+      guarantee,
+      annualRate,
+      monthlyPayment,
+      disabledReason: loanRefusalReason(state, tpl.principal, guarantee),
+    };
+  });
+
 export const requestLoan = (state: GameState, req: LoanRequest): GameState => {
   if (!canRequestLoan(state, req.principal, req.guarantee)) return state;
   const next = structuredClone(state);

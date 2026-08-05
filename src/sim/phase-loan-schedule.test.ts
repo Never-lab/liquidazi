@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildLoanOffers,
   buildLoanSchedule,
   frenchPayment,
+  loanRefusalReason,
   monthlyRateFromAnnual,
   remainingSchedule,
+  requestLoan,
 } from "./actions";
+import { createInitialGameState } from "./types";
 
 describe("Phase loan schedule — French amortization helpers", () => {
   it("monthlyRateFromAnnual: converte tasso annuale in mensile", () => {
@@ -67,5 +71,62 @@ describe("Phase loan schedule — French amortization helpers", () => {
   it("monthIndex è 1-based", () => {
     const rows = buildLoanSchedule(1200, 0.05, 3);
     expect(rows.map((r) => r.monthIndex)).toEqual([1, 2, 3]);
+  });
+});
+
+describe("loanRefusalReason", () => {
+  it("nessun motivo di rifiuto per un'offerta valida", () => {
+    const s = createInitialGameState();
+    expect(loanRefusalReason(s, 10000, "none")).toBeNull();
+  });
+
+  it("mutuo già attivo → rifiuto", () => {
+    let s = createInitialGameState();
+    s = requestLoan(s, {
+      principal: 10000,
+      tenorMonths: 12,
+      rateType: "fixed",
+      guarantee: "none",
+    });
+    expect(loanRefusalReason(s, 5000, "none")).toBe("Hai già un mutuo attivo");
+  });
+
+  it("40k senza Fondo PMI supera il tetto → rifiuto", () => {
+    const s = createInitialGameState();
+    expect(loanRefusalReason(s, 40000, "none")).toBe(
+      "Importo oltre il tetto: serve una garanzia / Fondo PMI",
+    );
+    expect(loanRefusalReason(s, 40000, "fondo_garanzia_pmi")).toBeNull();
+  });
+});
+
+describe("buildLoanOffers", () => {
+  it("restituisce 3 carte offerta con rata e TAN calcolati", () => {
+    const s = createInitialGameState();
+    const offers = buildLoanOffers(s);
+    expect(offers).toHaveLength(3);
+    for (const o of offers) {
+      expect(o.annualRate).toBeGreaterThan(0);
+      expect(o.monthlyPayment).toBeGreaterThan(0);
+      expect(o.disabledReason).toBeNull();
+    }
+    expect(offers.map((o) => o.principal)).toEqual([10000, 25000, 40000]);
+    expect(offers.map((o) => o.tenorMonths)).toEqual([12, 24, 36]);
+    expect(offers[2]!.guarantee).toBe("fondo_garanzia_pmi");
+  });
+
+  it("con mutuo attivo, tutte le carte sono disabilitate", () => {
+    let s = createInitialGameState();
+    s = requestLoan(s, {
+      principal: 10000,
+      tenorMonths: 12,
+      rateType: "fixed",
+      guarantee: "none",
+    });
+    const offers = buildLoanOffers(s);
+    expect(offers).toHaveLength(3);
+    for (const o of offers) {
+      expect(o.disabledReason).toBe("Hai già un mutuo attivo");
+    }
   });
 });
