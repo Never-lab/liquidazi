@@ -1,16 +1,13 @@
 .coach {
-  flex: 1 1 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid #c5d9cc;
-  background:
-    linear-gradient(135deg, rgba(31, 111, 67, 0.08), transparent 55%),
-    #f7fbf8;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-accent-soft);
   animation: coachIn 0.35s ease-out;
 }
 
@@ -26,7 +23,8 @@
 .title {
   margin: 4px 0 6px;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 1.1rem;
+  color: var(--color-text);
 }
 
 .body {
@@ -43,7 +41,8 @@
   text-decoration: underline;
   text-underline-offset: 3px;
   font-size: 13px;
-  padding: 0;
+  padding: 8px 4px;
+  min-height: var(--touch);
 }
 
 @keyframes coachIn {

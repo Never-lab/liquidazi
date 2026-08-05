@@ -53,7 +53,12 @@ export const TaxPanel = () => {
         Scadenza F24: giorno 16 del mese successivo alla competenza. Saltarla
         costa sanzioni, interessi e reputazione.
       </p>
-      <p className={styles.muted}>Compliance: {game.compliance}/100</p>
+      <p className={styles.muted}>
+        Compliance: {game.compliance}/100
+        {game.compliance < 70
+          ? " — sotto 70 la banca alza lo spread; sotto 40 anche il tetto fido."
+          : ""}
+      </p>
     </section>
   );
 };

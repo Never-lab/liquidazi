@@ -16,7 +16,8 @@ export const SavesScreen = () => {
     <div className={styles.menuWide}>
       <h2 className={styles.title}>Salvataggi</h2>
       <p className={styles.subtitle}>
-        Tre slot locali. Cambia slot per tenere partite parallele (es. Facile / Difficile).
+        Tre slot locali (browser). Cambia slot per partite parallele. Nessun sync cloud: la
+        classifica resta sull&apos;API locale quando sei loggato.
       </p>
 
       <ul className={styles.slotList}>
@@ -25,6 +26,15 @@ export const SavesScreen = () => {
           const city = g ? cityById(g.company.city) : null;
           const diff = g ? DIFFICULTIES[g.difficulty ?? "normal"].label : null;
           const active = i === activeSlot;
+          const running = g && g.monthsPlayed > 0 && g.status === "running";
+          const statusLabel =
+            !g || g.monthsPlayed < 1
+              ? "Vuoto"
+              : g.status === "lost"
+                ? "KO"
+                : g.status === "won"
+                  ? "Traguardo 24m"
+                  : "In corso";
           return (
             <li key={i} className={active ? styles.slotActive : styles.slot}>
               <div className={styles.slotHead}>
@@ -34,19 +44,28 @@ export const SavesScreen = () => {
                   onChange={(e) => renameSlot(i, e.target.value)}
                   aria-label={`Nome slot ${i + 1}`}
                 />
+                <span className={styles.slotBadge}>{statusLabel}</span>
                 {active && <span className={styles.slotBadge}>attivo</span>}
               </div>
               {g && g.monthsPlayed > 0 ? (
                 <p className={styles.slotMeta}>
-                  {g.company.name} · {city?.label} · {diff} · mese {g.monthsPlayed + 1}
-                  {" · "}cassa {formatCash(g.company.cash)}
-                  {g.status === "lost" ? " · KO" : ""}
-                  {slot.updatedAt
-                    ? ` · ${new Date(slot.updatedAt).toLocaleString("it-IT")}`
+                  <strong>{g.company.name}</strong> · {city?.label} · {diff}
+                  <br />
+                  Mese {g.monthsPlayed + 1} · cassa {formatCash(g.company.cash)}
+                  {(g.treasury ?? 0) > 0 ? ` · tesoreria ${formatCash(g.treasury)}` : ""}
+                  {(g.subsidiaries ?? []).length > 0
+                    ? ` · ${g.subsidiaries.length} partecipate`
                     : ""}
+                  <br />
+                  Salvato:{" "}
+                  {slot.updatedAt
+                    ? new Date(slot.updatedAt).toLocaleString("it-IT")
+                    : "mai"}
                 </p>
               ) : (
-                <p className={styles.slotMeta}>Vuoto — avvia una nuova partita su questo slot.</p>
+                <p className={styles.slotMeta}>
+                  Vuoto — scegli lo slot e avvia una nuova partita.
+                </p>
               )}
               <div className={styles.slotActions}>
                 <button
@@ -54,15 +73,11 @@ export const SavesScreen = () => {
                   type="button"
                   onClick={() => {
                     selectSlot(i);
-                    if (g && g.status === "running" && g.monthsPlayed > 0) setScreen("game");
+                    if (running) setScreen("game");
                     else setScreen("setup");
                   }}
                 >
-                  {g && g.monthsPlayed > 0 && g.status === "running"
-                    ? "Continua"
-                    : active
-                      ? "Nuova su questo slot"
-                      : "Usa questo slot"}
+                  {running ? "Continua partita" : active ? "Nuova su questo slot" : "Usa questo slot"}
                 </button>
                 {g && (
                   <button

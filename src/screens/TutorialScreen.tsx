@@ -1,52 +1,65 @@
+import { useState } from "react";
 import { useGameStore } from "../store/gameStore";
 import styles from "./MenuScreen.module.css";
 
+const STEPS = [
+  {
+    title: "1 · Cassa ≠ utile",
+    body: "Accetta una commessa dal tabellone. L'incasso arriva ai termini (PA = tardi). Non inventare fatture.",
+  },
+  {
+    title: "2 · Chiudi il mese",
+    body: "Premi «Chiudi il mese». Entrano/escono i soldi delle fatture scadute, affitto, stipendi. Guarda il riepilogo Δ cassa.",
+  },
+  {
+    title: "3 · Paga l'F24",
+    body: "Il mese dopo compare il banner giallo: versa IVA e ritenute. Saltare costa sanzione e compliance (spread banca).",
+  },
+];
+
 export const TutorialScreen = () => {
   const setScreen = useGameStore((s) => s.setScreen);
+  const [step, setStep] = useState(0);
+  const last = step >= STEPS.length - 1;
+  const current = STEPS[step]!;
 
   return (
     <div className={styles.menu}>
-      <h2 className={styles.title}>Come funziona l&apos;Italia in questo gioco</h2>
-      <ol className={styles.bullets}>
-        <li>
-          <strong>Regione, città e concorrenza contano.</strong> Lo stock
-          InfoCamere di imprese nel settore (provincia) e la densità rispetto
-          alla mediana del pack spostano prezzi e costi; l&apos;affitto usa
-          medie €/mq di mercato × 80 mq.
-        </li>
-        <li>
-          <strong>Cassa ≠ utile.</strong> Le fatture incassano (e pagano) il
-          mese dopo l&apos;emissione: puoi essere in utile e restare senza soldi.
-        </li>
-        <li>
-          <strong>L&apos;IVA non è tua.</strong> Ogni mese liquidi IVA vendite −
-          IVA acquisti: se è positiva diventa un debito da versare con l&apos;F24
-          del mese dopo (giorno 16).
-        </li>
-        <li>
-          <strong>I dipendenti costano più del netto.</strong> Paghi il netto in
-          busta, ma accumuli ritenute IRPEF, contributi INPS e TFR da versare.
-        </li>
-        <li>
-          <strong>Giugno e novembre sono i mesi boss.</strong> Saldo IRES/IRAP
-          dell&apos;anno prima + acconti (40/60) + diritto camerale: preparati la
-          cassa in anticipo.
-        </li>
-        <li>
-          <strong>Il credito ha un prezzo.</strong> Mutuo a Euribor + spread e fido di cassa;
-          il Fondo di Garanzia PMI abbassa lo spread ma il debito resta tuo. Nessuna vittoria a
-          tempo: la partita finisce solo dopo 12 mesi consecutivi in rosso (in difficoltà ti
-          propongono un prestito di salvataggio).
-        </li>
-        <li>
-          <strong>Difficoltà e guide.</strong> In setup scegli Facile / Normale / Difficile.
-          In partita un coach ti guida i primi mesi (nascondibile). Tre slot di salvataggio
-          locali; toast e suoni brevi a chiusura mese / F24 / KO.
-        </li>
-      </ol>
-      <button className={styles.secondary} onClick={() => setScreen("menu")}>
-        Torna al menu
-      </button>
+      <h2 className={styles.title}>Tutorial</h2>
+      <p className={styles.subtitle}>
+        Passo {step + 1} di {STEPS.length}. Poi apri un&apos;azienda e prova il loop.
+      </p>
+
+      <div className={styles.tutCard}>
+        <h3 className={styles.tutStep}>{current.title}</h3>
+        <p className={styles.subtitle}>{current.body}</p>
+      </div>
+
+      <div className={styles.tutDots}>
+        {STEPS.map((_, i) => (
+          <span key={i} className={i === step ? styles.tutDotOn : styles.tutDot} />
+        ))}
+      </div>
+
+      <div className={styles.actions}>
+        {!last ? (
+          <button className={styles.primary} onClick={() => setStep((s) => s + 1)}>
+            Capito, avanti
+          </button>
+        ) : (
+          <button className={styles.primary} onClick={() => setScreen("setup")}>
+            Apri la mia azienda
+          </button>
+        )}
+        {step > 0 && (
+          <button className={styles.secondary} onClick={() => setStep((s) => s - 1)}>
+            Indietro
+          </button>
+        )}
+        <button className={styles.secondary} onClick={() => setScreen("menu")}>
+          Torna al menu
+        </button>
+      </div>
     </div>
   );
 };

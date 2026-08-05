@@ -1,6 +1,7 @@
 import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
-import { marketModifiersFromIndex } from "./market";
+import { hasUpgrade } from "../config/upgrades";
+import { rng } from "./rng";
 import {
   round2,
   toMonthIndex,
@@ -9,6 +10,17 @@ import {
   type Opportunity,
 } from "./types";
 import { issueCustomerInvoice, recordSupplierCost } from "./actions";
+import { acceptAsContract, contractSlotsUsed, maybeMakeContract } from "./contracts";
+import {
+  capacityPressurePenalty,
+  paChanceBoost,
+  rollPressure,
+  shouldRollPressure,
+  ticketFactorFromPressure,
+} from "./pressures";
+import { applyRivalSteal, seedRival } from "./rival";
+
+export { rng };
 
 const CLIENT_NAMES = [
   "Rossi Snc", "Bianchi SRL", "Verdi & C.", "Neri Group", "Blu Servizi",
@@ -21,26 +33,43 @@ const SUPPLIER_NAMES = [
   "Forniture Nord", "Materie Prime Spa", "Utenze+", "Magazzino Est", "Tech Supply",
 ];
 
-/** Deterministic PRNG from seed (mulberry32). */
-export const rng = (seed: number): (() => number) => {
-  let t = seed >>> 0;
-  return () => {
-    t += 0x6d2b79f5;
-    let r = Math.imul(t ^ (t >>> 15), 1 | t);
-    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
-    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-  };
-};
+/** Soft cap on board rows so UI stays readable. */
+export const BOARD_MAX_OPS = 10;
+
+/** Full-value staff headcount before diminishing returns. */
+const STAFF_FULL_VALUE = 6;
 
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
 
-/** How many sale deals you can take this month. */
-export const monthlyCapacity = (state: GameState): number =>
-  1 + state.employees.length + Math.floor(state.company.reputation / 40);
+/**
+ * Sale slots / month. First 6 employees count 1:1; extras count 1/3.
+ * Processi upgrade adds +1 without headcount.
+ */
+export const monthlyCapacity = (state: GameState): number => {
+  const staff = state.employees.length;
+  const core = Math.min(staff, STAFF_FULL_VALUE);
+  const extra = Math.max(0, staff - STAFF_FULL_VALUE);
+  const repBonus = Math.floor(state.company.reputation / 40);
+  const processi = hasUpgrade(state.upgrades, "processi") ? 1 : 0;
+  const temp = (state.tempCapacityMonths ?? 0) > 0 ? 1 : 0;
+  const growth = state.growthCapacityBonus ?? 0;
+  const subCap = (state.subsidiaries ?? []).reduce((s, sub) => s + sub.capacityBonus, 0);
+  const base =
+    1 + core + Math.floor(extra / 3) + repBonus + processi + temp + growth + subCap;
+  return Math.max(0, base - contractSlotsUsed(state) - capacityPressurePenalty(state));
+};
 
 export const salesAcceptedThisMonth = (state: GameState): number => {
   const idx = toMonthIndex(state.calendar);
   return state.invoices.filter((i) => i.kind === "AR" && i.issuedIdx === idx).length;
+};
+
+/** Ticket ceiling grows a bit with staff; commerciale bumps further. Soft anti-exploit. */
+const ticketCeiling = (state: GameState): number => {
+  const staff = state.employees.length;
+  const growthBump = Math.min(6000, (state.growthCapacityBonus ?? 0) * 2000);
+  const base = 18000 + Math.min(12000, staff * 800) + growthBump;
+  return hasUpgrade(state.upgrades, "commerciale") ? base + 4000 : base;
 };
 
 /**
@@ -55,15 +84,81 @@ export const maxDealNet = (state: GameState): number => {
   const staff = state.employees.length;
   const dens = state.company.densityIndex;
   const rep = 0.85 + (state.company.reputation / 100) * 0.35;
-  const growth = 1 + months * 0.04 + staff * 0.16;
+  const growth =
+    1 +
+    months * 0.04 +
+    Math.min(staff, STAFF_FULL_VALUE) * 0.16 +
+    Math.max(0, staff - STAFF_FULL_VALUE) * 0.05;
   const competition = dens > 1 ? Math.max(0.7, 1 - (dens - 1) * 0.12) : 1 + (1 - dens) * 0.08;
   const ticketMult = DIFFICULTIES[state.difficulty ?? "normal"].ticketMult;
+  const commerciale = hasUpgrade(state.upgrades, "commerciale") ? 1.08 : 1;
+  const supplyMult = (state.supplyMonths ?? 0) > 0 ? 1 : 0.72;
+  const pressureTicket = ticketFactorFromPressure(state);
   return round2(
     Math.min(
-      18000,
-      Math.max(350, profile.baseTicket * season * growth * rep * competition * ticketMult),
+      ticketCeiling(state),
+      Math.max(
+        350,
+        profile.baseTicket *
+          season *
+          growth *
+          rep *
+          competition *
+          ticketMult *
+          commerciale *
+          supplyMult *
+          pressureTicket,
+      ),
     ),
   );
+};
+
+const pushSale = (
+  ops: Opportunity[],
+  state: GameState,
+  profile: (typeof SECTOR_PROFILES)[keyof typeof SECTOR_PROFILES],
+  cap: number,
+  rand: () => number,
+  id: number,
+): number => {
+  const sizeFactor = 0.35 + rand() * 0.65;
+  const net = round2(Math.max(300, Math.min(cap, cap * sizeFactor)));
+  const isPa = rand() < profile.paChance + paChanceBoost(state);
+  const clientType: ClientType = isPa ? "pa" : "private";
+  const termMonths = pick(isPa ? profile.paTerms : profile.privateTerms, rand);
+  const who = isPa
+    ? `${pick(PA_NAMES, rand)} di ${state.company.city}`
+    : pick(CLIENT_NAMES, rand);
+  const raw: Opportunity = {
+    id,
+    kind: "sale",
+    title: isPa ? `Appalto PA · ${who}` : `Commessa · ${who}`,
+    net,
+    expiresInMonths: 1,
+    clientType,
+    termMonths,
+  };
+  ops.push(maybeMakeContract(raw, rand));
+  return id + 1;
+};
+
+const pushSupply = (
+  ops: Opportunity[],
+  cap: number,
+  rand: () => number,
+  id: number,
+): number => {
+  const sizeFactor = 0.35 + rand() * 0.65;
+  const net = round2(Math.max(300, Math.min(cap, cap * sizeFactor)));
+  ops.push({
+    id,
+    kind: "supply",
+    title: `Fornitura · ${pick(SUPPLIER_NAMES, rand)}`,
+    net,
+    expiresInMonths: 1,
+    termMonths: 1,
+  });
+  return id + 1;
 };
 
 export const generateOpportunities = (
@@ -72,41 +167,25 @@ export const generateOpportunities = (
   const profile = SECTOR_PROFILES[state.company.sector];
   const rand = rng(toMonthIndex(state.calendar) * 997 + state.nextId * 13 + state.monthsPlayed);
   const cap = maxDealNet(state);
-  const count = 2 + Math.floor(rand() * 2);
+  const capacity = monthlyCapacity(state);
+  const commercialeBonus = hasUpgrade(state.upgrades, "commerciale") ? 1 : 0;
+  const jitter = Math.floor(rand() * 3) - 1; // -1, 0, +1
+  let saleTarget = Math.max(1, capacity + jitter + commercialeBonus);
+  let supplyTarget = Math.max(0, Math.round(saleTarget * (0.28 + rand() * 0.1)));
+  const total = saleTarget + supplyTarget;
+  if (total > BOARD_MAX_OPS) {
+    const scale = BOARD_MAX_OPS / total;
+    saleTarget = Math.max(1, Math.round(saleTarget * scale));
+    supplyTarget = Math.max(0, BOARD_MAX_OPS - saleTarget);
+  }
+
   const ops: Opportunity[] = [];
   let id = state.nextId;
-
-  for (let i = 0; i < count; i++) {
-    const kind: Opportunity["kind"] = rand() < profile.saleChance ? "sale" : "supply";
-    const sizeFactor = 0.35 + rand() * 0.65;
-    const net = round2(Math.max(300, Math.min(cap, cap * sizeFactor)));
-
-    if (kind === "sale") {
-      const isPa = rand() < profile.paChance;
-      const clientType: ClientType = isPa ? "pa" : "private";
-      const termMonths = pick(isPa ? profile.paTerms : profile.privateTerms, rand);
-      const who = isPa
-        ? `${pick(PA_NAMES, rand)} di ${state.company.city}`
-        : pick(CLIENT_NAMES, rand);
-      ops.push({
-        id: id++,
-        kind,
-        title: isPa ? `Appalto PA · ${who}` : `Commessa · ${who}`,
-        net,
-        expiresInMonths: 1,
-        clientType,
-        termMonths,
-      });
-    } else {
-      ops.push({
-        id: id++,
-        kind,
-        title: `Fornitura · ${pick(SUPPLIER_NAMES, rand)}`,
-        net,
-        expiresInMonths: 1,
-        termMonths: 1,
-      });
-    }
+  for (let i = 0; i < saleTarget; i++) {
+    id = pushSale(ops, state, profile, cap, rand, id);
+  }
+  for (let i = 0; i < supplyTarget; i++) {
+    id = pushSupply(ops, cap, rand, id);
   }
   return { ops, nextId: id };
 };
@@ -117,13 +196,29 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
   const cap = maxDealNet(state);
   if (op.net > cap + 0.01) return state;
 
+  if (op.kind === "sale" && op.contractMonths && op.contractMonths >= 2) {
+    if (salesAcceptedThisMonth(state) >= monthlyCapacity(state)) {
+      const blocked = structuredClone(state);
+      blocked.log.unshift({
+        id: blocked.nextId++,
+        monthIdx: toMonthIndex(blocked.calendar),
+        tone: "bad",
+        text: `Capacità piena: non puoi bloccare uno slot contratto.`,
+      });
+      blocked.log = blocked.log.slice(0, 12);
+      return blocked;
+    }
+    const asContract = acceptAsContract(state, op);
+    return asContract ?? state;
+  }
+
   if (op.kind === "sale" && salesAcceptedThisMonth(state) >= monthlyCapacity(state)) {
     const blocked = structuredClone(state);
     blocked.log.unshift({
       id: blocked.nextId++,
       monthIdx: toMonthIndex(blocked.calendar),
       tone: "bad",
-      text: `Capacità piena (${monthlyCapacity(state)} commesse/mese). Assumi o alza la reputazione.`,
+      text: `Capacità piena (${monthlyCapacity(state)} commesse/mese). Assumi con giudizio: oltre 6 dipendenti rendono meno.`,
     });
     blocked.log = blocked.log.slice(0, 12);
     return blocked;
@@ -140,6 +235,9 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
   next.opportunities = next.opportunities.filter((o) => o.id !== opportunityId);
   if (op.kind === "sale") {
     next.company.reputation = Math.min(100, next.company.reputation + 1);
+  } else {
+    // Supply builds coverage (cap 6 months)
+    next.supplyMonths = Math.min(6, (next.supplyMonths ?? 0) + (op.net >= 1200 ? 2 : 1));
   }
   const termNote =
     op.kind === "sale"
@@ -154,7 +252,7 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
     text:
       op.kind === "sale"
         ? `Accettata ${op.title} · ${op.net.toLocaleString("it-IT")} € + IVA.${termNote}`
-        : `Ordinata ${op.title} · ${op.net.toLocaleString("it-IT")} € + IVA.`,
+        : `Ordinata ${op.title} · ${op.net.toLocaleString("it-IT")} € + IVA. Scorte ${next.supplyMonths} mesi.`,
   });
   next.log = next.log.slice(0, 12);
   return next;
@@ -175,91 +273,27 @@ export const declineOpportunity = (state: GameState, opportunityId: number): Gam
   return next;
 };
 
-/** Apply 0–1 random monthly world event after the books close. */
-export const applyRandomEvent = (state: GameState): GameState => {
-  const next = structuredClone(state);
-  const rand = rng(toMonthIndex(next.calendar) * 1337 + next.monthsPlayed * 17);
-  const skipAbove = DIFFICULTIES[next.difficulty ?? "normal"].eventSkipAbove;
-  if (rand() > skipAbove) return next;
-
-  const roll = rand();
-  const idx = toMonthIndex(next.calendar);
-
-  if (roll < 0.22) {
-    const openAr = next.invoices.find((i) => i.kind === "AR" && !i.settled && !i.defaulted);
-    if (openAr) {
-      openAr.dueIdx += 1;
-      next.log.unshift({
-        id: next.nextId++,
-        monthIdx: idx,
-        tone: "bad",
-        text: `Cliente in ritardo: fattura #${openAr.id} slitta di un altro mese.`,
-      });
-    }
-  } else if (roll < 0.4) {
-    const hit = round2(180 + rand() * 620);
-    next.company.cash = round2(next.company.cash - hit);
-    next.ytd.otherCosts = round2(next.ytd.otherCosts + hit);
-    next.log.unshift({
-      id: next.nextId++,
-      monthIdx: idx,
-      tone: "bad",
-      text: `Costo imprevisto: −${hit.toLocaleString("it-IT")} €.`,
-    });
-  } else if (roll < 0.58) {
-    const profile = SECTOR_PROFILES[next.company.sector];
-    const isPa = rand() < profile.paChance + 0.1;
-    const bonus = round2(maxDealNet(next) * (0.4 + rand() * 0.3));
-    const termMonths = pick(isPa ? profile.paTerms : profile.privateTerms, rand);
-    next.opportunities.push({
-      id: next.nextId++,
-      kind: "sale",
-      title: isPa ? `Urgenza PA · ${pick(PA_NAMES, rand)}` : `Urgenza · ${pick(CLIENT_NAMES, rand)}`,
-      net: bonus,
-      expiresInMonths: 1,
-      clientType: isPa ? "pa" : "private",
-      termMonths,
-    });
-    next.log.unshift({
-      id: next.nextId++,
-      monthIdx: idx,
-      tone: "good",
-      text: `Commessa urgente (${isPa ? "PA" : "privato"}) da ${bonus.toLocaleString("it-IT")} € + IVA.`,
-    });
-  } else if (roll < 0.75) {
-    const mods = marketModifiersFromIndex(next.company.densityIndex);
-    next.log.unshift({
-      id: next.nextId++,
-      monthIdx: idx,
-      tone: "neutral",
-      text: `Mercato ${SECTOR_PROFILES[next.company.sector].id}: pressione ${mods.pressureLabel}.`,
-    });
-  } else {
-    next.log.unshift({
-      id: next.nextId++,
-      monthIdx: idx,
-      tone: "neutral",
-      text: "Promemoria: F24, stipendi e TFR non aspettano gli incassi PA.",
-    });
-  }
-
-  next.log = next.log.slice(0, 12);
-  return next;
-};
-
 export const seedNewGame = (state: GameState): GameState => {
-  const next = structuredClone(state);
+  let next = structuredClone(state);
+  next.rival = seedRival(next);
+  next.quarterPressure = null;
+  next.activeContracts = [];
+  if (!next.quietMode && shouldRollPressure(next)) {
+    next = rollPressure(next);
+  }
   const { ops, nextId } = generateOpportunities(next);
   next.opportunities = ops;
-  next.nextId = nextId;
+  next.nextId = Math.max(next.nextId, nextId);
+  next = applyRivalSteal(next);
   next.log = [
     {
       id: next.nextId++,
       monthIdx: toMonthIndex(next.calendar),
-      tone: "neutral",
-      text: "Azienda aperta. Commesse del mese sole: PA paga tardi, i privati a volte non pagano.",
+      tone: "neutral" as const,
+      text: `Azienda aperta. Rivale locale: ${next.rival?.name ?? "—"}. PA paga tardi; i privati a volte non pagano.`,
     },
-  ];
+    ...next.log.slice(0, 11),
+  ].slice(0, 12);
   next.history = [
     {
       monthIdx: toMonthIndex(next.calendar),
@@ -274,9 +308,10 @@ export const seedNewGame = (state: GameState): GameState => {
 };
 
 export const refreshMarketBoard = (state: GameState): GameState => {
-  const next = structuredClone(state);
+  let next = structuredClone(state);
   const { ops, nextId } = generateOpportunities(next);
   next.opportunities = ops;
   next.nextId = Math.max(next.nextId, nextId);
+  next = applyRivalSteal(next);
   return next;
 };

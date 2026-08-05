@@ -8,9 +8,8 @@
 .chart {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 14px 16px;
-  background-image: linear-gradient(160deg, #fff 0%, #f3f7f4 100%);
 }
 
 .title {
@@ -36,3 +35,63 @@
 
 .legGood { color: var(--color-accent); font-weight: 600; }
 .legBad { color: var(--color-danger); font-weight: 600; }
+
+.zeroLine {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.cashArea {
+  fill: var(--color-accent);
+  opacity: 0.14;
+  animation: areaIn 0.45s ease-out;
+}
+
+.cashDot {
+  fill: var(--color-accent);
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+.hit {
+  pointer-events: all;
+}
+
+.barRev {
+  fill: var(--color-accent);
+  opacity: 0.9;
+  animation: barIn 0.4s ease-out;
+}
+
+.barCost {
+  fill: var(--color-danger);
+  opacity: 0.75;
+  animation: barIn 0.4s ease-out;
+}
+
+.spark {
+  width: 80px;
+  height: 28px;
+  display: block;
+  opacity: 0.9;
+  color: #d8ebe0;
+}
+
+@keyframes areaIn {
+  from { opacity: 0; }
+  to { opacity: 0.14; }
+}
+
+@keyframes barIn {
+  from { opacity: 0; }
+  to { opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cashArea,
+  .barRev,
+  .barCost {
+    animation: none;
+  }
+}

@@ -92,7 +92,7 @@ describe("Phase 6 — prestito", () => {
   });
 });
 
-describe("Phase 6 — lose (no win)", () => {
+describe("Phase 6 — lose / soft win", () => {
   it("12 chiusure in rosso → lost + offerta prestito lungo il percorso", () => {
     let s = createInitialGameState();
     for (let i = 0; i < 12; i++) {
@@ -115,11 +115,14 @@ describe("Phase 6 — lose (no win)", () => {
     expect(s.status).toBe("running");
   });
 
-  it("24 mesi non vincono: la sim continua", () => {
+  it("24 mesi → soft win (year2Reached)", () => {
     let s = createInitialGameState();
+    s.quietMode = true;
+    s.company.cash = 80000;
     for (let i = 0; i < 24; i++) s = advanceMonth(s);
-    expect(s.status).toBe("running");
+    expect(s.status).toBe("won");
     expect(s.monthsPlayed).toBe(24);
+    expect(s.career.year2Reached).toBe(true);
   });
 
   it("accettare l'offerta di salvataggio eroga il prestito", () => {

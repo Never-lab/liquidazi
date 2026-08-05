@@ -14,27 +14,27 @@ import styles from "./App.module.css";
 function App() {
   const screen = useGameStore((s) => s.screen);
   const auth = useGameStore((s) => s.auth);
-
-  const gated = !auth || screen === "auth";
+  const inGame = screen === "game";
+  const bareShell = screen === "menu" || screen === "auth" || screen === "gameover";
 
   return (
     <div className={styles.app}>
-      <header className={styles.header}>
-        <h1 className={styles.brand}>Liquidazi</h1>
-        {auth && screen !== "auth" && (
-          <p className={styles.userBadge}>{auth.username}</p>
-        )}
-      </header>
+      {!bareShell && (
+        <header className={`${styles.header} ${inGame ? styles.headerGame : ""}`}>
+          <h1 className={styles.brand}>Liquidazi</h1>
+          <p className={styles.userBadge}>{auth?.username ?? "Ospite"}</p>
+        </header>
+      )}
 
-      <main className={`${styles.main} ${styles.screenIn}`} key={gated ? "auth" : screen}>
-        {gated && <AuthScreen />}
-        {!gated && screen === "menu" && <MenuScreen />}
-        {!gated && screen === "setup" && <SetupScreen />}
-        {!gated && screen === "tutorial" && <TutorialScreen />}
-        {!gated && screen === "game" && <GameHUD />}
-        {!gated && screen === "gameover" && <EndScreen />}
-        {!gated && screen === "leaderboard" && <LeaderboardScreen />}
-        {!gated && screen === "saves" && <SavesScreen />}
+      <main className={`${styles.main} ${styles.screenIn}`} key={screen}>
+        {screen === "auth" && <AuthScreen />}
+        {screen === "menu" && <MenuScreen />}
+        {screen === "setup" && <SetupScreen />}
+        {screen === "tutorial" && <TutorialScreen />}
+        {screen === "game" && <GameHUD />}
+        {screen === "gameover" && <EndScreen />}
+        {screen === "leaderboard" && <LeaderboardScreen />}
+        {screen === "saves" && <SavesScreen />}
       </main>
 
       <ToastHost />

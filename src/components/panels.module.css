@@ -1,34 +1,36 @@
 .panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
   flex: 1 1 280px;
 }
 
 .panelWide {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
   flex: 1 1 100%;
 }
 
 .panelHead {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .panelTitle {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   color: var(--color-text-muted);
-  margin-bottom: 10px;
+  margin: 0 0 10px;
 }
 
 .panelHead .panelTitle {
@@ -37,52 +39,65 @@
 
 .badge {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
+  font-family: var(--font-mono);
   color: var(--color-accent);
-  background: #e7f3ec;
+  background: var(--color-accent-soft);
   padding: 4px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
 }
 
 .cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
-  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 4px;
 }
 
 .deal {
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 12px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 14px 0;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: #fbfcfb;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: transparent;
+}
+
+.deal:last-child {
+  border-bottom: none;
 }
 
 .dealTitle {
   font-size: 15px;
+  font-weight: 600;
   margin: 0;
+  color: var(--color-text);
 }
 
 .dealMeta {
   margin: 4px 0 0;
   font-size: 13px;
   color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .dealActions {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .feed {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 16px 20px;
-  flex: 1 1 280px;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  flex: 1 1 100%;
 }
 
 .feedList {
@@ -94,7 +109,7 @@
 .feedList li {
   padding: 8px 0;
   border-bottom: 1px solid var(--color-border);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
@@ -120,42 +135,47 @@
 
 .input {
   font: inherit;
-  padding: 6px 8px;
+  padding: 8px 10px;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   width: 110px;
+  min-height: var(--touch);
 }
 
 .button {
   background: var(--color-accent);
   color: var(--color-accent-contrast);
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  min-height: var(--touch);
   font-size: 14px;
   font-weight: 600;
 }
 
 .button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .buttonSecondary {
   background: var(--color-surface);
   color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 8px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  min-height: var(--touch);
   font-size: 14px;
+  font-weight: 600;
 }
 
 .buttonDanger {
   background: var(--color-danger);
   color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  min-height: var(--touch);
   font-size: 14px;
   font-weight: 600;
 }
@@ -171,8 +191,9 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 4px 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
 }
 
 .list li:last-child {
