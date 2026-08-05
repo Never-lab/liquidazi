@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { advanceMonth } from "../sim/advanceMonth";
-import { issueCustomerInvoice, recordSupplierCost } from "../sim/actions";
+import {
+  fireEmployee,
+  hireEmployee,
+  issueCustomerInvoice,
+  recordSupplierCost,
+} from "../sim/actions";
 import { createInitialGameState, type GameState } from "../sim/types";
 
 interface GameStore {
@@ -8,6 +13,8 @@ interface GameStore {
   advanceMonth: () => void;
   issueCustomerInvoice: (net: number) => void;
   recordSupplierCost: (net: number) => void;
+  hireEmployee: (role: string) => void;
+  fireEmployee: (id: number) => void;
 }
 
 export const useGameStore = create<GameStore>()((set, get) => ({
@@ -15,4 +22,6 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   advanceMonth: () => set({ game: advanceMonth(get().game) }),
   issueCustomerInvoice: (net) => set({ game: issueCustomerInvoice(get().game, net) }),
   recordSupplierCost: (net) => set({ game: recordSupplierCost(get().game, net) }),
+  hireEmployee: (role) => set({ game: hireEmployee(get().game, role) }),
+  fireEmployee: (id) => set({ game: fireEmployee(get().game, id) }),
 }));

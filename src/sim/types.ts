@@ -47,12 +47,32 @@ export interface TaxLiability {
   penalized: boolean;
 }
 
+export interface Employee {
+  id: number;
+  role: string;
+  grossMonthly: number;
+}
+
+/** Aggregated monthly payroll result (cedolino semplificato). */
+export interface PayrollRun {
+  monthIdx: number;
+  totalGross: number;
+  totalNet: number;
+  irpefWithheld: number;
+  inpsTotal: number;
+  tfrAccrued: number;
+}
+
 export interface GameState {
   company: Company;
   calendar: Calendar;
   invoices: Invoice[];
   vat: VatAccount;
   liabilities: TaxLiability[];
+  employees: Employee[];
+  /** cumulative TFR liability (accrual only in MVP, never paid out) */
+  tfrFund: number;
+  lastPayroll: PayrollRun | null;
   nextId: number;
 }
 
@@ -73,5 +93,8 @@ export const createInitialGameState = (): GameState => ({
   invoices: [],
   vat: { credit: 0 },
   liabilities: [],
+  employees: [],
+  tfrFund: 0,
+  lastPayroll: null,
   nextId: 1,
 });

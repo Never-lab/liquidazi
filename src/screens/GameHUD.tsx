@@ -1,4 +1,5 @@
 import { InvoicesPanel } from "../components/InvoicesPanel";
+import { PayrollPanel } from "../components/PayrollPanel";
 import { TaxPanel } from "../components/TaxPanel";
 import { formatCash } from "../components/formatCash";
 import { useGameStore } from "../store/gameStore";
@@ -38,6 +39,7 @@ export const GameHUD = () => {
       </button>
 
       <InvoicesPanel />
+      <PayrollPanel />
       <TaxPanel />
     </div>
   );
