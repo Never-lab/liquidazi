@@ -1,4 +1,4 @@
-# Impresa Italia — Piano MVP
+# Liquidazi — Piano MVP
 
 Business sim educativo (non AAA): gestisci un’azienda tipo **SRL** in Italia, mese per mese, con tasse, liquidità e credito plausibili.
 
@@ -268,13 +268,13 @@ plans/
 
 | Domanda | Default proposto |
 |---------|------------------|
-| Nome display gioco | **Impresa Italia** |
+| Nome display gioco | **Liquidazi** |
 | Forma giuridica MVP | Solo SRL-like |
 | Settore iniziale | Commercio/servizi generico (markup + costi fissi) |
 | Difficoltà | Una sola + seed eventi |
 | Lingua UI | Italiano |
 | Licenza | MIT |
-| Repo | https://github.com/Never-lab/impresa-italia |
+| Repo | https://github.com/Never-lab/liquidazi |
 
 ---
 

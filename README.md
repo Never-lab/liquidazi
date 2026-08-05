@@ -1,4 +1,4 @@
-# Impresa Italia
+# Liquidazi
 
 Business simulation game (educational): run an Italian **SRL-like** company — cash flow, IVA, payroll, F24, IRES/IRAP, loans.
 
