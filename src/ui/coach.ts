@@ -1,0 +1,55 @@
+import type { GameState } from "../sim/types";
+
+export type CoachTip = {
+  id: string;
+  title: string;
+  body: string;
+};
+
+/** Guided tips for the first months — contextual, not a modal gauntlet. */
+export const coachTipFor = (game: GameState): CoachTip | null => {
+  if (game.monthsPlayed === 0 && game.invoices.filter((i) => i.kind === "AR").length === 0) {
+    return {
+      id: "first-deal",
+      title: "Mese 1 — prima commessa",
+      body: "Accetta una vendita dal tabellone. Non puoi inventare fatture: solo le offerte del mercato.",
+    };
+  }
+  if (game.monthsPlayed === 0 && game.invoices.some((i) => i.kind === "AR")) {
+    return {
+      id: "close-month",
+      title: "Chiudi il mese",
+      body: "Premi «Chiudi il mese». L'incasso arriverà ai termini della fattura (PA = tardi).",
+    };
+  }
+  const due = game.liabilities.filter((l) => !l.paid);
+  if (game.monthsPlayed >= 1 && due.length > 0) {
+    return {
+      id: "f24",
+      title: "Apri Fisco e paga l'F24",
+      body: "IVA e ritenute scadono il mese dopo. Saltare costa sanzione + reputazione compliance.",
+    };
+  }
+  if (game.monthsPlayed >= 2 && game.employees.length === 0 && game.monthsPlayed < 6) {
+    return {
+      id: "hire",
+      title: "Capacità",
+      body: "Più dipendenti (e reputazione) = più slot commesse al mese. Ma la 13ª a dicembre fa male.",
+    };
+  }
+  if (game.calendar.month === 5 || game.calendar.month === 10) {
+    return {
+      id: "boss",
+      title: "Mese boss in arrivo",
+      body: "A giugno/novembre arrivano IRES/IRAP (saldo o acconti). Tieni cassa libera.",
+    };
+  }
+  if (game.monthsBelowZero > 0) {
+    return {
+      id: "red",
+      title: "Sei in rosso",
+      body: "La banca può proporti un prestito. 12 mesi consecutivi sotto zero = KO.",
+    };
+  }
+  return null;
+};

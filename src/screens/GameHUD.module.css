@@ -87,6 +87,36 @@
   gap: 12px;
 }
 
+.opsRight {
+  display: flex;
+  gap: 14px;
+}
+
+.cashBad {
+  color: #ffb4a8;
+}
+
+.dueWarn {
+  color: #ffe08a;
+}
+
+.statPulse {
+  animation: cashFlash 0.45s ease-out;
+}
+
+@keyframes cashFlash {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+
 .linkish {
   background: transparent;
   border: none;
@@ -103,3 +133,32 @@
   flex-wrap: wrap;
   gap: 16px;
 }
+
+.rescue {
+  flex: 1 1 100%;
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid #c45c26;
+  background: #fff5ef;
+  color: #3a2218;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rescue p {
+  margin: 0;
+  flex: 1 1 240px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.rescueActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+

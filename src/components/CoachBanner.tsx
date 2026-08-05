@@ -1,0 +1,25 @@
+import { coachTipFor } from "../ui/coach";
+import { useGameStore } from "../store/gameStore";
+import styles from "./CoachBanner.module.css";
+
+export const CoachBanner = () => {
+  const game = useGameStore((s) => s.game);
+  const coachOn = useGameStore((s) => s.coachOn);
+  const dismissCoach = useGameStore((s) => s.dismissCoach);
+  if (!coachOn) return null;
+  const tip = coachTipFor(game);
+  if (!tip) return null;
+
+  return (
+    <aside className={styles.coach} aria-live="polite">
+      <div>
+        <p className={styles.kicker}>Guida</p>
+        <h3 className={styles.title}>{tip.title}</h3>
+        <p className={styles.body}>{tip.body}</p>
+      </div>
+      <button type="button" className={styles.dismiss} onClick={dismissCoach}>
+        Nascondi guide
+      </button>
+    </aside>
+  );
+};

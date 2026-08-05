@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { advanceMonth } from "./advanceMonth";
-import { canRequestLoan, requestLoan } from "./actions";
+import {
+  acceptLoanOffer,
+  canRequestLoan,
+  drawFido,
+  requestFido,
+  requestLoan,
+} from "./actions";
 import { createInitialGameState, round2 } from "./types";
 
 describe("Phase 6 — prestito", () => {
@@ -86,39 +92,72 @@ describe("Phase 6 — prestito", () => {
   });
 });
 
-describe("Phase 6 — win/lose", () => {
-  it("cassa negativa per 3 mesi consecutivi → sconfitta", () => {
-    let s = { ...createInitialGameState() };
-    s.company.cash = -1000;
-    s = advanceMonth(s);
-    s = advanceMonth(s);
-    expect(s.status).toBe("running");
-    s = advanceMonth(s);
+describe("Phase 6 — lose (no win)", () => {
+  it("12 chiusure in rosso → lost + offerta prestito lungo il percorso", () => {
+    let s = createInitialGameState();
+    for (let i = 0; i < 12; i++) {
+      s = { ...s, company: { ...s.company, cash: -500 }, loanOffer: null };
+      s = advanceMonth(s);
+    }
     expect(s.status).toBe("lost");
+    expect(s.monthsBelowZero).toBeGreaterThanOrEqual(12);
   });
 
   it("la cassa che risale azzera il contatore", () => {
     let s = createInitialGameState();
-    s.company.cash = -1000;
+    s = { ...s, company: { ...s.company, cash: -1000 } };
     s = advanceMonth(s);
-    s.company.cash = 500; // rientro
+    expect(s.monthsBelowZero).toBe(1);
+    expect(s.loanOffer).not.toBeNull();
+    s = { ...s, company: { ...s.company, cash: 500 } };
     s = advanceMonth(s);
-    s.company.cash = -1000;
-    s = advanceMonth(s);
-    s = advanceMonth(s);
+    expect(s.monthsBelowZero).toBe(0);
     expect(s.status).toBe("running");
   });
 
-  it("24 mesi di sopravvivenza con cassa >= 0 → vittoria", () => {
+  it("24 mesi non vincono: la sim continua", () => {
     let s = createInitialGameState();
     for (let i = 0; i < 24; i++) s = advanceMonth(s);
-    expect(s.status).toBe("won");
+    expect(s.status).toBe("running");
     expect(s.monthsPlayed).toBe(24);
+  });
+
+  it("accettare l'offerta di salvataggio eroga il prestito", () => {
+    let s = createInitialGameState();
+    s = { ...s, company: { ...s.company, cash: -2000 } };
+    s = advanceMonth(s);
+    expect(s.loanOffer).not.toBeNull();
+    const principal = s.loanOffer!.principal;
+    s = acceptLoanOffer(s);
+    expect(s.loan?.outstanding).toBe(principal);
+    expect(s.distressLoanTaken).toBe(true);
+    expect(s.loanOffer).toBeNull();
+    expect(s.company.cash).toBeGreaterThan(0);
+  });
+
+  it("fido: prelievo e interessi; mutuo può coesistere", () => {
+    let s = createInitialGameState();
+    s = requestFido(s, 8000);
+    s = drawFido(s, 3000);
+    expect(s.fido?.drawn).toBe(3000);
+    expect(s.company.cash).toBe(13000);
+    s = requestLoan(s, {
+      principal: 5000,
+      tenorMonths: 12,
+      rateType: "fixed",
+      guarantee: "none",
+    });
+    expect(s.loan?.outstanding).toBe(5000);
+    expect(s.fido?.drawn).toBe(3000);
+    const cashBefore = s.company.cash;
+    s = advanceMonth(s);
+    // rata mutuo + interessi fido; rimborso auto del fido se cassa > 0
+    expect(s.company.cash).toBeLessThan(cashBefore);
   });
 
   it("a partita finita advanceMonth non fa nulla", () => {
     let s = createInitialGameState();
-    for (let i = 0; i < 24; i++) s = advanceMonth(s);
+    s = { ...s, status: "lost" as const };
     const frozen = JSON.stringify(s);
     s = advanceMonth(s);
     expect(JSON.stringify(s)).toBe(frozen);

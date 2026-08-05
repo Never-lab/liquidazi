@@ -68,6 +68,18 @@ describe("Phase 2 — fatture e liquidazione IVA", () => {
     expect(s.company.cash).toBeCloseTo(cash0 - 400 * (1 + snap.iva_standard_rate));
   });
 
+  it("PA split payment: incassi solo il netto, IVA non in liability output", () => {
+    let s = createInitialGameState();
+    const cash0 = s.company.cash;
+    s = issueCustomerInvoice(s, 1000, { clientType: "pa", termMonths: 1 });
+    expect(s.invoices[0].splitPayment).toBe(true);
+    s = advanceMonth(s);
+    expect(s.liabilities.filter((l) => l.kind === "IVA")).toHaveLength(0);
+    s = advanceMonth(s);
+    expect(s.company.cash).toBeCloseTo(cash0 + 1000);
+    expect(s.invoices[0].settled).toBe(true);
+  });
+
   it("advanceMonth non muta lo stato di partenza (deep clone)", () => {
     const s = issueCustomerInvoice(createInitialGameState(), 1000);
     const frozen = JSON.stringify(s);

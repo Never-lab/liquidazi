@@ -33,10 +33,15 @@ export const TutorialScreen = () => {
           cassa in anticipo.
         </li>
         <li>
-          <strong>Il credito ha un prezzo.</strong> Prestito a Euribor + spread;
-          il Fondo di Garanzia PMI abbassa lo spread ma il debito resta tuo.
-          Sopravvivi 24 mesi con cassa ≥ 0 per vincere; 3 mesi consecutivi in
-          rosso e la partita finisce.
+          <strong>Il credito ha un prezzo.</strong> Mutuo a Euribor + spread e fido di cassa;
+          il Fondo di Garanzia PMI abbassa lo spread ma il debito resta tuo. Nessuna vittoria a
+          tempo: la partita finisce solo dopo 12 mesi consecutivi in rosso (in difficoltà ti
+          propongono un prestito di salvataggio).
+        </li>
+        <li>
+          <strong>Difficoltà e guide.</strong> In setup scegli Facile / Normale / Difficile.
+          In partita un coach ti guida i primi mesi (nascondibile). Tre slot di salvataggio
+          locali; toast e suoni brevi a chiusura mese / F24 / KO.
         </li>
       </ol>
       <button className={styles.secondary} onClick={() => setScreen("menu")}>

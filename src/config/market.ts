@@ -91,27 +91,58 @@ const provinceFirms = firms.provinces as Record<
   }
 >;
 
-const medians = firms.densityMediansPer10k as Record<SectorId, number>;
 const provinceRent = firms.provinceRentEurPerSqmMonth as Record<string, number>;
 const regionRent = firms.regionRentEurPerSqmMonth as Record<string, number>;
 const localeSqm = firms.localeSqmAssumption as number;
+
+/** Pop. provinciale = somma comuni ISTAT (stesso livello dello stock InfoCamere). */
+const provincePopulation: Record<string, number> = {};
+for (const c of CITIES) {
+  if (c.population && c.population > 0) {
+    provincePopulation[c.provinceCode] =
+      (provincePopulation[c.provinceCode] ?? 0) + c.population;
+  }
+}
+
+const provinceDensityPer10k = (provinceCode: string, sector: SectorId): number | null => {
+  const firmsN = provinceFirms[provinceCode]?.firmsBySector[sector] ?? 0;
+  const pop = provincePopulation[provinceCode];
+  if (!pop || pop <= 0) return null;
+  return (firmsN / pop) * 10000;
+};
+
+/** Mediana densità tra province con dati (coerente imprese/pop. stesso livello). */
+const sectorMedianPer10k = ((): Record<SectorId, number> => {
+  const out = {} as Record<SectorId, number>;
+  for (const sector of SECTORS.map((s) => s.id)) {
+    const vals = Object.keys(provinceFirms)
+      .map((code) => provinceDensityPer10k(code, sector))
+      .filter((v): v is number => v !== null)
+      .sort((a, b) => a - b);
+    out[sector] = vals.length ? vals[Math.floor(vals.length / 2)]! : 1;
+  }
+  return out;
+})();
 
 export const firmsInSector = (cityId: CityId, sector: SectorId): number => {
   const city = cityById(cityId);
   return provinceFirms[city.provinceCode]?.firmsBySector[sector] ?? 0;
 };
 
+export const provincePopulationFor = (cityId: CityId): number => {
+  const city = cityById(cityId);
+  return provincePopulation[city.provinceCode] ?? city.population ?? 0;
+};
+
 export const densityPer10k = (cityId: CityId, sector: SectorId): number => {
   const city = cityById(cityId);
-  const firmsN = firmsInSector(cityId, sector);
-  const pop = city.population;
-  if (!pop || pop <= 0) return medians[sector] ?? 1;
-  return (firmsN / pop) * 10000;
+  const d = provinceDensityPer10k(city.provinceCode, sector);
+  return d ?? sectorMedianPer10k[sector] ?? 1;
 };
 
 export const densityIndexFor = (cityId: CityId, sector: SectorId): number => {
   const d = densityPer10k(cityId, sector);
-  const med = medians[sector] || 1;
+  const med = sectorMedianPer10k[sector] || 1;
   return d / med;
 };
 

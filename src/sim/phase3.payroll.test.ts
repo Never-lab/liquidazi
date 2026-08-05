@@ -8,7 +8,15 @@ const withEmployee = (gross: number): GameState => {
   const s = createInitialGameState();
   return {
     ...s,
-    employees: [{ id: s.nextId, role: "Test", grossMonthly: gross }],
+    employees: [
+      {
+        id: s.nextId,
+        role: "Test",
+        grossMonthly: gross,
+        hireMonthIdx: 2024 * 12,
+        tfrAccrued: 0,
+      },
+    ],
     nextId: s.nextId + 1,
   };
 };

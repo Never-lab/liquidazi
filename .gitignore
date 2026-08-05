@@ -11,3 +11,4 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .worktrees/
+server/data/*.json

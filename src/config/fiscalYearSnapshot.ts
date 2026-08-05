@@ -1,11 +1,15 @@
 /**
  * A FiscalYearSnapshot is a frozen set of educational rates for one campaign
- * year. It is never "the live law" — fiscal logic (Phase 2+) reads only from
- * here, never hardcodes rates inline.
+ * year. It is never "the live law" — fiscal logic reads only from here.
  *
- * This mirrors docs/fiscal-snapshot/fy2024.placeholder.json (kept as typed
- * constants rather than a cross-project JSON import, since docs/ sits
- * outside the src/ TypeScript project boundary). Keep the two in sync.
+ * Sources (indicative, FY2024 educational pack):
+ * - IVA 22%: DPR 633/72 aliquota ordinaria
+ * - IRES 24%: art. 77 TUIR (post-2017)
+ * - IRAP 3,9%: aliquota base ordinaria (regioni possono differire)
+ * - INPS: aliquote semplificate datoriali/dipendenti (ordine di grandezza IVS)
+ * - IRPEF withholding: flat didattica, non scaglioni
+ * - TFR: 1/13,5 ≈ 7,41% del lordo
+ * - Euribor path: scenario inventato per la campagna, non feed live
  */
 export interface FiscalYearSnapshot {
   year: number;
@@ -45,7 +49,7 @@ export interface FiscalYearSnapshot {
 
 export const fiscalYearSnapshot: FiscalYearSnapshot = {
   year: 2024,
-  label: "Italia FY2024 educational pack (placeholder rates — replace before playtest)",
+  label: "Italia FY2024 educational pack (aliquote indicative + fonti in header file)",
   iva_standard_rate: 0.22,
   iva_mode: "monthly",
   f24_day: 16,

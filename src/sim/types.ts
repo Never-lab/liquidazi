@@ -13,8 +13,9 @@ import {
   type CityId,
   type SectorId,
 } from "../config/market";
+import { DIFFICULTIES, type DifficultyId } from "../config/difficulty";
 
-export type { CityId, SectorId };
+export type { CityId, SectorId, DifficultyId };
 
 export interface Company {
   name: string;
@@ -23,10 +24,12 @@ export interface Company {
   sector: SectorId;
   /** InfoCamere: imprese attive in provincia nel settore (ATECO mappato) */
   firmsInSector: number;
-  /** densità settore vs mediana capoluoghi (1 = mediana) */
+  /** densità settore vs mediana province (1 = mediana) */
   densityIndex: number;
   /** monthly locale rent = €/mq × 80 mq sede tipo */
   monthlyRent: number;
+  /** 0–100 commercial reputation (clients / defaults) */
+  reputation: number;
 }
 
 export interface Calendar {
@@ -36,6 +39,7 @@ export interface Calendar {
 }
 
 export type InvoiceKind = "AR" | "AP";
+export type ClientType = "private" | "pa";
 
 export interface Invoice {
   id: number;
@@ -48,6 +52,12 @@ export interface Invoice {
   /** settles when advancing a month with index >= dueIdx */
   dueIdx: number;
   settled: boolean;
+  /** AR only */
+  clientType?: ClientType;
+  /** AR only — scissione dei pagamenti (PA paga IVA allo Stato) */
+  splitPayment?: boolean;
+  /** AR written off as bad debt */
+  defaulted?: boolean;
 }
 
 export interface VatAccount {
@@ -71,6 +81,10 @@ export interface Employee {
   id: number;
   role: string;
   grossMonthly: number;
+  /** month index when hired */
+  hireMonthIdx: number;
+  /** TFR matured for this person (paid out on fire) */
+  tfrAccrued: number;
 }
 
 /** Aggregated monthly payroll result (cedolino semplificato). */
@@ -98,7 +112,21 @@ export interface Loan {
   lastInstallment: { interest: number; principal: number } | null;
 }
 
-export type GameStatus = "running" | "won" | "lost";
+export type GameStatus = "running" | "lost";
+
+/** Banca propone questo in difficoltà (cassa < 0). */
+export interface LoanOffer {
+  principal: number;
+  tenorMonths: number;
+  rateType: "fixed" | "floating";
+  guarantee: LoanGuarantee;
+}
+
+/** Fido di cassa revolving (scoperto accordato). */
+export interface Fido {
+  limit: number;
+  drawn: number;
+}
 
 export type OpportunityKind = "sale" | "supply";
 
@@ -109,6 +137,9 @@ export interface Opportunity {
   title: string;
   net: number;
   expiresInMonths: number;
+  clientType?: ClientType;
+  /** months until cash moves (AR/AP payment term) */
+  termMonths: number;
 }
 
 export interface LogEntry {
@@ -143,6 +174,14 @@ export interface YearReport extends YearToDate {
   irap: number;
 }
 
+export interface CareerStats {
+  peakCash: number;
+  peakDebt: number;
+  lifetimeRevenue: number;
+  /** run già inviata alla leaderboard */
+  submitted: boolean;
+}
+
 export interface GameState {
   company: Company;
   calendar: Calendar;
@@ -150,7 +189,7 @@ export interface GameState {
   vat: VatAccount;
   liabilities: TaxLiability[];
   employees: Employee[];
-  /** cumulative TFR liability (accrual only in MVP, never paid out) */
+  /** cumulative TFR liability (paid out when firing) */
   tfrFund: number;
   lastPayroll: PayrollRun | null;
   /** 0-100 reputation with the tax authorities; drops when F24s are skipped */
@@ -162,8 +201,16 @@ export interface GameState {
   accontiCharged: { ires: number; irap: number };
   lastYearReport: YearReport | null;
   loan: Loan | null;
+  /** Offerta di salvataggio quando sei in rosso (null se non attiva). */
+  loanOffer: LoanOffer | null;
+  /** Fido di cassa; può coesistere con un mutuo. */
+  fido: Fido | null;
+  /** true dopo aver accettato un prestito in difficoltà */
+  distressLoanTaken: boolean;
+  /** stats di carriera per leaderboard */
+  career: CareerStats;
   monthsPlayed: number;
-  /** consecutive months closed with negative cash */
+  /** mesi consecutivi chiusi con cassa < 0 */
   monthsBelowZero: number;
   status: GameStatus;
   nextId: number;
@@ -175,12 +222,11 @@ export interface GameState {
   history: HistoryPoint[];
   /** when true, skip random world events (unit tests / replay) */
   quietMode: boolean;
+  difficulty: DifficultyId;
 }
 
-/** Game-over rule: this many consecutive months with cash < 0 loses. */
-export const LOSE_MONTHS_BELOW_ZERO = 3;
-/** Win rule: survive this many months with cash >= 0 at the end. */
-export const WIN_MONTHS = 24;
+/** Mesi consecutivi in rosso → fallimento (dopo proposta di prestito). */
+export const LOSE_MONTHS_BELOW_ZERO = 12;
 
 /** Absolute month index: comparable across year boundaries. */
 export const toMonthIndex = (c: Calendar): number => c.year * 12 + (c.month - 1);
@@ -191,6 +237,7 @@ export interface NewGameOptions {
   name?: string;
   city: CityId;
   sector: SectorId;
+  difficulty?: DifficultyId;
 }
 
 export const createInitialGameState = (opts?: NewGameOptions): GameState => {
@@ -199,15 +246,19 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
   const city = opts?.city ?? DEFAULT_CITY_ID;
   const sector = opts?.sector ?? "servizi";
   const withMarket = Boolean(opts);
+  const difficulty = opts?.difficulty ?? "normal";
+  const diff = DIFFICULTIES[difficulty];
+  const rent = withMarket ? Math.round(monthlyRentFor(city) * diff.rentFactor) : 0;
   return {
     company: {
       name: opts?.name?.trim() || "La Mia SRL",
-      cash: 10000,
+      cash: withMarket ? diff.startingCash : 10000,
       city,
       sector,
       firmsInSector: firmsInSector(city, sector),
       densityIndex: withMarket ? densityIndexFor(city, sector) : 1,
-      monthlyRent: withMarket ? monthlyRentFor(city) : 0,
+      monthlyRent: rent,
+      reputation: 50,
     },
     calendar: {
       month: 1,
@@ -225,6 +276,15 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     accontiCharged: { ires: 0, irap: 0 },
     lastYearReport: null,
     loan: null,
+    loanOffer: null,
+    fido: null,
+    distressLoanTaken: false,
+    career: {
+      peakCash: withMarket ? diff.startingCash : 10000,
+      peakDebt: 0,
+      lifetimeRevenue: 0,
+      submitted: false,
+    },
     monthsPlayed: 0,
     monthsBelowZero: 0,
     status: "running",
@@ -238,7 +298,16 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
         text: "Azienda aperta. Non inventare fatture: prendi le commesse del mese.",
       },
     ],
-    history: [{ monthIdx: 2024 * 12, label: "Gen 2024", cash: 10000, revenue: 0, costs: 0 }],
+    history: [
+      {
+        monthIdx: 2024 * 12,
+        label: "Gen 2024",
+        cash: withMarket ? diff.startingCash : 10000,
+        revenue: 0,
+        costs: 0,
+      },
+    ],
     quietMode: !withMarket,
+    difficulty,
   };
 };

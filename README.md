@@ -6,7 +6,10 @@ Business simulation game (educational): run an Italian **SRL-like** company — 
 
 ## Come si gioca
 
-Sopravvivi **24 mesi** con la cassa in ordine. 3 mesi consecutivi in rosso = game over.
+Sopravvivi all'infinito con la cassa in ordine. **12 mesi consecutivi in rosso** = game over.
+In difficoltà la banca ti propone un prestito di salvataggio.
+
+Difficoltà Facile/Normale/Difficile, guide in-game, 3 slot salvataggio, toast + beep a chiusura mese.
 
 1. **Scegli regione e comune ISTAT** (tutti i ~7.900 comuni). La concorrenza usa lo stock InfoCamere della provincia; l'affitto medie €/mq × 80 mq.
 2. **Fattura e compra.** Emetti fatture clienti e registra costi fornitori: il lordo (imponibile + IVA) entra/esce il mese successivo.
@@ -19,23 +22,34 @@ Sopravvivi **24 mesi** con la cassa in ordine. 3 mesi consecutivi in rosso = gam
 
 ```bash
 npm install
-npm run dev      # server di sviluppo con hot reload
-npm run build    # build di produzione (type-check + bundle in dist/)
-npm test         # test del motore di simulazione (vitest)
-npm run preview  # serve la build di produzione in locale
+npm run dev:api  # API auth + leaderboard su :8787 (terminale 1)
+npm run dev      # UI Vite su :5173, proxy /api → :8787 (terminale 2)
+npm run build
+npm test
 ```
 
-Il salvataggio è automatico in `localStorage` (chiave `liquidazi-save`).
+Crea un account (username + password), gioca, al KO la run va in classifica.
+
+### Classifiche
+- Sopravvivenza più lunga
+- Run più corta (KO veloce)
+- Debito più alto (mutuo + fido + rosso)
+- Cassa al picco
+- Fatturato lifetime
+
+Dati in `server/data/` (gitignored). Secret: `LIQUIDAZI_SECRET`.
+
+Il salvataggio partita resta in `localStorage` (`liquidazi-save`); la sessione utente pure.
 
 ## Cosa è semplificato (di proposito)
 
 - **IVA**: liquidazione mensile per competenza sul mese di emissione, credito a riporto; niente pro-rata, reverse charge, esigibilità differita.
-- **Cedolino**: ritenuta IRPEF flat e contributi INPS a percentuale unica dallo snapshot; niente scaglioni, detrazioni, CCNL, 13ª/14ª.
+- **Cedolino**: ritenuta IRPEF flat e contributi INPS a percentuale unica; in dicembre anche la 13ª (doppio cedolino didattico); TFR liquidato al licenziamento.
 - **F24**: un solo batch mensile senza codici tributo; la sanzione per omesso versamento è una tantum (niente ravvedimento operoso).
 - **IRES/IRAP**: utile fiscale = ricavi − costi; base IRAP = ricavi − acquisti (personale e interessi indeducibili). Acconti conteggiati quando addebitati.
-- **Mercato:** geografia completa da elenco comuni ISTAT; stock imprese InfoCamere Dic 2025 a livello provinciale (105 province); densità = imprese provincia / pop. comune. Affitto = medie €/mq × 80 mq. Pack: `istatGeo.json` + `provinceFirms.json`.
-- **Incassi/pagamenti**: deterministici a 30 giorni, niente insoluti.
-- **Prestito**: quota capitale costante, Euribor da un path di scenario fisso (nessun dato live).
+- **Mercato:** geografia completa da elenco comuni ISTAT; stock imprese InfoCamere Dic 2025 a livello provinciale (105 province); densità = imprese provincia / pop. **provincia** (somma comuni). Affitto = medie €/mq × 80 mq (non OMI zona-per-zona). Pack: `istatGeo.json` + `provinceFirms.json`.
+- **Incassi/pagamenti**: termini per settore; PA con split payment (incassi il netto); privati possono andare in insoluto.
+- **Prestito**: mutuo a piano rate + fido di cassa revolving; Euribor da path di scenario.
 - **Diritto camerale**: importo flat pagato a giugno.
 
 Tutte le aliquote vivono in [`src/config/fiscalYearSnapshot.ts`](src/config/fiscalYearSnapshot.ts) (specchiato in `docs/fiscal-snapshot/`): sono un pacchetto educational per l'anno di campagna, **mai "la legge live"**.

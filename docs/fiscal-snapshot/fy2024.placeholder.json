@@ -1,7 +1,14 @@
 {
-  "$schema_comment": "Educational fiscal-year snapshot — NOT live law. Update packs per campaign year.",
+  "$schema_comment": "Educational fiscal-year snapshot — NOT live law. Keep in sync with src/config/fiscalYearSnapshot.ts",
   "year": 2024,
-  "label": "Italia FY2024 educational pack (placeholder rates — replace before playtest)",
+  "label": "Italia FY2024 educational pack (aliquote indicative)",
+  "sources": [
+    "IVA 22%: DPR 633/72 aliquota ordinaria",
+    "IRES 24%: art. 77 TUIR",
+    "IRAP 3,9%: aliquota base ordinaria (regioni possono differire)",
+    "TFR ~7,41%: 1/13,5 sul lordo",
+    "Euribor path: scenario di campagna, non feed live"
+  ],
   "iva_standard_rate": 0.22,
   "iva_mode": "monthly",
   "f24_day": 16,

@@ -9,14 +9,41 @@
   padding: 16px 24px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .brand {
   font-size: 22px;
   letter-spacing: 0.02em;
   color: var(--color-accent);
+  margin: 0;
+}
+
+.userBadge {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 
 .main {
   flex: 1;
 }
+
+.screenIn {
+  animation: screenIn 0.28s ease-out;
+}
+
+@keyframes screenIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

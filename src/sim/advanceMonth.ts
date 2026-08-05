@@ -1,9 +1,14 @@
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
-import { applyRandomEvent, refreshMarketBoard } from "./events";
-import { euriborAt } from "./actions";
+import { SECTOR_PROFILES } from "../config/sectorProfile";
+import { DIFFICULTIES } from "../config/difficulty";
+import {
+  buildRescueOffer,
+  euriborAt,
+  FIDO_SPREAD_BPS,
+} from "./actions";
+import { applyRandomEvent, refreshMarketBoard, rng } from "./events";
 import {
   LOSE_MONTHS_BELOW_ZERO,
-  WIN_MONTHS,
   round2,
   toMonthIndex,
   type GameState,
@@ -27,33 +32,105 @@ const pushLiability = (
   });
 };
 
+/** Cedolino: in dicembre paga anche la 13ª (2× lordo didattico). */
+const runPayroll = (next: GameState, idx: number): void => {
+  if (next.employees.length === 0) {
+    next.lastPayroll = null;
+    return;
+  }
+
+  const thirteenth = next.calendar.month === 12;
+  const payMonths = thirteenth ? 2 : 1;
+
+  let totalGross = 0;
+  let totalNet = 0;
+  let irpef = 0;
+  let inpsEmployeeTotal = 0;
+  let inpsEmployerTotal = 0;
+  let tfr = 0;
+  for (const emp of next.employees) {
+    const gross = round2(emp.grossMonthly * payMonths);
+    const inpsEmployee = round2(gross * snap.inps_employee_rate);
+    const inpsEmployer = round2(gross * snap.inps_employer_rate);
+    const irpefWithheld = round2(gross * snap.irpef_withholding_simplified_rate);
+    const net = round2(gross - inpsEmployee - irpefWithheld);
+    const tfrPiece = round2(gross * snap.tfr_accrual_factor);
+    totalGross = round2(totalGross + gross);
+    totalNet = round2(totalNet + net);
+    irpef = round2(irpef + irpefWithheld);
+    inpsEmployeeTotal = round2(inpsEmployeeTotal + inpsEmployee);
+    inpsEmployerTotal = round2(inpsEmployerTotal + inpsEmployer);
+    tfr = round2(tfr + tfrPiece);
+    emp.tfrAccrued = round2(emp.tfrAccrued + tfrPiece);
+  }
+  const inpsTotal = round2(inpsEmployeeTotal + inpsEmployerTotal);
+  next.company.cash = round2(next.company.cash - totalNet);
+  next.tfrFund = round2(next.tfrFund + tfr);
+  next.ytd.payrollCost = round2(next.ytd.payrollCost + totalGross + inpsEmployerTotal + tfr);
+  next.lastPayroll = {
+    monthIdx: idx,
+    totalGross,
+    totalNet,
+    irpefWithheld: irpef,
+    inpsTotal,
+    tfrAccrued: tfr,
+  };
+  pushLiability(next, "IRPEF", irpef, idx + 1);
+  pushLiability(next, "INPS", inpsTotal, idx + 1);
+
+  if (thirteenth) {
+    next.log.unshift({
+      id: next.nextId++,
+      monthIdx: idx,
+      tone: "bad",
+      text: "Dicembre: pagata anche la 13ª mensilità (doppio cedolino didattico).",
+    });
+    next.log = next.log.slice(0, 12);
+  }
+};
+
 /**
  * Pure simulation step: closes the current month and moves the calendar
- * forward. Order of operations:
- *   1. settle invoices due (cash in/out of the gross amount)
- *   2. penalize skipped F24s (one-shot penalty + interest + compliance malus)
- *   3. payroll: pay net salaries, accrue IRPEF/INPS liabilities + TFR
- *   4. liquidate month IVA (output - input - credit) → liability due next
- *      month; cash untouched until the F24 is paid
- *   5. loan installment (constant principal share + interest)
- *   6. annual events: diritto camerale (June), acconti IRES/IRAP (May/Oct
- *      close → due June/November), year close (December) → saldo next June
- *   7. advance calendar
- *   8. win/lose check
+ * forward.
  */
 export const advanceMonth = (state: GameState): GameState => {
   if (state.status !== "running") return state;
 
   const next = structuredClone(state);
   const idx = toMonthIndex(next.calendar);
+  const profile = SECTOR_PROFILES[next.company.sector];
+  const rand = rng(idx * 7919 + next.monthsPlayed * 31);
 
-  // 1. invoice settlement
+  // 1. invoice settlement (+ insoluti; PA split payment → incassi il netto)
   for (const inv of next.invoices) {
-    if (!inv.settled && inv.dueIdx <= idx) {
+    if (inv.settled || inv.defaulted || inv.dueIdx > idx) continue;
+
+    if (
+      !next.quietMode &&
+      inv.kind === "AR" &&
+      inv.clientType !== "pa" &&
+      rand() <
+        profile.defaultChance * DIFFICULTIES[next.difficulty ?? "normal"].defaultMult
+    ) {
       inv.settled = true;
-      next.company.cash = round2(
-        next.company.cash + (inv.kind === "AR" ? inv.gross : -inv.gross),
-      );
+      inv.defaulted = true;
+      next.company.reputation = Math.max(0, round2(next.company.reputation - 5));
+      next.log.unshift({
+        id: next.nextId++,
+        monthIdx: idx,
+        tone: "bad",
+        text: `Insoluto: fattura #${inv.id} (${inv.net.toLocaleString("it-IT")} € + IVA) non pagata.`,
+      });
+      next.log = next.log.slice(0, 12);
+      continue;
+    }
+
+    inv.settled = true;
+    if (inv.kind === "AR") {
+      const inflow = inv.splitPayment ? inv.net : inv.gross;
+      next.company.cash = round2(next.company.cash + inflow);
+    } else {
+      next.company.cash = round2(next.company.cash - inv.gross);
     }
   }
 
@@ -63,8 +140,7 @@ export const advanceMonth = (state: GameState): GameState => {
     next.ytd.otherCosts = round2(next.ytd.otherCosts + next.company.monthlyRent);
   }
 
-  // 2. skipped F24s: one-shot penalty + interest + compliance malus.
-  // Runs before new liabilities are pushed (those are due next month).
+  // 2. skipped F24s
   for (const l of next.liabilities) {
     if (!l.paid && !l.penalized && l.dueIdx <= idx) {
       l.penalized = true;
@@ -73,51 +149,13 @@ export const advanceMonth = (state: GameState): GameState => {
     }
   }
 
-  // 3. payroll (cedolino semplificato: ritenute flat sul lordo)
-  if (next.employees.length > 0) {
-    let totalGross = 0;
-    let totalNet = 0;
-    let irpef = 0;
-    let inpsEmployeeTotal = 0;
-    let inpsEmployerTotal = 0;
-    let tfr = 0;
-    for (const emp of next.employees) {
-      const gross = emp.grossMonthly;
-      const inpsEmployee = round2(gross * snap.inps_employee_rate);
-      const inpsEmployer = round2(gross * snap.inps_employer_rate);
-      const irpefWithheld = round2(gross * snap.irpef_withholding_simplified_rate);
-      const net = round2(gross - inpsEmployee - irpefWithheld);
-      totalGross += gross;
-      totalNet = round2(totalNet + net);
-      irpef = round2(irpef + irpefWithheld);
-      inpsEmployeeTotal = round2(inpsEmployeeTotal + inpsEmployee);
-      inpsEmployerTotal = round2(inpsEmployerTotal + inpsEmployer);
-      tfr = round2(tfr + round2(gross * snap.tfr_accrual_factor));
-    }
-    const inpsTotal = round2(inpsEmployeeTotal + inpsEmployerTotal);
-    next.company.cash = round2(next.company.cash - totalNet);
-    next.tfrFund = round2(next.tfrFund + tfr);
-    next.ytd.payrollCost = round2(
-      next.ytd.payrollCost + totalGross + inpsEmployerTotal + tfr,
-    );
-    next.lastPayroll = {
-      monthIdx: idx,
-      totalGross,
-      totalNet,
-      irpefWithheld: irpef,
-      inpsTotal,
-      tfrAccrued: tfr,
-    };
-    pushLiability(next, "IRPEF", irpef, idx + 1);
-    pushLiability(next, "INPS", inpsTotal, idx + 1);
-  } else {
-    next.lastPayroll = null;
-  }
+  // 3. payroll (+ 13ª in dicembre)
+  runPayroll(next, idx);
 
-  // 4. IVA liquidation for invoices issued this month (competenza)
+  // 4. IVA: split payment PA escluso dall'output (IVA versata dalla PA allo Stato)
   const issuedNow = next.invoices.filter((i) => i.issuedIdx === idx);
   const output = issuedNow
-    .filter((i) => i.kind === "AR")
+    .filter((i) => i.kind === "AR" && !i.splitPayment)
     .reduce((sum, i) => sum + i.vat, 0);
   const input = issuedNow
     .filter((i) => i.kind === "AP")
@@ -130,7 +168,6 @@ export const advanceMonth = (state: GameState): GameState => {
     next.vat.credit = -netVat;
   }
 
-  // P&L accrual (competenza: month of issue, not of settlement)
   next.ytd.revenue = round2(
     next.ytd.revenue + issuedNow.filter((i) => i.kind === "AR").reduce((s2, i) => s2 + i.net, 0),
   );
@@ -138,7 +175,7 @@ export const advanceMonth = (state: GameState): GameState => {
     next.ytd.purchases + issuedNow.filter((i) => i.kind === "AP").reduce((s2, i) => s2 + i.net, 0),
   );
 
-  // 5. loan installment: constant principal share + interest on outstanding
+  // 5. loan installment
   if (next.loan && next.loan.outstanding > 0) {
     const loan = next.loan;
     const annualRate =
@@ -154,16 +191,27 @@ export const advanceMonth = (state: GameState): GameState => {
     next.ytd.interest = round2(next.ytd.interest + interest);
   }
 
+  // 5b. fido: interessi sullo scoperto + rimborso automatico se c'è cassa
+  if (next.fido && next.fido.drawn > 0) {
+    const annual = euriborAt(next.monthsPlayed) + FIDO_SPREAD_BPS / 10000;
+    const interest = round2((next.fido.drawn * annual) / 12);
+    next.company.cash = round2(next.company.cash - interest);
+    next.ytd.interest = round2(next.ytd.interest + interest);
+    if (next.company.cash > 0 && next.fido.drawn > 0) {
+      const repay = round2(Math.min(next.company.cash, next.fido.drawn));
+      next.company.cash = round2(next.company.cash - repay);
+      next.fido.drawn = round2(next.fido.drawn - repay);
+    }
+  }
+
   // 6. annual events
   const month = next.calendar.month;
 
-  // June close: diritto camerale (flat CCIAA fee), paid cash
   if (month === 6) {
     next.company.cash = round2(next.company.cash - snap.diritto_camerale_flat);
     next.ytd.otherCosts = round2(next.ytd.otherCosts + snap.diritto_camerale_flat);
   }
 
-  // May/October close: acconti on prior-year tax, due June / November
   if (next.priorYearTax) {
     const split =
       month === 5 ? snap.acconto_split_first : month === 10 ? snap.acconto_split_second : 0;
@@ -177,9 +225,6 @@ export const advanceMonth = (state: GameState): GameState => {
     }
   }
 
-  // December close: fiscal year end.
-  // IRES: simplified taxable profit (revenue - all costs).
-  // IRAP: different, simplified base — labor and interest are NOT deductible.
   if (month === 12) {
     const { revenue, purchases, payrollCost, interest, otherCosts } = next.ytd;
     const profit = round2(revenue - purchases - payrollCost - interest - otherCosts);
@@ -187,7 +232,6 @@ export const advanceMonth = (state: GameState): GameState => {
     const ires = round2(Math.max(0, profit) * snap.ires_rate);
     const irap = round2(Math.max(0, irapBase) * snap.irap_rate);
 
-    // saldo (net of acconti already charged) due next June
     pushLiability(next, "IRES", round2(ires - next.accontiCharged.ires), idx + 6);
     pushLiability(next, "IRAP", round2(irap - next.accontiCharged.irap), idx + 6);
 
@@ -228,13 +272,50 @@ export const advanceMonth = (state: GameState): GameState => {
     year: isDecember ? next.calendar.year + 1 : next.calendar.year,
   };
 
-  // 8. win/lose check
+  // 8. lose: 12 mesi consecutivi in rosso; in difficoltà proponi prestito
   next.monthsPlayed += 1;
-  next.monthsBelowZero = next.company.cash < 0 ? next.monthsBelowZero + 1 : 0;
+
+  // career peaks for leaderboard
+  if (!next.career) {
+    next.career = {
+      peakCash: next.company.cash,
+      peakDebt: 0,
+      lifetimeRevenue: 0,
+      submitted: false,
+    };
+  }
+  const debtNow = round2(
+    (next.loan?.outstanding ?? 0) +
+      (next.fido?.drawn ?? 0) +
+      Math.max(0, -next.company.cash),
+  );
+  next.career.peakCash = Math.max(next.career.peakCash, next.company.cash);
+  next.career.peakDebt = Math.max(next.career.peakDebt, debtNow);
+  next.career.lifetimeRevenue = round2(next.career.lifetimeRevenue + monthRevenue);
+
+  if (next.company.cash < 0) {
+    next.monthsBelowZero += 1;
+    if (!next.loanOffer) {
+      const offer = buildRescueOffer(next);
+      if (offer) {
+        next.loanOffer = offer;
+        next.log.unshift({
+          id: next.nextId++,
+          monthIdx: closedIdx,
+          tone: "bad",
+          text: `Cassa in rosso (${next.monthsBelowZero}/${LOSE_MONTHS_BELOW_ZERO}). La banca propone ${offer.principal.toLocaleString("it-IT")} € a 24 mesi.`,
+        });
+        next.log = next.log.slice(0, 12);
+      }
+    }
+  } else {
+    next.monthsBelowZero = 0;
+    next.loanOffer = null;
+  }
+
   if (next.monthsBelowZero >= LOSE_MONTHS_BELOW_ZERO) {
     next.status = "lost";
-  } else if (next.monthsPlayed >= WIN_MONTHS && next.company.cash >= 0) {
-    next.status = "won";
+    next.loanOffer = null;
   }
 
   next.history = [
@@ -246,7 +327,7 @@ export const advanceMonth = (state: GameState): GameState => {
       revenue: round2(monthRevenue),
       costs: monthCosts,
     },
-  ].slice(-24);
+  ].slice(-36);
 
   if (next.status === "running") {
     const afterEvents = next.quietMode ? next : applyRandomEvent(next);

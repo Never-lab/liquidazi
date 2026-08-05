@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { canRequestLoan } from "../sim/actions";
+import { canRequestLoan, FIDO_MAX } from "../sim/actions";
 import type { LoanGuarantee } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
@@ -14,39 +14,42 @@ const GUARANTEE_LABEL: Record<LoanGuarantee, string> = {
 export const LoanPanel = () => {
   const game = useGameStore((s) => s.game);
   const doRequestLoan = useGameStore((s) => s.requestLoan);
+  const doRequestFido = useGameStore((s) => s.requestFido);
+  const doDrawFido = useGameStore((s) => s.drawFido);
   const [principal, setPrincipal] = useState("10000");
   const [tenor, setTenor] = useState("12");
   const [rateType, setRateType] = useState<"fixed" | "floating">("fixed");
   const [guarantee, setGuarantee] = useState<LoanGuarantee>("none");
+  const [fidoLimit, setFidoLimit] = useState("8000");
+  const [fidoDraw, setFidoDraw] = useState("2000");
 
   const loan = game.loan;
   const active = loan !== null && loan.outstanding > 0;
   const approvable = canRequestLoan(game, Number(principal), guarantee);
+  const fido = game.fido;
 
   return (
     <section className={styles.panel}>
       <h2 className={styles.panelTitle}>Credito</h2>
 
       {active ? (
-        <>
-          <ul className={styles.list}>
-            <li><span>Debito residuo</span><span>{formatCash(loan.outstanding)}</span></li>
+        <ul className={styles.list}>
+          <li><span>Debito residuo</span><span>{formatCash(loan.outstanding)}</span></li>
+          <li>
+            <span>Tasso</span>
+            <span>{loan.rateType === "fixed" ? "Fisso" : "Variabile (Euribor 3M + spread)"}</span>
+          </li>
+          <li><span>Garanzia</span><span>{GUARANTEE_LABEL[loan.guarantee]}</span></li>
+          {loan.lastInstallment && (
             <li>
-              <span>Tasso</span>
-              <span>{loan.rateType === "fixed" ? "Fisso" : "Variabile (Euribor 3M + spread)"}</span>
+              <span>Ultima rata</span>
+              <span>
+                {formatCash(loan.lastInstallment.principal + loan.lastInstallment.interest)}{" "}
+                (int. {formatCash(loan.lastInstallment.interest)})
+              </span>
             </li>
-            <li><span>Garanzia</span><span>{GUARANTEE_LABEL[loan.guarantee]}</span></li>
-            {loan.lastInstallment && (
-              <li>
-                <span>Ultima rata</span>
-                <span>
-                  {formatCash(loan.lastInstallment.principal + loan.lastInstallment.interest)}{" "}
-                  (int. {formatCash(loan.lastInstallment.interest)})
-                </span>
-              </li>
-            )}
-          </ul>
-        </>
+          )}
+        </ul>
       ) : (
         <>
           <div className={styles.row}>
@@ -100,18 +103,66 @@ export const LoanPanel = () => {
                 })
               }
             >
-              Richiedi prestito
+              Richiedi mutuo
             </button>
             {!approvable && Number(principal) > 0 && (
               <span className={styles.warning}>Importo oltre il tetto: serve una garanzia.</span>
             )}
           </div>
-          <p className={styles.muted}>
-            Il Fondo di Garanzia PMI garantisce la banca: più credito e spread
-            più basso. Non è un contributo a fondo perduto — il debito resta tuo.
-          </p>
         </>
       )}
+
+      <h3 className={styles.panelTitle} style={{ marginTop: 16 }}>Fido di cassa</h3>
+      {fido ? (
+        <>
+          <ul className={styles.list}>
+            <li><span>Accordato</span><span>{formatCash(fido.limit)}</span></li>
+            <li><span>Utilizzato</span><span>{formatCash(fido.drawn)}</span></li>
+            <li><span>Disponibile</span><span>{formatCash(fido.limit - fido.drawn)}</span></li>
+          </ul>
+          <div className={styles.row}>
+            <input
+              className={styles.input}
+              type="number"
+              min="0"
+              value={fidoDraw}
+              onChange={(e) => setFidoDraw(e.target.value)}
+              aria-label="Importo prelievo fido"
+            />
+            <button
+              className={styles.buttonSecondary}
+              disabled={fido.drawn >= fido.limit}
+              onClick={() => doDrawFido(Number(fidoDraw))}
+            >
+              Preleva
+            </button>
+          </div>
+          <p className={styles.muted}>Interessi mensili sullo scoperto; rimborso automatico se torni in positivo.</p>
+        </>
+      ) : (
+        <div className={styles.row}>
+          <input
+            className={styles.input}
+            type="number"
+            min="0"
+            max={FIDO_MAX}
+            value={fidoLimit}
+            onChange={(e) => setFidoLimit(e.target.value)}
+            aria-label="Limite fido"
+          />
+          <button
+            className={styles.buttonSecondary}
+            disabled={!(Number(fidoLimit) > 0) || Number(fidoLimit) > FIDO_MAX}
+            onClick={() => doRequestFido(Number(fidoLimit))}
+          >
+            Apri fido (max {formatCash(FIDO_MAX)})
+          </button>
+        </div>
+      )}
+
+      <p className={styles.muted}>
+        Mutuo a piano rate e fido possono coesistere. Il Fondo PMI non è un contributo a fondo perduto.
+      </p>
     </section>
   );
 };

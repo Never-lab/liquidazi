@@ -37,6 +37,7 @@ export const PayrollPanel = () => {
               </span>
               <button className={styles.buttonDanger} onClick={() => fire(e.id)}>
                 Licenzia
+                {e.tfrAccrued > 0 ? ` (−${formatCash(e.tfrAccrued)} TFR)` : ""}
               </button>
             </li>
           ))}
