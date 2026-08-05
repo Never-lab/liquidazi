@@ -48,3 +48,26 @@
 
 ## Commit
 `Use French amortization for loans and expose schedule helpers.`
+
+## Fix: negative principalShare clamp (rate spike)
+
+**Problem:** When `monthlyPayment - interest < 0` (e.g. floating rate spike with fixed
+origination rata), the loan block treated negative `principalShare` like final-month payoff,
+setting `principalShare = outstanding` and wiping the loan in one month.
+
+**Fix:** Split the clamp rule:
+- Final month or `principalShare > outstanding` → full payoff (`principalShare = outstanding`)
+- `principalShare < 0` → interest-only (`principalShare = 0`)
+
+Applied in `advanceMonth.ts`, `remainingSchedule` (`actions.ts`), and the independent
+recompute in `phase6.loan.test.ts` floating-rate test.
+
+**Test added:** `rate spike: principalShare negativo → solo interessi, niente estinzione
+anticipata` — loan with `monthlyPayment=100` and `fixedAnnualRate=0.24` on €10k; asserts
+principal=0, outstanding unchanged, interest≈200.
+
+**Verification:** `npx vitest run src/sim/phase-loan-schedule.test.ts src/sim/phase6.loan.test.ts`
+→ **21/21 passed**.
+
+## Commit (fix)
+`Clamp negative French principal share to interest-only.`

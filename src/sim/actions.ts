@@ -183,8 +183,10 @@ export const remainingSchedule = (
   for (let i = 1; i <= monthsLeft; i++) {
     const interest = round2(residual * r);
     let principal = round2(payment - interest);
-    if (i === monthsLeft || principal > residual || principal < 0) {
+    if (i === monthsLeft || principal > residual) {
       principal = residual;
+    } else if (principal < 0) {
+      principal = 0;
     }
     residual = round2(residual - principal);
     rows.push({ monthIndex: i, interest, principal, payment: round2(interest + principal), residual });

@@ -95,7 +95,8 @@ describe("Phase 6 — prestito", () => {
       const annualRate = snap.euribor_3m_path[m] + spread;
       const interest = round2((outstanding * annualRate) / 12);
       let principal = round2(payment - interest);
-      if (m + 1 >= 12 || principal > outstanding || principal < 0) principal = outstanding;
+      if (m + 1 >= 12 || principal > outstanding) principal = outstanding;
+      else if (principal < 0) principal = 0;
       outstanding = round2(outstanding - principal);
       expectedInterestMonth3 = interest;
     }
@@ -107,6 +108,30 @@ describe("Phase 6 — prestito", () => {
     expect(s.loan?.lastInstallment?.interest).toBeCloseTo(expectedInterestMonth3);
     expect(s.loan?.outstanding).toBeCloseTo(outstanding);
     expect(snap.euribor_3m_path[2]).not.toBe(snap.euribor_3m_path[0]);
+  });
+
+  it("rate spike: principalShare negativo → solo interessi, niente estinzione anticipata", () => {
+    let s = createInitialGameState();
+    s = requestLoan(s, {
+      principal: 10000,
+      tenorMonths: 12,
+      rateType: "fixed",
+      guarantee: "none",
+    });
+    // monthlyPayment fissato a origination; tasso effettivo sale → interessi > rata
+    s = {
+      ...s,
+      loan: {
+        ...s.loan!,
+        monthlyPayment: 100,
+        fixedAnnualRate: 0.24,
+      },
+    };
+    const outstandingBefore = s.loan!.outstanding;
+    s = advanceMonth(s);
+    expect(s.loan?.lastInstallment?.principal).toBe(0);
+    expect(s.loan?.outstanding).toBe(outstandingBefore);
+    expect(s.loan?.lastInstallment?.interest).toBeCloseTo(200);
   });
 
   it("estinzione: dopo il tenor l'outstanding è zero e non escono più rate", () => {

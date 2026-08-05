@@ -338,12 +338,10 @@ export const advanceMonth = (state: GameState): GameState => {
         : euriborAt(next.monthsPlayed) + loan.spreadBps / 10000;
     const interest = round2((loan.outstanding * annualRate) / 12);
     let principalShare = round2(loan.monthlyPayment - interest);
-    if (
-      loan.monthsPaid + 1 >= loan.tenorMonths ||
-      principalShare > loan.outstanding ||
-      principalShare < 0
-    ) {
+    if (loan.monthsPaid + 1 >= loan.tenorMonths || principalShare > loan.outstanding) {
       principalShare = loan.outstanding;
+    } else if (principalShare < 0) {
+      principalShare = 0;
     }
     const payment = round2(interest + principalShare);
     next.company.cash = round2(next.company.cash - payment);
