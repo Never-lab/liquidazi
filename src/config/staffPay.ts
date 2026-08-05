@@ -51,4 +51,6 @@ export const grossWithSeniority = (base: number, steps: number): number => {
 
 /** Costo azienda stimato (INPS datore + accantonamento TFR) sul lordo. */
 export const employerCostMonthly = (gross: number): number =>
-  gross * (1 + snap.inps_employer_rate) + gross * snap.tfr_accrual_factor;
+  round2(
+    gross * (1 + snap.inps_employer_rate) + gross * snap.tfr_accrual_factor,
+  );

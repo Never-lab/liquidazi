@@ -7,6 +7,7 @@ import {
   grossWithSeniority,
 } from "../config/staffPay";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
+import { round2 } from "./types";
 
 describe("staffPay config", () => {
   it("tre ruoli con punti distinti", () => {
@@ -29,6 +30,6 @@ describe("staffPay config", () => {
     const g = 1650;
     const expected =
       g * (1 + snap.inps_employer_rate) + g * snap.tfr_accrual_factor;
-    expect(employerCostMonthly(g)).toBeCloseTo(expected);
+    expect(employerCostMonthly(g)).toBe(round2(expected));
   });
 });
