@@ -109,7 +109,7 @@ export const ChartsPanel = ({ history }: { history: HistoryPoint[] }) => {
             points={poly(cashPts)}
           />
           {cashPts.map((p, i) => (
-            <circle key={labels[i] ?? i} cx={p.x} cy={p.y} r="0" className={styles.hit}>
+            <circle key={`cash-pt-${i}`} cx={p.x} cy={p.y} r="0" className={styles.hit}>
               <title>
                 {labels[i]}:{" "}
                 {cash[i]!.toLocaleString("it-IT", {
@@ -149,7 +149,7 @@ export const ChartsPanel = ({ history }: { history: HistoryPoint[] }) => {
             const revH = (h.revenue / barMax) * (H - PAD * 2);
             const costH = (h.costs / barMax) * (H - PAD * 2);
             return (
-              <g key={`${h.monthIdx}-${h.label}`}>
+              <g key={`bars-${i}-${h.monthIdx}`}>
                 <rect
                   x={x0}
                   y={H - PAD - revH}

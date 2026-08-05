@@ -56,7 +56,14 @@ export const monthlyCapacity = (state: GameState): number => {
   const subCap = (state.subsidiaries ?? []).reduce((s, sub) => s + sub.capacityBonus, 0);
   const base =
     1 + core + Math.floor(extra / 3) + repBonus + processi + temp + growth + subCap;
-  return Math.max(0, base - contractSlotsUsed(state) - capacityPressurePenalty(state));
+  const afterContracts = base - contractSlotsUsed(state);
+  const penalized = afterContracts - capacityPressurePenalty(state);
+  // Soft floor: don't soft-lock a board with 0 free slots when you have no contracts
+  // (pa_wave + scorte 0 still hurts via ticket ×0.72).
+  if (penalized <= 0 && contractSlotsUsed(state) === 0) {
+    return Math.max(0, Math.min(1, afterContracts));
+  }
+  return Math.max(0, penalized);
 };
 
 export const salesAcceptedThisMonth = (state: GameState): number => {
@@ -172,11 +179,21 @@ export const generateOpportunities = (
   const jitter = Math.floor(rand() * 3) - 1; // -1, 0, +1
   let saleTarget = Math.max(1, capacity + jitter + commercialeBonus);
   let supplyTarget = Math.max(0, Math.round(saleTarget * (0.28 + rand() * 0.1)));
+  // Never soft-lock: if scorte are empty, always offer at least one supply.
+  if ((state.supplyMonths ?? 0) <= 0) {
+    supplyTarget = Math.max(1, supplyTarget);
+  }
   const total = saleTarget + supplyTarget;
   if (total > BOARD_MAX_OPS) {
     const scale = BOARD_MAX_OPS / total;
     saleTarget = Math.max(1, Math.round(saleTarget * scale));
-    supplyTarget = Math.max(0, BOARD_MAX_OPS - saleTarget);
+    supplyTarget = Math.max(
+      (state.supplyMonths ?? 0) <= 0 ? 1 : 0,
+      BOARD_MAX_OPS - saleTarget,
+    );
+    if (saleTarget + supplyTarget > BOARD_MAX_OPS) {
+      saleTarget = BOARD_MAX_OPS - supplyTarget;
+    }
   }
 
   const ops: Opportunity[] = [];
@@ -190,20 +207,47 @@ export const generateOpportunities = (
   return { ops, nextId: id };
 };
 
+/** Fixed emergency restock when board supply was skipped — always available at scorte 0. */
+export const EMERGENCY_SUPPLY_NET = 750;
+
+export const orderEmergencySupply = (state: GameState): GameState => {
+  if ((state.supplyMonths ?? 0) > 0) return state;
+  let next = recordSupplierCost(state, EMERGENCY_SUPPLY_NET, 1);
+  next = structuredClone(next);
+  next.supplyMonths = Math.min(6, (next.supplyMonths ?? 0) + 2);
+  next.log.unshift({
+    id: next.nextId++,
+    monthIdx: toMonthIndex(next.calendar),
+    tone: "good",
+    text: `Fornitura d'emergenza ordinata · ${EMERGENCY_SUPPLY_NET.toLocaleString("it-IT")} € + IVA. Scorte ${next.supplyMonths} mesi.`,
+  });
+  next.log = next.log.slice(0, 12);
+  return next;
+};
+
 export const acceptOpportunity = (state: GameState, opportunityId: number): GameState => {
   const op = state.opportunities.find((o) => o.id === opportunityId);
   if (!op) return state;
-  const cap = maxDealNet(state);
-  if (op.net > cap + 0.01) return state;
 
   if (op.kind === "sale" && op.contractMonths && op.contractMonths >= 2) {
+    if ((state.activeContracts ?? []).length >= 2) {
+      const blocked = structuredClone(state);
+      blocked.log.unshift({
+        id: blocked.nextId++,
+        monthIdx: toMonthIndex(blocked.calendar),
+        tone: "bad",
+        text: "Hai già 2 contratti attivi: chiudine uno prima di firmarne un altro.",
+      });
+      blocked.log = blocked.log.slice(0, 12);
+      return blocked;
+    }
     if (salesAcceptedThisMonth(state) >= monthlyCapacity(state)) {
       const blocked = structuredClone(state);
       blocked.log.unshift({
         id: blocked.nextId++,
         monthIdx: toMonthIndex(blocked.calendar),
         tone: "bad",
-        text: `Capacità piena: non puoi bloccare uno slot contratto.`,
+        text: `Capacità piena (${monthlyCapacity(state)} slot): non puoi bloccare un contratto.`,
       });
       blocked.log = blocked.log.slice(0, 12);
       return blocked;
@@ -214,11 +258,15 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
 
   if (op.kind === "sale" && salesAcceptedThisMonth(state) >= monthlyCapacity(state)) {
     const blocked = structuredClone(state);
+    const cap = monthlyCapacity(state);
     blocked.log.unshift({
       id: blocked.nextId++,
       monthIdx: toMonthIndex(blocked.calendar),
       tone: "bad",
-      text: `Capacità piena (${monthlyCapacity(state)} commesse/mese). Assumi con giudizio: oltre 6 dipendenti rendono meno.`,
+      text:
+        cap <= 0
+          ? "Nessuno slot libero (contratti, pressione o scorte a zero). Libera capacità o ordina forniture."
+          : `Capacità piena (${cap} commesse/mese). Assumi o chiudi un contratto.`,
     });
     blocked.log = blocked.log.slice(0, 12);
     return blocked;
@@ -263,11 +311,20 @@ export const declineOpportunity = (state: GameState, opportunityId: number): Gam
   const op = next.opportunities.find((o) => o.id === opportunityId);
   if (!op) return state;
   next.opportunities = next.opportunities.filter((o) => o.id !== opportunityId);
+  if (op.kind === "sale" && next.rival) {
+    next.rival = {
+      ...next.rival,
+      heat: Math.min(100, next.rival.heat + 2),
+    };
+  }
   next.log.unshift({
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),
     tone: "neutral",
-    text: `Lasciata scadere: ${op.title}.`,
+    text:
+      op.kind === "sale" && next.rival
+        ? `Lasciata scadere: ${op.title}. ${next.rival.name} guadagna spazio (heat ${Math.round(next.rival.heat)}).`
+        : `Lasciata scadere: ${op.title}.`,
   });
   next.log = next.log.slice(0, 12);
   return next;

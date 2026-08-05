@@ -458,16 +458,22 @@ export const advanceMonth = (state: GameState): GameState => {
     next.status = "won";
   }
 
-  next.history = [
-    ...next.history,
-    {
-      monthIdx: closedIdx,
-      label: closedLabel,
-      cash: next.company.cash,
-      revenue: round2(monthRevenue),
-      costs: monthCosts,
-    },
-  ].slice(-36);
+  const point = {
+    monthIdx: closedIdx,
+    label: closedLabel,
+    cash: next.company.cash,
+    revenue: round2(monthRevenue),
+    costs: monthCosts,
+  };
+  const hist = [...next.history];
+  const last = hist[hist.length - 1];
+  // Opening seed uses the same monthIdx as the first close — replace, don't duplicate.
+  if (last && last.monthIdx === closedIdx) {
+    hist[hist.length - 1] = point;
+  } else {
+    hist.push(point);
+  }
+  next.history = hist.slice(-36);
 
   if (next.tempCapacityMonths > 0) {
     next.tempCapacityMonths -= 1;

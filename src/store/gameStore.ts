@@ -21,7 +21,7 @@ import {
 } from "../sim/actions";
 import { buyAcquisition, refreshAcquisitionBoard } from "../sim/acquisitions";
 import { resolveEventOption } from "../sim/eventCatalog";
-import { acceptOpportunity, declineOpportunity, seedNewGame } from "../sim/events";
+import { acceptOpportunity, declineOpportunity, seedNewGame, orderEmergencySupply } from "../sim/events";
 import { formatCloseToast, unlockMilestones } from "../sim/milestones";
 import {
   createInitialGameState,
@@ -79,6 +79,7 @@ interface GameStore {
   continueAfterWin: () => void;
   acceptOpportunity: (id: number) => void;
   declineOpportunity: (id: number) => void;
+  orderEmergencySupply: () => void;
   hireEmployee: (role: string) => void;
   fireEmployee: (id: number) => void;
   payF24: () => void;
@@ -186,9 +187,10 @@ export const useGameStore = create<GameStore>()(
           get().flashToast(`Decisione: ${game.pendingEvent.title}`, "neutral");
           sfxMonthClose();
         } else if (game.lastCloseSummary) {
+          const d = game.lastCloseSummary.delta;
           get().flashToast(
             formatCloseToast(game.lastCloseSummary),
-            game.lastCloseSummary.delta < 0 ? "bad" : "neutral",
+            d < 0 ? "bad" : d > 0 ? "good" : "neutral",
           );
           sfxMonthClose();
         } else {
@@ -205,13 +207,33 @@ export const useGameStore = create<GameStore>()(
         get().flashToast("Continui oltre i 24 mesi", "neutral");
       },
       acceptOpportunity: (id) => {
-        const game = acceptOpportunity(get().game, id);
+        const before = get().game;
+        const game = acceptOpportunity(before, id);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-        sfxGood();
+        const tookDeal = game.opportunities.every((o) => o.id !== id);
+        if (tookDeal) {
+          sfxGood();
+        } else {
+          const msg =
+            game.log[0] && game.log[0].id !== before.log[0]?.id
+              ? game.log[0].text
+              : "Commessa non accettata";
+          get().flashToast(msg, "bad");
+          sfxBad();
+        }
       },
       declineOpportunity: (id) => {
         const game = declineOpportunity(get().game, id);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+      },
+      orderEmergencySupply: () => {
+        const before = get().game.supplyMonths ?? 0;
+        const game = orderEmergencySupply(get().game);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if ((game.supplyMonths ?? 0) > before) {
+          get().flashToast("Fornitura d'emergenza ordinata (+2 mesi scorte)", "good");
+          sfxGood();
+        }
       },
       hireEmployee: (role) => {
         const game = hireEmployee(get().game, role);

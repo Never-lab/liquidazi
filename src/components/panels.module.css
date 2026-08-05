@@ -205,6 +205,40 @@
   font-size: 13px;
 }
 
+.closePreview {
+  padding: 12px 14px;
+  margin: 0 0 12px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+}
+
+.closePreviewTitle {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.closePreviewNums {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.scheduleSection {
+  margin: 12px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
 .warning {
   color: var(--color-warning);
   font-weight: 600;

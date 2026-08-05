@@ -344,6 +344,22 @@ export const CAMPAIGN_WIN_MONTHS = 24;
 /** Absolute month index: comparable across year boundaries. */
 export const toMonthIndex = (c: Calendar): number => c.year * 12 + (c.month - 1);
 
+export const calendarFromIndex = (idx: number): Calendar => ({
+  year: Math.floor(idx / 12),
+  month: (idx % 12) + 1,
+});
+
+const MESI_IT = [
+  "Gen", "Feb", "Mar", "Apr", "Mag", "Giu",
+  "Lug", "Ago", "Set", "Ott", "Nov", "Dic",
+];
+
+/** Short label e.g. "Mar 2024". */
+export const formatMonthIdx = (idx: number): string => {
+  const c = calendarFromIndex(idx);
+  return `${MESI_IT[c.month - 1]} ${c.year}`;
+};
+
 export const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 export interface NewGameOptions {

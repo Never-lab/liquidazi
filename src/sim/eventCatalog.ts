@@ -277,7 +277,73 @@ const CHOICE_POOL: ChoiceDef[] = [
       },
     ],
   },
+  {
+    kind: "choice",
+    id: "rival_push",
+    title: "Il rivale alza la voce",
+    body: "La concorrenza locale ti sfida sul territorio. Come rispondi?",
+    options: [
+      {
+        id: "campaign",
+        label: "Campagna (−800 €)",
+        apply: (s) => {
+          s.company.cash = round2(s.company.cash - 800);
+          s.ytd.otherCosts = round2(s.ytd.otherCosts + 800);
+          if (s.rival) {
+            s.rival = { ...s.rival, heat: Math.max(0, s.rival.heat - 14) };
+          }
+          s.company.reputation = Math.min(100, s.company.reputation + 2);
+          const who = s.rival?.name ?? "Il rivale";
+          pushLog(
+            s,
+            "good",
+            `${who}: campagna commerciale −800 € · heat ${Math.round(s.rival?.heat ?? 0)}.`,
+          );
+        },
+      },
+      {
+        id: "undercut",
+        label: "Guerra prezzi (−rep)",
+        apply: (s) => {
+          s.company.reputation = Math.max(0, s.company.reputation - 6);
+          if (s.rival) {
+            s.rival = { ...s.rival, heat: Math.max(0, s.rival.heat - 6) };
+          }
+          const net = round2(maxDealNet(s) * 0.7);
+          s.opportunities.push({
+            id: s.nextId++,
+            kind: "sale",
+            title: "Commessa · prezzo aggressivo",
+            net,
+            expiresInMonths: 1,
+            clientType: "private",
+            termMonths: 1,
+          });
+          const who = s.rival?.name ?? "Il rivale";
+          pushLog(
+            s,
+            "neutral",
+            `${who}: guerra prezzi — rep −6, deal scontato sul tabellone.`,
+          );
+        },
+      },
+      {
+        id: "ignore",
+        label: "Ignora",
+        apply: (s) => {
+          if (s.rival) {
+            s.rival = { ...s.rival, heat: Math.min(100, s.rival.heat + 10) };
+          }
+          const who = s.rival?.name ?? "Il rivale";
+          pushLog(s, "bad", `${who}: lo ignori — heat sale a ${Math.round(s.rival?.heat ?? 0)}.`);
+        },
+      },
+    ],
+  },
 ];
+
+const findChoiceDef = (id: string): ChoiceDef | undefined =>
+  CHOICE_POOL.find((c) => c.id === id);
 
 const toPending = (def: ChoiceDef): PendingEvent => ({
   id: def.id,
@@ -331,13 +397,37 @@ const applyCalendar = (state: GameState, rand: () => number): void => {
       pushLog(
         state,
         "bad",
-        `Agosto — ferie clienti: −${hit.toLocaleString("it-IT")} € e una commessa in meno sul tabellone.`,
+        `Agosto — ferie clienti: ticket bassi, −${hit.toLocaleString("it-IT")} € e una commessa in meno.`,
       );
     } else {
       pushLog(
         state,
         "bad",
-        `Agosto — stagione bassa / ferie: −${hit.toLocaleString("it-IT")} € di liquidità assorbita.`,
+        `Agosto — stagione bassa / ferie: ticket ridotti, −${hit.toLocaleString("it-IT")} € di liquidità assorbita.`,
+      );
+    }
+  }
+  if (month === 9) {
+    pushLog(
+      state,
+      "good",
+      "Settembre — ripresa: ticket in ripresa, clienti tornano. Buon mese per riempire gli slot.",
+    );
+    if (rand() < 0.55) {
+      const bonus = round2(maxDealNet(state) * (0.55 + rand() * 0.35));
+      state.opportunities.push({
+        id: state.nextId++,
+        kind: "sale",
+        title: "Commessa · ripresa settembre",
+        net: bonus,
+        expiresInMonths: 1,
+        clientType: "private",
+        termMonths: 1,
+      });
+      pushLog(
+        state,
+        "good",
+        `Ripresa: +1 lead da ${bonus.toLocaleString("it-IT")} € + IVA sul tabellone.`,
       );
     }
   }
@@ -445,8 +535,23 @@ export const runWorldEvents = (state: GameState): GameState => {
   // Don't stack a new choice if one is somehow still pending
   if (next.pendingEvent) return next;
 
+  // Rival challenge when heat is high (prefer over generic pool)
+  if (next.rival && next.rival.heat >= 55) {
+    const rivalChance = 0.2 + (next.rival.heat - 55) / 160;
+    if (rand() < rivalChance) {
+      const def = findChoiceDef("rival_push")!;
+      const pending = toPending(def);
+      pending.title = `${next.rival.name} alza la voce`;
+      pending.body = `${next.rival.name} ti sfida in zona (heat ${Math.round(next.rival.heat)}). Campagna, guerra prezzi o ignori?`;
+      next.pendingEvent = pending;
+      pushLog(next, "neutral", `Decisione: ${pending.title}`);
+      return next;
+    }
+  }
+
   if (rand() < diff.choiceChance) {
-    const def = CHOICE_POOL[Math.floor(rand() * CHOICE_POOL.length)]!;
+    const pool = CHOICE_POOL.filter((c) => c.id !== "rival_push");
+    const def = pool[Math.floor(rand() * pool.length)]!;
     next.pendingEvent = toPending(def);
     pushLog(next, "neutral", `Decisione: ${def.title}`);
     return next;
@@ -460,7 +565,7 @@ export const runWorldEvents = (state: GameState): GameState => {
 export const resolveEventOption = (state: GameState, optionId: string): GameState => {
   const pending = state.pendingEvent;
   if (!pending) return state;
-  const def = CHOICE_POOL.find((c) => c.id === pending.id);
+  const def = findChoiceDef(pending.id);
   if (!def) {
     const cleared = structuredClone(state);
     cleared.pendingEvent = null;
