@@ -1,5 +1,10 @@
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
+import {
+  UPGRADES,
+  type UpgradeId,
+} from "../config/upgrades";
 import { marketModifiersFromIndex } from "./market";
+import { hasPressure } from "./pressures";
 import {
   round2,
   toMonthIndex,
@@ -54,7 +59,7 @@ export const issueCustomerInvoice = (
   net: number,
   opts?: InvoiceOpts,
 ): GameState => {
-  if (!(net > 0) || net > 18000) return state;
+  if (!(net > 0) || net > 35000) return state;
   return addInvoice(state, "AR", net, opts);
 };
 
@@ -64,7 +69,7 @@ export const recordSupplierCost = (
   net: number,
   termMonths = 1,
 ): GameState => {
-  if (!(net > 0) || net > 18000) return state;
+  if (!(net > 0) || net > 35000) return state;
   return addInvoice(state, "AP", net, { termMonths });
 };
 
@@ -76,6 +81,17 @@ export const PRESET_ROLES = [
 ] as const;
 
 export const hireEmployee = (state: GameState, role: string): GameState => {
+  if (hasPressure(state, "hiring_freeze")) {
+    const blocked = structuredClone(state);
+    blocked.log.unshift({
+      id: blocked.nextId++,
+      monthIdx: toMonthIndex(blocked.calendar),
+      tone: "bad",
+      text: "Blocco assunzioni: pressione trimestre attiva.",
+    });
+    blocked.log = blocked.log.slice(0, 12);
+    return blocked;
+  }
   const preset = PRESET_ROLES.find((r) => r.role === role);
   if (!preset) return state;
   const next = structuredClone(state);
@@ -181,7 +197,8 @@ export const requestLoan = (state: GameState, req: LoanRequest): GameState => {
   if (!canRequestLoan(state, req.principal, req.guarantee)) return state;
   const next = structuredClone(state);
   const wasDistressed = next.company.cash < 0 || next.loanOffer !== null;
-  const spreadBps = spreadForGuarantee(req.guarantee);
+  const spreadBps =
+    spreadForGuarantee(req.guarantee) + complianceSpreadPenaltyBps(next.compliance);
   next.loan = {
     principal: req.principal,
     outstanding: req.principal,
@@ -197,6 +214,15 @@ export const requestLoan = (state: GameState, req: LoanRequest): GameState => {
   next.company.cash = round2(next.company.cash + req.principal);
   next.loanOffer = null;
   if (wasDistressed) next.distressLoanTaken = true;
+  if (complianceSpreadPenaltyBps(next.compliance) > 0) {
+    next.log.unshift({
+      id: next.nextId++,
+      monthIdx: toMonthIndex(next.calendar),
+      tone: "bad",
+      text: `Compliance bassa (${Math.round(next.compliance)}): la banca applica +${complianceSpreadPenaltyBps(next.compliance)} bps di spread.`,
+    });
+    next.log = next.log.slice(0, 12);
+  }
   return next;
 };
 
@@ -223,9 +249,24 @@ export const declineLoanOffer = (state: GameState): GameState => {
 const FIDO_MAX = 15000;
 const FIDO_SPREAD_BPS = 450;
 
+/** Extra spread (bps) when tax compliance is weak — banks price the risk. */
+export const complianceSpreadPenaltyBps = (compliance: number): number => {
+  if (compliance < 40) return 200;
+  if (compliance < 70) return 100;
+  return 0;
+};
+
+/** Fido ceiling shrinks with poor compliance. */
+export const fidoMaxFor = (state: GameState): number => {
+  if (state.compliance < 40) return Math.round(FIDO_MAX * 0.5);
+  if (state.compliance < 70) return Math.round(FIDO_MAX * 0.75);
+  return FIDO_MAX;
+};
+
 /** Attiva un fido di cassa (può coesistere col mutuo). */
 export const requestFido = (state: GameState, limit: number): GameState => {
-  if (state.fido || !(limit > 0) || limit > FIDO_MAX) return state;
+  const max = fidoMaxFor(state);
+  if (state.fido || !(limit > 0) || limit > max) return state;
   const next = structuredClone(state);
   next.fido = { limit: round2(limit), drawn: 0 };
   next.log.unshift({
@@ -266,3 +307,104 @@ export const payF24 = (state: GameState): GameState => {
   next.company.cash = round2(next.company.cash - total);
   return next;
 };
+
+export const upgradeCost = (state: GameState, id: UpgradeId): number => {
+  const def = UPGRADES[id];
+  if (id === "sede") {
+    return Math.max(def.cost, Math.round(state.company.monthlyRent * 6));
+  }
+  return def.cost;
+};
+
+/** One-shot company upgrade. */
+export const buyUpgrade = (state: GameState, id: UpgradeId): GameState => {
+  if (!UPGRADES[id]) return state;
+  const owned = state.upgrades ?? [];
+  if (owned.includes(id)) return state;
+  const cost = upgradeCost(state, id);
+  if (state.company.cash < cost) return state;
+
+  const next = structuredClone(state);
+  next.upgrades = [...(next.upgrades ?? []), id];
+  next.company.cash = round2(next.company.cash - cost);
+  if (id === "sede") {
+    next.company.monthlyRent = round2(next.company.monthlyRent * 0.85);
+  }
+  next.log.unshift({
+    id: next.nextId++,
+    monthIdx: toMonthIndex(next.calendar),
+    tone: "good",
+    text: `Upgrade: ${UPGRADES[id].label} (−${cost.toLocaleString("it-IT")} €).`,
+  });
+  next.log = next.log.slice(0, 12);
+  return next;
+};
+
+export const TREASURY_MIN = 500;
+export const GROWTH_PER_SLOT = 4000;
+export const GROWTH_CAPACITY_CAP = 3;
+export const MAX_SUBSIDIARIES = 3;
+
+export const depositTreasury = (state: GameState, amount: number): GameState => {
+  const amt = round2(amount);
+  if (!(amt >= TREASURY_MIN) || state.company.cash < amt) return state;
+  const next = structuredClone(state);
+  next.treasury = round2((next.treasury ?? 0) + amt);
+  next.company.cash = round2(next.company.cash - amt);
+  next.log.unshift({
+    id: next.nextId++,
+    monthIdx: toMonthIndex(next.calendar),
+    tone: "neutral",
+    text: `Tesoreria: depositati ${amt.toLocaleString("it-IT")} €.`,
+  });
+  next.log = next.log.slice(0, 12);
+  return next;
+};
+
+export const withdrawTreasury = (state: GameState, amount: number): GameState => {
+  const amt = round2(amount);
+  const bal = state.treasury ?? 0;
+  if (!(amt > 0) || amt > bal) return state;
+  const next = structuredClone(state);
+  next.treasury = round2(bal - amt);
+  next.company.cash = round2(next.company.cash + amt);
+  next.log.unshift({
+    id: next.nextId++,
+    monthIdx: toMonthIndex(next.calendar),
+    tone: "neutral",
+    text: `Tesoreria: prelevati ${amt.toLocaleString("it-IT")} €.`,
+  });
+  next.log = next.log.slice(0, 12);
+  return next;
+};
+
+/** Reinvest cash into growth: every GROWTH_PER_SLOT € → +1 capacity (cap GROWTH_CAPACITY_CAP). */
+export const investGrowth = (state: GameState, amount: number): GameState => {
+  const amt = round2(amount);
+  if (!(amt >= GROWTH_PER_SLOT) || state.company.cash < amt) return state;
+  if ((state.growthCapacityBonus ?? 0) >= GROWTH_CAPACITY_CAP) return state;
+  const next = structuredClone(state);
+  next.growthInvested = round2((next.growthInvested ?? 0) + amt);
+  next.company.cash = round2(next.company.cash - amt);
+  const slots = Math.min(
+    GROWTH_CAPACITY_CAP,
+    Math.floor(next.growthInvested / GROWTH_PER_SLOT),
+  );
+  const gained = slots - (next.growthCapacityBonus ?? 0);
+  next.growthCapacityBonus = slots;
+  next.log.unshift({
+    id: next.nextId++,
+    monthIdx: toMonthIndex(next.calendar),
+    tone: "good",
+    text:
+      gained > 0
+        ? `Reinvestimento crescita −${amt.toLocaleString("it-IT")} €: +${gained} slot capacità.`
+        : `Reinvestimento crescita −${amt.toLocaleString("it-IT")} € (verso il prossimo slot).`,
+  });
+  next.log = next.log.slice(0, 12);
+  return next;
+};
+
+/** Indicative annual treasury yield (fraction of Euribor). */
+export const treasuryAnnualRate = (monthsPlayed: number): number =>
+  Math.max(0, euriborAt(monthsPlayed) * 0.4);

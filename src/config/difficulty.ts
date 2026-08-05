@@ -12,6 +12,8 @@ export interface DifficultyProfile {
   ticketMult: number;
   /** applyRandomEvent: skip if rng() > this (higher = fewer events) */
   eventSkipAbove: number;
+  /** when a world roll fires, P(choice event) vs auto */
+  choiceChance: number;
 }
 
 export const DIFFICULTIES: Record<DifficultyId, DifficultyProfile> = {
@@ -23,7 +25,8 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyProfile> = {
     rentFactor: 0.85,
     defaultMult: 0.4,
     ticketMult: 1.12,
-    eventSkipAbove: 0.72,
+    eventSkipAbove: 0.55,
+    choiceChance: 0.35,
   },
   normal: {
     id: "normal",
@@ -33,7 +36,8 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyProfile> = {
     rentFactor: 1,
     defaultMult: 1,
     ticketMult: 1,
-    eventSkipAbove: 0.55,
+    eventSkipAbove: 0.32,
+    choiceChance: 0.55,
   },
   hard: {
     id: "hard",
@@ -43,7 +47,8 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyProfile> = {
     rentFactor: 1.2,
     defaultMult: 1.7,
     ticketMult: 0.9,
-    eventSkipAbove: 0.35,
+    eventSkipAbove: 0.18,
+    choiceChance: 0.7,
   },
 };
 

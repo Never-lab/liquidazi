@@ -1,4 +1,5 @@
 import { useGameStore } from "../store/gameStore";
+import { Button } from "../components/ui/Button";
 import styles from "./MenuScreen.module.css";
 
 export const MenuScreen = () => {
@@ -13,34 +14,44 @@ export const MenuScreen = () => {
   const slotLabel = slots[activeSlot]?.label ?? `Slot ${activeSlot + 1}`;
 
   return (
-    <div className={styles.menu}>
-      <h2 className={styles.title}>Liquidazi</h2>
-      <p className={styles.subtitle}>
-        Ciao <strong>{auth?.username}</strong> · {slotLabel}. Simulazione aperta: un anno in
-        rosso e sei KO.
-      </p>
-      <div className={styles.actions}>
-        <button className={styles.primary} onClick={() => setScreen("setup")}>
-          Nuova partita
-        </button>
-        {canResume && (
-          <button className={styles.secondary} onClick={() => setScreen("game")}>
-            Riprendi partita
-          </button>
-        )}
-        <button className={styles.secondary} onClick={() => setScreen("saves")}>
+    <div className={styles.shell}>
+      <div className={styles.heroBlock}>
+        <p className={styles.brandMark}>Liquidazi</p>
+        <h2 className={styles.headline}>Tieni in piedi la cassa della tua SRL.</h2>
+        <p className={styles.lede}>
+          Ciao <strong>{auth?.username ?? "ospite"}</strong> · {slotLabel}. Sopravvivi 24 mesi;
+          12 mesi in rosso e sei KO.
+        </p>
+        <div className={styles.ctaRow}>
+          <Button onClick={() => setScreen("setup")}>Nuova partita</Button>
+          {canResume && (
+            <Button variant="secondary" onClick={() => setScreen("game")}>
+              Riprendi
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <nav className={styles.secondaryNav} aria-label="Altro">
+        <button type="button" className={styles.navLink} onClick={() => setScreen("saves")}>
           Salvataggi
         </button>
-        <button className={styles.secondary} onClick={() => setScreen("leaderboard")}>
+        <button type="button" className={styles.navLink} onClick={() => setScreen("leaderboard")}>
           Classifiche
         </button>
-        <button className={styles.secondary} onClick={() => setScreen("tutorial")}>
+        <button type="button" className={styles.navLink} onClick={() => setScreen("tutorial")}>
           Tutorial
         </button>
-        <button className={styles.secondary} onClick={logout}>
-          Esci ({auth?.username})
-        </button>
-      </div>
+        {auth ? (
+          <button type="button" className={styles.navLink} onClick={logout}>
+            Esci ({auth.username})
+          </button>
+        ) : (
+          <button type="button" className={styles.navLink} onClick={() => setScreen("auth")}>
+            Accedi per la classifica
+          </button>
+        )}
+      </nav>
     </div>
   );
 };

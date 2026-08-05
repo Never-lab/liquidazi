@@ -6,21 +6,29 @@ import type { DifficultyId } from "../config/difficulty";
 import { advanceMonth } from "../sim/advanceMonth";
 import {
   acceptLoanOffer,
+  buyUpgrade,
   declineLoanOffer,
+  depositTreasury,
   drawFido,
   fireEmployee,
   hireEmployee,
+  investGrowth,
   payF24,
   requestFido,
   requestLoan,
+  withdrawTreasury,
   type LoanRequest,
 } from "../sim/actions";
+import { buyAcquisition, refreshAcquisitionBoard } from "../sim/acquisitions";
+import { resolveEventOption } from "../sim/eventCatalog";
 import { acceptOpportunity, declineOpportunity, seedNewGame } from "../sim/events";
+import { formatCloseToast, unlockMilestones } from "../sim/milestones";
 import {
   createInitialGameState,
   type GameState,
   type NewGameOptions,
 } from "../sim/types";
+import type { UpgradeId } from "../config/upgrades";
 import { sfxBad, sfxGood, sfxMonthClose, sfxPay } from "../ui/sfx";
 import { formatCash } from "../components/formatCash";
 
@@ -60,6 +68,7 @@ interface GameStore {
   setScreen: (screen: Screen) => void;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
+  continueAsGuest: () => void;
   logout: () => void;
   dismissCoach: () => void;
   enableCoach: () => void;
@@ -67,6 +76,7 @@ interface GameStore {
   flashToast: (text: string, tone?: ToastTone) => void;
   newGame: (opts: NewGameOptions) => void;
   advanceMonth: () => void;
+  continueAfterWin: () => void;
   acceptOpportunity: (id: number) => void;
   declineOpportunity: (id: number) => void;
   hireEmployee: (role: string) => void;
@@ -77,6 +87,12 @@ interface GameStore {
   declineLoanOffer: () => void;
   requestFido: (limit: number) => void;
   drawFido: (amount: number) => void;
+  buyUpgrade: (id: UpgradeId) => void;
+  resolveEvent: (optionId: string) => void;
+  depositTreasury: (amount: number) => void;
+  withdrawTreasury: (amount: number) => void;
+  investGrowth: (amount: number) => void;
+  buyAcquisition: (id: number) => void;
   markRunSubmitted: () => void;
   selectSlot: (index: number) => void;
   renameSlot: (index: number, label: string) => void;
@@ -122,6 +138,7 @@ export const useGameStore = create<GameStore>()(
         const session = await apiRegister(username, password);
         set({ auth: session, screen: "menu" });
       },
+      continueAsGuest: () => set({ auth: null, screen: "menu" }),
       logout: () => set({ auth: null, screen: "auth" }),
       dismissCoach: () => set({ coachOn: false }),
       enableCoach: () => set({ coachOn: true }),
@@ -136,35 +153,56 @@ export const useGameStore = create<GameStore>()(
         set({ slots: syncSlot(slots, activeSlot, game) });
       },
       newGame: (opts) => {
-        const game = seedNewGame(
+        let game = seedNewGame(
           createInitialGameState({
             ...opts,
             difficulty: opts.difficulty ?? get().preferredDifficulty,
           }),
         );
+        game = refreshAcquisitionBoard(game);
         const slots = syncSlot(get().slots, get().activeSlot, game);
         set({ game, slots, screen: "game", coachOn: true });
         get().flashToast("Nuova azienda aperta", "good");
         sfxGood();
       },
       advanceMonth: () => {
-        const before = get().game.company.cash;
+        if (get().game.pendingEvent) {
+          get().flashToast("Risolvi prima l'evento in corso", "bad");
+          sfxBad();
+          return;
+        }
         const game = advanceMonth(get().game);
-        const screen = game.status === "lost" ? "gameover" : get().screen;
+        let screen = get().screen;
+        if (game.status === "lost" || game.status === "won") screen = "gameover";
         const slots = syncSlot(get().slots, get().activeSlot, game);
         set({ game, screen, slots });
         if (game.status === "lost") {
           get().flashToast("Fallimento: 12 mesi in rosso", "bad");
           sfxBad();
-        } else {
-          const delta = game.company.cash - before;
-          const sign = delta >= 0 ? "+" : "";
+        } else if (game.status === "won") {
+          get().flashToast("Traguardo: 24 mesi di attività", "good");
+          sfxGood();
+        } else if (game.pendingEvent) {
+          get().flashToast(`Decisione: ${game.pendingEvent.title}`, "neutral");
+          sfxMonthClose();
+        } else if (game.lastCloseSummary) {
           get().flashToast(
-            `Mese chiuso · cassa ${sign}${formatCash(delta)}`,
-            delta < 0 ? "bad" : "neutral",
+            formatCloseToast(game.lastCloseSummary),
+            game.lastCloseSummary.delta < 0 ? "bad" : "neutral",
           );
           sfxMonthClose();
+        } else {
+          get().flashToast("Mese chiuso", "neutral");
+          sfxMonthClose();
         }
+      },
+      continueAfterWin: () => {
+        const game = structuredClone(get().game);
+        if (game.status !== "won") return;
+        game.status = "running";
+        const slots = syncSlot(get().slots, get().activeSlot, game);
+        set({ game, slots, screen: "game" });
+        get().flashToast("Continui oltre i 24 mesi", "neutral");
       },
       acceptOpportunity: (id) => {
         const game = acceptOpportunity(get().game, id);
@@ -223,6 +261,67 @@ export const useGameStore = create<GameStore>()(
         const game = drawFido(get().game, amount);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
       },
+      buyUpgrade: (id) => {
+        const game = buyUpgrade(get().game, id);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if ((game.upgrades ?? []).includes(id)) {
+          get().flashToast("Upgrade acquistato", "good");
+          sfxGood();
+        } else {
+          get().flashToast("Upgrade non disponibile", "bad");
+        }
+      },
+      resolveEvent: (optionId) => {
+        if (!get().game.pendingEvent) return;
+        const game = resolveEventOption(get().game, optionId);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        get().flashToast("Decisione presa", "neutral");
+        sfxGood();
+      },
+      depositTreasury: (amount) => {
+        const before = get().game.treasury ?? 0;
+        const game = depositTreasury(get().game, amount);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if ((game.treasury ?? 0) > before) {
+          get().flashToast("Depositato in tesoreria", "good");
+          sfxGood();
+        } else {
+          get().flashToast("Deposito non riuscito", "bad");
+        }
+      },
+      withdrawTreasury: (amount) => {
+        const before = get().game.treasury ?? 0;
+        const game = withdrawTreasury(get().game, amount);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if ((game.treasury ?? 0) < before) {
+          get().flashToast("Prelievo tesoreria", "neutral");
+        }
+      },
+      investGrowth: (amount) => {
+        const before = get().game.growthInvested ?? 0;
+        const game = investGrowth(get().game, amount);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if ((game.growthInvested ?? 0) > before) {
+          get().flashToast("Reinvestimento crescita", "good");
+          sfxGood();
+        } else {
+          get().flashToast("Investimento non riuscito", "bad");
+        }
+      },
+      buyAcquisition: (id) => {
+        const before = (get().game.subsidiaries ?? []).length;
+        let game = buyAcquisition(get().game, id);
+        if ((game.subsidiaries ?? []).length > before) {
+          const mil = unlockMilestones(game);
+          game = mil.state;
+          get().flashToast("Azienda acquisita", "good");
+          sfxGood();
+        } else {
+          get().flashToast("Acquisizione non riuscita", "bad");
+          sfxBad();
+        }
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+      },
       markRunSubmitted: () => {
         const game = structuredClone(get().game);
         game.career.submitted = true;
@@ -236,9 +335,7 @@ export const useGameStore = create<GameStore>()(
         set({
           activeSlot: index,
           game,
-          screen: slot.game?.status === "running" && (slot.game.monthsPlayed ?? 0) > 0
-            ? "menu"
-            : "menu",
+          screen: "menu",
         });
         get().flashToast(`Slot attivo: ${slot.label}`, "neutral");
       },
@@ -268,7 +365,7 @@ export const useGameStore = create<GameStore>()(
       version: 9,
       partialize: (state) => ({
         game: state.game,
-        screen: state.auth ? (state.screen === "auth" ? "menu" : state.screen) : "auth",
+        screen: state.screen === "auth" ? "auth" : state.screen,
         auth: state.auth,
         coachOn: state.coachOn,
         preferredDifficulty: state.preferredDifficulty,

@@ -6,7 +6,7 @@
 
 .header {
   flex-shrink: 0;
-  padding: 16px 24px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
   display: flex;
@@ -15,21 +15,35 @@
   gap: 12px;
 }
 
+.headerGame {
+  padding: 8px 16px;
+}
+
 .brand {
-  font-size: 22px;
-  letter-spacing: 0.02em;
-  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
   margin: 0;
+}
+
+.headerGame .brand {
+  font-size: 1.05rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
 }
 
 .userBadge {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .main {
   flex: 1;
+  width: 100%;
 }
 
 .screenIn {
@@ -46,4 +60,3 @@
     transform: translateY(0);
   }
 }
-

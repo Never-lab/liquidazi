@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { canRequestLoan, FIDO_MAX } from "../sim/actions";
+import { canRequestLoan, fidoMaxFor } from "../sim/actions";
 import type { LoanGuarantee } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
@@ -27,10 +27,18 @@ export const LoanPanel = () => {
   const active = loan !== null && loan.outstanding > 0;
   const approvable = canRequestLoan(game, Number(principal), guarantee);
   const fido = game.fido;
+  const fidoCap = fidoMaxFor(game);
 
   return (
     <section className={styles.panel}>
       <h2 className={styles.panelTitle}>Credito</h2>
+
+      {game.compliance < 70 && (
+        <p className={styles.warning}>
+          Compliance {Math.round(game.compliance)}/100: spread banca maggiorato
+          {game.compliance < 40 ? " e tetto fido ridotto." : "."}
+        </p>
+      )}
 
       {active ? (
         <ul className={styles.list}>
@@ -145,17 +153,17 @@ export const LoanPanel = () => {
             className={styles.input}
             type="number"
             min="0"
-            max={FIDO_MAX}
+            max={fidoCap}
             value={fidoLimit}
             onChange={(e) => setFidoLimit(e.target.value)}
             aria-label="Limite fido"
           />
           <button
             className={styles.buttonSecondary}
-            disabled={!(Number(fidoLimit) > 0) || Number(fidoLimit) > FIDO_MAX}
+            disabled={!(Number(fidoLimit) > 0) || Number(fidoLimit) > fidoCap}
             onClick={() => doRequestFido(Number(fidoLimit))}
           >
-            Apri fido (max {formatCash(FIDO_MAX)})
+            Apri fido (max {formatCash(fidoCap)})
           </button>
         </div>
       )}

@@ -8,6 +8,13 @@ export type CoachTip = {
 
 /** Guided tips for the first months — contextual, not a modal gauntlet. */
 export const coachTipFor = (game: GameState): CoachTip | null => {
+  if (game.pendingEvent) {
+    return {
+      id: "pending-event",
+      title: "Decisione aperta",
+      body: "Scegli un'opzione nel banner blu prima di chiudere un altro mese.",
+    };
+  }
   if (game.monthsPlayed === 0 && game.invoices.filter((i) => i.kind === "AR").length === 0) {
     return {
       id: "first-deal",
@@ -27,14 +34,32 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
     return {
       id: "f24",
       title: "Apri Fisco e paga l'F24",
-      body: "IVA e ritenute scadono il mese dopo. Saltare costa sanzione + reputazione compliance.",
+      body: "Usa il banner giallo «Paga F24» (o Fisco nelle operazioni). Saltare costa sanzione + compliance peggiore sul credito.",
     };
   }
   if (game.monthsPlayed >= 2 && game.employees.length === 0 && game.monthsPlayed < 6) {
     return {
       id: "hire",
       title: "Capacità",
-      body: "Più dipendenti (e reputazione) = più slot commesse al mese. Ma la 13ª a dicembre fa male.",
+      body: "Assumi se il tabellone ha slot vuoti. I primi 6 dipendenti contano pieno; oltre rendono meno. Oppure compra «Processi».",
+    };
+  }
+  if (game.monthsPlayed >= 3 && (game.upgrades?.length ?? 0) === 0 && game.company.cash > 4000) {
+    return {
+      id: "upgrade",
+      title: "Migliora l'azienda",
+      body: "In Upgrade: gestionale F24 automatico, commerciale (+commesse), sede (−affitto), processi (+slot).",
+    };
+  }
+  if (
+    (game.lastYearReport?.profit ?? 0) > 0 &&
+    (game.treasury ?? 0) === 0 &&
+    game.company.cash > 5000
+  ) {
+    return {
+      id: "invest",
+      title: "Investi l'utile",
+      body: "In Investimenti: parcheggia in tesoreria, reinvesti in crescita (+slot) o acquisisci fino a 3 partecipate.",
     };
   }
   if (game.calendar.month === 5 || game.calendar.month === 10) {

@@ -16,11 +16,17 @@ export const OpportunitiesPanel = () => {
       <div className={styles.panelHead}>
         <h2 className={styles.panelTitle}>Commesse del mese</h2>
         <span className={styles.badge}>
-          tetto {formatCash(cap)} · {taken}/{capacity} slot · rep {Math.round(game.company.reputation)}
+          tetto {formatCash(cap)} · {taken}/{capacity} slot · scorte{" "}
+          {game.supplyMonths ?? 0}m · rep {Math.round(game.company.reputation)}
+          {(game.activeContracts?.length ?? 0) > 0
+            ? ` · contratti ${game.activeContracts!.length}`
+            : ""}
         </span>
       </div>
       <p className={styles.muted}>
-        Mercato settoriale: PA paga tardi, i privati a volte non pagano. Capacità = staff + reputazione.
+        {(game.supplyMonths ?? 0) <= 0
+          ? "Scorte a zero: ticket −28% e più insoluti. Ordina una fornitura."
+          : "Forniture = scorte (mesi). Contratti bloccano 1 slot per 3 mesi. PA paga tardi; i privati a volte non pagano."}
       </p>
       {game.opportunities.length === 0 ? (
         <p className={styles.muted}>Nessuna offerta aperta — avanza il mese.</p>
@@ -33,7 +39,11 @@ export const OpportunitiesPanel = () => {
                 <p className={styles.dealMeta}>
                   {op.kind === "sale" ? "Entrata" : "Uscita"} · {formatCash(op.net)} + IVA
                   {op.kind === "sale" && op.clientType === "pa" ? " · PA" : ""}
-                  {op.termMonths > 1 ? ` · ${op.termMonths} mesi` : ""}
+                  {op.contractMonths
+                    ? ` · Contratto ${op.contractMonths} mesi (−1 slot)`
+                    : op.termMonths > 1
+                      ? ` · ${op.termMonths} mesi`
+                      : ""}
                 </p>
               </div>
               <div className={styles.dealActions}>

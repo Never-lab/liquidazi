@@ -14,6 +14,7 @@ import {
   type SectorId,
 } from "../config/market";
 import { DIFFICULTIES, type DifficultyId } from "../config/difficulty";
+import type { UpgradeId } from "../config/upgrades";
 
 export type { CityId, SectorId, DifficultyId };
 
@@ -112,7 +113,7 @@ export interface Loan {
   lastInstallment: { interest: number; principal: number } | null;
 }
 
-export type GameStatus = "running" | "lost";
+export type GameStatus = "running" | "lost" | "won";
 
 /** Banca propone questo in difficoltà (cassa < 0). */
 export interface LoanOffer {
@@ -140,6 +141,35 @@ export interface Opportunity {
   clientType?: ClientType;
   /** months until cash moves (AR/AP payment term) */
   termMonths: number;
+  /** if set, multi-month contract locking capacity */
+  contractMonths?: number;
+}
+
+export type PressureId =
+  | "cash_crunch"
+  | "pa_wave"
+  | "inspection"
+  | "hiring_freeze"
+  | "boom";
+
+export interface QuarterPressure {
+  id: PressureId;
+  label: string;
+  monthsLeft: number;
+}
+
+export interface ActiveContract {
+  id: number;
+  title: string;
+  netPerMonth: number;
+  monthsLeft: number;
+  slotCost: number;
+  clientType: ClientType;
+}
+
+export interface Rival {
+  name: string;
+  heat: number;
 }
 
 export interface LogEntry {
@@ -180,6 +210,43 @@ export interface CareerStats {
   lifetimeRevenue: number;
   /** run già inviata alla leaderboard */
   submitted: boolean;
+  /** soft win: 24 mesi raggiunti (una volta) */
+  year2Reached: boolean;
+}
+
+export interface PendingEventOption {
+  id: string;
+  label: string;
+}
+
+/** Choice event waiting for the player (blocks Chiudi mese). */
+export interface PendingEvent {
+  id: string;
+  title: string;
+  body: string;
+  options: PendingEventOption[];
+}
+
+export type AcquisitionRisk = "low" | "med" | "high";
+
+export interface AcquisitionTarget {
+  id: number;
+  name: string;
+  sector: SectorId;
+  price: number;
+  monthlyEbitda: number;
+  capacityBonus: number;
+  risk: AcquisitionRisk;
+}
+
+export interface Subsidiary {
+  id: number;
+  name: string;
+  sector: SectorId;
+  monthlyEbitda: number;
+  capacityBonus: number;
+  monthsOwned: number;
+  risk: AcquisitionRisk;
 }
 
 export interface GameState {
@@ -200,6 +267,10 @@ export interface GameState {
   /** acconti already charged (as liabilities) against the current year */
   accontiCharged: { ires: number; irap: number };
   lastYearReport: YearReport | null;
+  /** Storico bilanci (ultimi N anni) per confronto YoY */
+  yearReports: YearReport[];
+  /** Upgrade aziendali acquistati */
+  upgrades: UpgradeId[];
   loan: Loan | null;
   /** Offerta di salvataggio quando sei in rosso (null se non attiva). */
   loanOffer: LoanOffer | null;
@@ -223,10 +294,52 @@ export interface GameState {
   /** when true, skip random world events (unit tests / replay) */
   quietMode: boolean;
   difficulty: DifficultyId;
+  /** Player must resolve before closing another month */
+  pendingEvent: PendingEvent | null;
+  /** Remaining months of +1 capacity from temp hire event */
+  tempCapacityMonths: number;
+  /** Cash parked in educational deposit */
+  treasury: number;
+  /** Cumulative growth reinvestment */
+  growthInvested: number;
+  /** Permanent capacity from growth invest (cap 3) */
+  growthCapacityBonus: number;
+  /** Owned portfolio companies (max 3) */
+  subsidiaries: Subsidiary[];
+  /** Acquisition targets on the board */
+  acquisitionBoard: AcquisitionTarget[];
+  /** Remaining months of supply coverage (0 = ticket/default penalty) */
+  supplyMonths: number;
+  /** Breakdown of last month close for UI */
+  lastCloseSummary: MonthCloseSummary | null;
+  /** Mid-game goals completed */
+  milestones: MilestoneId[];
+  /** Current quarter pressure (null = none) */
+  quarterPressure: QuarterPressure | null;
+  /** Multi-month contracts locking capacity */
+  activeContracts: ActiveContract[];
+  /** Local rival (heat 0–100) */
+  rival: Rival | null;
+}
+
+export type MilestoneId =
+  | "survive_12"
+  | "year1_profit"
+  | "first_acquisition"
+  | "compliance_80";
+
+export interface MonthCloseSummary {
+  cashBefore: number;
+  cashAfter: number;
+  delta: number;
+  lines: { label: string; amount: number }[];
 }
 
 /** Mesi consecutivi in rosso → fallimento (dopo proposta di prestito). */
 export const LOSE_MONTHS_BELOW_ZERO = 12;
+
+/** Soft win: sopravvivi N mesi → schermata traguardo (si può continuare). */
+export const CAMPAIGN_WIN_MONTHS = 24;
 
 /** Absolute month index: comparable across year boundaries. */
 export const toMonthIndex = (c: Calendar): number => c.year * 12 + (c.month - 1);
@@ -275,6 +388,8 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     priorYearTax: null,
     accontiCharged: { ires: 0, irap: 0 },
     lastYearReport: null,
+    yearReports: [],
+    upgrades: [],
     loan: null,
     loanOffer: null,
     fido: null,
@@ -284,6 +399,7 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
       peakDebt: 0,
       lifetimeRevenue: 0,
       submitted: false,
+      year2Reached: false,
     },
     monthsPlayed: 0,
     monthsBelowZero: 0,
@@ -309,5 +425,18 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     ],
     quietMode: !withMarket,
     difficulty,
+    pendingEvent: null,
+    tempCapacityMonths: 0,
+    treasury: 0,
+    growthInvested: 0,
+    growthCapacityBonus: 0,
+    subsidiaries: [],
+    acquisitionBoard: [],
+    supplyMonths: 1,
+    lastCloseSummary: null,
+    milestones: [],
+    quarterPressure: null,
+    activeContracts: [],
+    rival: null,
   };
 };

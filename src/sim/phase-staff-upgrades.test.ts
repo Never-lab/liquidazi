@@ -1,0 +1,101 @@
+import { describe, expect, it } from "vitest";
+import { advanceMonth } from "./advanceMonth";
+import { buyUpgrade, hireEmployee, PRESET_ROLES } from "./actions";
+import {
+  BOARD_MAX_OPS,
+  generateOpportunities,
+  monthlyCapacity,
+} from "./events";
+import { createInitialGameState } from "./types";
+
+describe("Staff board + upgrades lite", () => {
+  it("capacity: primi 6 full, poi 1/3; 100 dipendenti non = 100 slot", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    const base = monthlyCapacity(s);
+    for (let i = 0; i < 6; i++) s = hireEmployee(s, PRESET_ROLES[0].role);
+    expect(monthlyCapacity(s)).toBe(base + 6);
+    for (let i = 0; i < 9; i++) s = hireEmployee(s, PRESET_ROLES[0].role);
+    // +9 extra → floor(9/3)=3, not +9
+    expect(monthlyCapacity(s)).toBe(base + 6 + 3);
+    for (let i = 0; i < 85; i++) s = hireEmployee(s, PRESET_ROLES[0].role);
+    expect(monthlyCapacity(s)).toBeLessThan(50);
+  });
+
+  it("tabellone scala con staff; capped a BOARD_MAX_OPS", () => {
+    const solo = createInitialGameState({ city: "058091", sector: "servizi" });
+    const { ops: few } = generateOpportunities(solo);
+    const salesFew = few.filter((o) => o.kind === "sale").length;
+
+    let hired = solo;
+    for (let i = 0; i < 4; i++) hired = hireEmployee(hired, PRESET_ROLES[0].role);
+    const { ops: more } = generateOpportunities({ ...hired, nextId: 50, monthsPlayed: 2 });
+    const salesMore = more.filter((o) => o.kind === "sale").length;
+
+    expect(salesMore).toBeGreaterThan(salesFew);
+    expect(more.length).toBeLessThanOrEqual(BOARD_MAX_OPS);
+  });
+
+  it("yearReports accumula a dicembre", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.company.cash = 100000;
+    s.calendar = { month: 12, year: 2024 };
+    s.ytd = {
+      revenue: 20000,
+      purchases: 5000,
+      payrollCost: 2000,
+      interest: 0,
+      otherCosts: 1000,
+    };
+    s = advanceMonth(s);
+    expect(s.lastYearReport?.year).toBe(2024);
+    expect(s.yearReports).toHaveLength(1);
+    expect(s.yearReports[0]?.revenue).toBe(20000);
+
+    s.calendar = { month: 12, year: 2025 };
+    s.ytd = {
+      revenue: 30000,
+      purchases: 8000,
+      payrollCost: 4000,
+      interest: 100,
+      otherCosts: 1200,
+    };
+    s = advanceMonth(s);
+    expect(s.yearReports).toHaveLength(2);
+    expect(s.yearReports[1]?.year).toBe(2025);
+  });
+
+  it("gestionale F24 auto-paga se cassa basta", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.company.cash = 20000;
+    s = buyUpgrade(s, "gestionale_f24");
+    expect(s.upgrades).toContain("gestionale_f24");
+    const idx = 2024 * 12; // gen 2024
+    s.liabilities.push({
+      id: 99,
+      kind: "IVA",
+      amount: 500,
+      dueIdx: idx,
+      paid: false,
+      penalized: false,
+    });
+    const cashBefore = s.company.cash;
+    s = advanceMonth(s);
+    expect(s.liabilities.find((l) => l.id === 99)?.paid).toBe(true);
+    expect(s.company.cash).toBe(cashBefore - 500);
+    expect(s.log.some((e) => e.text.includes("Gestionale"))).toBe(true);
+  });
+
+  it("sede riduce affitto; processi alza capacity", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.company.cash = 50000;
+    const rent0 = s.company.monthlyRent;
+    expect(rent0).toBeGreaterThan(0);
+    const cap0 = monthlyCapacity(s);
+    s = buyUpgrade(s, "sede");
+    expect(s.company.monthlyRent).toBeCloseTo(rent0 * 0.85);
+    s = buyUpgrade(s, "processi");
+    expect(monthlyCapacity(s)).toBe(cap0 + 1);
+  });
+});

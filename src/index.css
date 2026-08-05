@@ -1,23 +1,39 @@
 :root {
-  --color-bg: #eef2ef;
+  --color-bg: #f2f4f3;
+  --color-bg-ink: #e8ebe9;
   --color-surface: #ffffff;
-  --color-border: #d5ddd7;
-  --color-text: #1a221c;
-  --color-text-muted: #5a675e;
-  --color-accent: #1f6f43;
+  --color-border: #cfd5d1;
+  --color-border-strong: #a8b2ac;
+  --color-text: #141a16;
+  --color-text-muted: #5c6660;
+  --color-accent: #1a4d35;
+  --color-accent-soft: #e6eee9;
   --color-accent-contrast: #ffffff;
-  --color-danger: #b3261e;
-  --color-warning: #8a6100;
+  --color-danger: #9b2c24;
+  --color-danger-soft: #f8eceb;
+  --color-warning: #7a5a00;
+  --color-warning-soft: #f7f1e0;
+  --color-info: #1e3f5c;
+  --color-info-soft: #e8eef4;
 
   --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
   --font-display: "Fraunces", "Times New Roman", serif;
-  --font-mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --space: 16px;
+  --desk-max: 720px;
+  --touch: 44px;
 
   color-scheme: light;
   color: var(--color-text);
-  background:
-    radial-gradient(ellipse at top left, #e3efe6 0%, transparent 50%),
-    var(--color-bg);
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(rgba(20, 26, 22, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 26, 22, 0.03) 1px, transparent 1px),
+    radial-gradient(ellipse at 12% 0%, var(--color-bg-ink) 0%, transparent 55%);
+  background-size: 24px 24px, 24px 24px, 100% 100%;
   font: 16px/1.45 var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
@@ -37,7 +53,9 @@ body {
   flex-direction: column;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   margin: 0;
   font-weight: 600;
 }
@@ -45,4 +63,15 @@ h1, h2, h3 {
 button {
   font: inherit;
   cursor: pointer;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
