@@ -2,11 +2,22 @@
  * Core simulation types for Liquidazi.
  * Fiscal entities grow phase by phase; all rates come from
  * src/config/fiscalYearSnapshot.ts — never hardcoded here.
+ * Zone/sector market pack lives in src/config/market.ts.
  */
+
+import { RIVALRY, zoneById, type SectorId, type ZoneId } from "../config/market";
+
+export type { SectorId, ZoneId };
 
 export interface Company {
   name: string;
   cash: number;
+  zone: ZoneId;
+  sector: SectorId;
+  /** competing firms already in the same zone+sector */
+  rivals: number;
+  /** monthly locale / rent cost from the chosen zone */
+  monthlyRent: number;
 }
 
 export interface Calendar {
@@ -133,29 +144,46 @@ export const toMonthIndex = (c: Calendar): number => c.year * 12 + (c.month - 1)
 
 export const round2 = (n: number): number => Math.round(n * 100) / 100;
 
-export const createInitialGameState = (): GameState => ({
-  company: {
-    name: "La Mia SRL",
-    cash: 10000,
-  },
-  calendar: {
-    month: 1,
-    year: 2024,
-  },
-  invoices: [],
-  vat: { credit: 0 },
-  liabilities: [],
-  employees: [],
-  tfrFund: 0,
-  lastPayroll: null,
-  compliance: 100,
-  ytd: { revenue: 0, purchases: 0, payrollCost: 0, interest: 0, otherCosts: 0 },
-  priorYearTax: null,
-  accontiCharged: { ires: 0, irap: 0 },
-  lastYearReport: null,
-  loan: null,
-  monthsPlayed: 0,
-  monthsBelowZero: 0,
-  status: "running",
-  nextId: 1,
-});
+export interface NewGameOptions {
+  name?: string;
+  zone: ZoneId;
+  sector: SectorId;
+}
+
+export const createInitialGameState = (opts?: NewGameOptions): GameState => {
+  const zone = opts?.zone ?? "veneto";
+  const sector = opts?.sector ?? "servizi";
+  // Bare createInitialGameState() (tests / resume seed): neutral competition, no rent.
+  // Setup UI always passes opts so rent + real rivalry apply.
+  const withMarket = Boolean(opts);
+  return {
+    company: {
+      name: opts?.name?.trim() || "La Mia SRL",
+      cash: 10000,
+      zone,
+      sector,
+      rivals: withMarket ? RIVALRY[zone][sector] : 3,
+      monthlyRent: withMarket ? zoneById(zone).monthlyRent : 0,
+    },
+    calendar: {
+      month: 1,
+      year: 2024,
+    },
+    invoices: [],
+    vat: { credit: 0 },
+    liabilities: [],
+    employees: [],
+    tfrFund: 0,
+    lastPayroll: null,
+    compliance: 100,
+    ytd: { revenue: 0, purchases: 0, payrollCost: 0, interest: 0, otherCosts: 0 },
+    priorYearTax: null,
+    accontiCharged: { ires: 0, irap: 0 },
+    lastYearReport: null,
+    loan: null,
+    monthsPlayed: 0,
+    monthsBelowZero: 0,
+    status: "running",
+    nextId: 1,
+  };
+};

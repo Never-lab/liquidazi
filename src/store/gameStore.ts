@@ -10,15 +10,19 @@ import {
   requestLoan,
   type LoanRequest,
 } from "../sim/actions";
-import { createInitialGameState, type GameState } from "../sim/types";
+import {
+  createInitialGameState,
+  type GameState,
+  type NewGameOptions,
+} from "../sim/types";
 
-export type Screen = "menu" | "game" | "tutorial" | "gameover" | "win";
+export type Screen = "menu" | "setup" | "game" | "tutorial" | "gameover" | "win";
 
 interface GameStore {
   game: GameState;
   screen: Screen;
   setScreen: (screen: Screen) => void;
-  newGame: () => void;
+  newGame: (opts: NewGameOptions) => void;
   advanceMonth: () => void;
   issueCustomerInvoice: (net: number) => void;
   recordSupplierCost: (net: number) => void;
@@ -34,7 +38,7 @@ export const useGameStore = create<GameStore>()(
       game: createInitialGameState(),
       screen: "menu",
       setScreen: (screen) => set({ screen }),
-      newGame: () => set({ game: createInitialGameState(), screen: "game" }),
+      newGame: (opts) => set({ game: createInitialGameState(opts), screen: "game" }),
       advanceMonth: () => {
         const game = advanceMonth(get().game);
         const screen =
@@ -50,8 +54,20 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: "liquidazi-save",
-      version: 1,
+      version: 2,
       partialize: (state) => ({ game: state.game, screen: state.screen }),
+      migrate: (persisted) => {
+        const state = persisted as { game?: GameState; screen?: Screen };
+        const game = state.game ?? createInitialGameState();
+        // Old saves lack zone/sector — park them in a neutral market.
+        if (!game.company.zone) {
+          const patched = createInitialGameState({ zone: "veneto", sector: "servizi" });
+          patched.company.name = game.company.name;
+          patched.company.cash = game.company.cash;
+          return { game: { ...game, company: { ...game.company, ...patched.company } }, screen: state.screen ?? "menu" };
+        }
+        return { game, screen: state.screen ?? "menu" };
+      },
     },
   ),
 );

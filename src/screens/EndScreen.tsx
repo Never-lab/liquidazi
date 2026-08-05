@@ -4,7 +4,6 @@ import styles from "./MenuScreen.module.css";
 
 export const EndScreen = ({ outcome }: { outcome: "gameover" | "win" }) => {
   const game = useGameStore((s) => s.game);
-  const newGame = useGameStore((s) => s.newGame);
   const setScreen = useGameStore((s) => s.setScreen);
 
   return (
@@ -18,7 +17,9 @@ export const EndScreen = ({ outcome }: { outcome: "gameover" | "win" }) => {
           : `Tre mesi consecutivi in rosso: la banca ha chiuso i rubinetti dopo ${game.monthsPlayed} mesi.`}
       </p>
       <div className={styles.actions}>
-        <button className={styles.primary} onClick={newGame}>Nuova partita</button>
+        <button className={styles.primary} onClick={() => setScreen("setup")}>
+          Nuova partita
+        </button>
         <button className={styles.secondary} onClick={() => setScreen("menu")}>Menu</button>
       </div>
     </div>

@@ -54,3 +54,42 @@
   font-size: 20px;
   margin: 0 0 24px;
 }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  margin-bottom: 14px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.field input,
+.field select {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+.preview {
+  text-align: left;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.preview p {
+  margin: 0 0 6px;
+}
+
+.preview p:last-child {
+  margin-bottom: 0;
+}
