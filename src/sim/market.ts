@@ -1,33 +1,39 @@
-import { RIVALRY, type SectorId, type ZoneId } from "../config/market";
+import { densityIndexFor, firmsInSector, type CityId, type SectorId } from "../config/market";
 
 export interface MarketModifiers {
   /** multiplies customer invoice net ( >1 bonus, <1 malus ) */
   priceFactor: number;
   /** multiplies supplier cost net ( >1 more expensive inputs under pressure ) */
   costFactor: number;
-  pressureLabel: "bassa" | "media" | "alta";
+  pressureLabel: "bassa" | "media" | "alta" | "molto alta";
+  densityIndex: number;
+  firmsInSector: number;
 }
 
-/** Rival count for a zone+sector pair from the educational market pack. */
-export const rivalsFor = (zone: ZoneId, sector: SectorId): number =>
-  RIVALRY[zone][sector];
-
 /**
- * Competition curve — stepwise, no floating magic rates elsewhere.
- * 0–1 rivals: soft monopoly bonus
- * 2–3: neutral-ish
- * 4–5: crowded
- * 6+: cut-throat
+ * Map InfoCamere density index (city vs pack median) onto price/cost factors.
+ * Index 1.0 = mediana del pack; above = more crowded sector locally.
  */
-export const marketModifiers = (rivals: number): MarketModifiers => {
-  if (rivals <= 1) {
-    return { priceFactor: 1.12, costFactor: 0.95, pressureLabel: "bassa" };
+export const marketModifiersFromIndex = (
+  densityIndex: number,
+): Pick<MarketModifiers, "priceFactor" | "costFactor" | "pressureLabel"> => {
+  if (densityIndex < 0.75) {
+    return { priceFactor: 1.1, costFactor: 0.96, pressureLabel: "bassa" };
   }
-  if (rivals <= 3) {
+  if (densityIndex < 1.15) {
     return { priceFactor: 1.0, costFactor: 1.0, pressureLabel: "media" };
   }
-  if (rivals <= 5) {
-    return { priceFactor: 0.9, costFactor: 1.05, pressureLabel: "alta" };
+  if (densityIndex < 1.6) {
+    return { priceFactor: 0.92, costFactor: 1.04, pressureLabel: "alta" };
   }
-  return { priceFactor: 0.8, costFactor: 1.12, pressureLabel: "alta" };
+  return { priceFactor: 0.82, costFactor: 1.1, pressureLabel: "molto alta" };
+};
+
+export const marketModifiersFor = (cityId: CityId, sector: SectorId): MarketModifiers => {
+  const densityIndex = densityIndexFor(cityId, sector);
+  return {
+    ...marketModifiersFromIndex(densityIndex),
+    densityIndex,
+    firmsInSector: firmsInSector(cityId, sector),
+  };
 };

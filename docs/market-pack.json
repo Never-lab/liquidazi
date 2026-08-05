@@ -1,0 +1,737 @@
+{
+  "version": "2025-12-infocamere",
+  "asOf": "2025-12",
+  "localeSqmAssumption": 80,
+  "sources": {
+    "firms": "InfoCamere stock imprese attive per provincia (ATECO), ripubblicato da Camera di Commercio delle Marche / codiceateco.org, Dicembre 2025, CC BY 4.0",
+    "population": "ISTAT popolazione residente comuni capoluogo, 01/01/2026 (via Tuttitalia)",
+    "rent": "Media €/mq/mese annunci locali commerciali (aggregatori mercato, estate 2026) × 80 mq sede tipo PMI. Per quotazioni ufficiali zona OMI: Agenzia Entrate OMI."
+  },
+  "notes": [
+    "Stock imprese = livello provinciale; popolazione = comune capoluogo. Densità = imprese di settore / 10.000 abitanti del comune: proxy di pressione competitiva, non rivali sulla stessa via.",
+    "Mapping settori gioco: commercio=G, ristorazione=I, artigianato=C (manifattura), servizi=N+O (professionali + supporto).",
+    "L'indice densità = densità città / mediana del pack. Usato per bonus/malus prezzi e costi."
+  ],
+  "cities": [
+    {
+      "id": "milano",
+      "label": "Milano",
+      "provinceCode": "MI",
+      "regionId": "lombardia",
+      "regionLabel": "Lombardia",
+      "population": 1362863,
+      "firmsTotal": 314726,
+      "firmsBySector": {
+        "commercio": 61570,
+        "ristorazione": 18938,
+        "artigianato": 23709,
+        "servizi": 54747
+      },
+      "firmsByAteco": {
+        "G": 61570,
+        "I": 18938,
+        "C": 23709,
+        "N": 33810,
+        "O": 20937
+      },
+      "rentEurPerSqmMonth": 26.3,
+      "monthlyRent": 2104,
+      "densityPer10k": {
+        "commercio": 451.77,
+        "ristorazione": 138.96,
+        "artigianato": 173.96,
+        "servizi": 401.71
+      },
+      "densityIndex": {
+        "commercio": 0.765,
+        "ristorazione": 0.666,
+        "artigianato": 0.762,
+        "servizi": 1.616
+      }
+    },
+    {
+      "id": "roma",
+      "label": "Roma",
+      "provinceCode": "RM",
+      "regionId": "lazio",
+      "regionLabel": "Lazio",
+      "population": 2745062,
+      "firmsTotal": 334763,
+      "firmsBySector": {
+        "commercio": 77786,
+        "ristorazione": 31506,
+        "artigianato": 14477,
+        "servizi": 46553
+      },
+      "firmsByAteco": {
+        "G": 77786,
+        "I": 31506,
+        "C": 14477,
+        "N": 22368,
+        "O": 24185
+      },
+      "rentEurPerSqmMonth": 19.6,
+      "monthlyRent": 1568,
+      "densityPer10k": {
+        "commercio": 283.37,
+        "ristorazione": 114.77,
+        "artigianato": 52.74,
+        "servizi": 169.59
+      },
+      "densityIndex": {
+        "commercio": 0.48,
+        "ristorazione": 0.55,
+        "artigianato": 0.231,
+        "servizi": 0.682
+      }
+    },
+    {
+      "id": "napoli",
+      "label": "Napoli",
+      "provinceCode": "NA",
+      "regionId": "campania",
+      "regionLabel": "Campania",
+      "population": 905050,
+      "firmsTotal": 259047,
+      "firmsBySector": {
+        "commercio": 97969,
+        "ristorazione": 22603,
+        "artigianato": 19399,
+        "servizi": 21767
+      },
+      "firmsByAteco": {
+        "G": 97969,
+        "I": 22603,
+        "C": 19399,
+        "N": 10644,
+        "O": 11123
+      },
+      "rentEurPerSqmMonth": 14.5,
+      "monthlyRent": 1160,
+      "densityPer10k": {
+        "commercio": 1082.47,
+        "ristorazione": 249.74,
+        "artigianato": 214.34,
+        "servizi": 240.51
+      },
+      "densityIndex": {
+        "commercio": 1.832,
+        "ristorazione": 1.197,
+        "artigianato": 0.939,
+        "servizi": 0.968
+      }
+    },
+    {
+      "id": "torino",
+      "label": "Torino",
+      "provinceCode": "TO",
+      "regionId": "piemonte",
+      "regionLabel": "Piemonte",
+      "population": 855654,
+      "firmsTotal": 195613,
+      "firmsBySector": {
+        "commercio": 43265,
+        "ristorazione": 12956,
+        "artigianato": 16274,
+        "servizi": 21961
+      },
+      "firmsByAteco": {
+        "G": 43265,
+        "I": 12956,
+        "C": 16274,
+        "N": 11043,
+        "O": 10918
+      },
+      "rentEurPerSqmMonth": 12.0,
+      "monthlyRent": 960,
+      "densityPer10k": {
+        "commercio": 505.64,
+        "ristorazione": 151.42,
+        "artigianato": 190.19,
+        "servizi": 256.66
+      },
+      "densityIndex": {
+        "commercio": 0.856,
+        "ristorazione": 0.726,
+        "artigianato": 0.834,
+        "servizi": 1.032
+      }
+    },
+    {
+      "id": "bologna",
+      "label": "Bologna",
+      "provinceCode": "BO",
+      "regionId": "emilia",
+      "regionLabel": "Emilia-Romagna",
+      "population": 391473,
+      "firmsTotal": 80830,
+      "firmsBySector": {
+        "commercio": 16041,
+        "ristorazione": 6098,
+        "artigianato": 7471,
+        "servizi": 8361
+      },
+      "firmsByAteco": {
+        "G": 16041,
+        "I": 6098,
+        "C": 7471,
+        "N": 4508,
+        "O": 3853
+      },
+      "rentEurPerSqmMonth": 13.5,
+      "monthlyRent": 1080,
+      "densityPer10k": {
+        "commercio": 409.76,
+        "ristorazione": 155.77,
+        "artigianato": 190.84,
+        "servizi": 213.58
+      },
+      "densityIndex": {
+        "commercio": 0.694,
+        "ristorazione": 0.747,
+        "artigianato": 0.836,
+        "servizi": 0.859
+      }
+    },
+    {
+      "id": "palermo",
+      "label": "Palermo",
+      "provinceCode": "PA",
+      "regionId": "sicilia",
+      "regionLabel": "Sicilia",
+      "population": 626273,
+      "firmsTotal": 80760,
+      "firmsBySector": {
+        "commercio": 25690,
+        "ristorazione": 6765,
+        "artigianato": 5449,
+        "servizi": 6125
+      },
+      "firmsByAteco": {
+        "G": 25690,
+        "I": 6765,
+        "C": 5449,
+        "N": 3041,
+        "O": 3084
+      },
+      "rentEurPerSqmMonth": 11.0,
+      "monthlyRent": 880,
+      "densityPer10k": {
+        "commercio": 410.2,
+        "ristorazione": 108.02,
+        "artigianato": 87.01,
+        "servizi": 97.8
+      },
+      "densityIndex": {
+        "commercio": 0.694,
+        "ristorazione": 0.518,
+        "artigianato": 0.381,
+        "servizi": 0.393
+      }
+    },
+    {
+      "id": "venezia",
+      "label": "Venezia",
+      "provinceCode": "VE",
+      "regionId": "veneto",
+      "regionLabel": "Veneto",
+      "population": 249385,
+      "firmsTotal": 66529,
+      "firmsBySector": {
+        "commercio": 13851,
+        "ristorazione": 7318,
+        "artigianato": 5539,
+        "servizi": 5660
+      },
+      "firmsByAteco": {
+        "G": 13851,
+        "I": 7318,
+        "C": 5539,
+        "N": 3015,
+        "O": 2645
+      },
+      "rentEurPerSqmMonth": 18.0,
+      "monthlyRent": 1440,
+      "densityPer10k": {
+        "commercio": 555.41,
+        "ristorazione": 293.44,
+        "artigianato": 222.11,
+        "servizi": 226.96
+      },
+      "densityIndex": {
+        "commercio": 0.94,
+        "ristorazione": 1.407,
+        "artigianato": 0.973,
+        "servizi": 0.913
+      }
+    },
+    {
+      "id": "verona",
+      "label": "Verona",
+      "provinceCode": "VR",
+      "regionId": "veneto",
+      "regionLabel": "Veneto",
+      "population": 255139,
+      "firmsTotal": 81874,
+      "firmsBySector": {
+        "commercio": 14595,
+        "ristorazione": 6072,
+        "artigianato": 7365,
+        "servizi": 7149
+      },
+      "firmsByAteco": {
+        "G": 14595,
+        "I": 6072,
+        "C": 7365,
+        "N": 4127,
+        "O": 3022
+      },
+      "rentEurPerSqmMonth": 11.5,
+      "monthlyRent": 920,
+      "densityPer10k": {
+        "commercio": 572.04,
+        "ristorazione": 237.99,
+        "artigianato": 288.67,
+        "servizi": 280.2
+      },
+      "densityIndex": {
+        "commercio": 0.968,
+        "ristorazione": 1.141,
+        "artigianato": 1.265,
+        "servizi": 1.127
+      }
+    },
+    {
+      "id": "firenze",
+      "label": "Firenze",
+      "provinceCode": "FI",
+      "regionId": "toscana",
+      "regionLabel": "Toscana",
+      "population": 361625,
+      "firmsTotal": 86525,
+      "firmsBySector": {
+        "commercio": 18966,
+        "ristorazione": 6743,
+        "artigianato": 11195,
+        "servizi": 8095
+      },
+      "firmsByAteco": {
+        "G": 18966,
+        "I": 6743,
+        "C": 11195,
+        "N": 3868,
+        "O": 4227
+      },
+      "rentEurPerSqmMonth": 16.5,
+      "monthlyRent": 1320,
+      "densityPer10k": {
+        "commercio": 524.47,
+        "ristorazione": 186.46,
+        "artigianato": 309.57,
+        "servizi": 223.85
+      },
+      "densityIndex": {
+        "commercio": 0.888,
+        "ristorazione": 0.894,
+        "artigianato": 1.357,
+        "servizi": 0.9
+      }
+    },
+    {
+      "id": "genova",
+      "label": "Genova",
+      "provinceCode": "GE",
+      "regionId": "liguria",
+      "regionLabel": "Liguria",
+      "population": 566247,
+      "firmsTotal": 69132,
+      "firmsBySector": {
+        "commercio": 17448,
+        "ristorazione": 6418,
+        "artigianato": 5130,
+        "servizi": 6237
+      },
+      "firmsByAteco": {
+        "G": 17448,
+        "I": 6418,
+        "C": 5130,
+        "N": 3032,
+        "O": 3205
+      },
+      "rentEurPerSqmMonth": 12.5,
+      "monthlyRent": 1000,
+      "densityPer10k": {
+        "commercio": 308.13,
+        "ristorazione": 113.34,
+        "artigianato": 90.6,
+        "servizi": 110.15
+      },
+      "densityIndex": {
+        "commercio": 0.522,
+        "ristorazione": 0.543,
+        "artigianato": 0.397,
+        "servizi": 0.443
+      }
+    },
+    {
+      "id": "bari",
+      "label": "Bari",
+      "provinceCode": "BA",
+      "regionId": "puglia",
+      "regionLabel": "Puglia",
+      "population": 316248,
+      "firmsTotal": 122780,
+      "firmsBySector": {
+        "commercio": 31232,
+        "ristorazione": 9031,
+        "artigianato": 9638,
+        "servizi": 8621
+      },
+      "firmsByAteco": {
+        "G": 31232,
+        "I": 9031,
+        "C": 9638,
+        "N": 4656,
+        "O": 3965
+      },
+      "rentEurPerSqmMonth": 10.5,
+      "monthlyRent": 840,
+      "densityPer10k": {
+        "commercio": 987.58,
+        "ristorazione": 285.57,
+        "artigianato": 304.76,
+        "servizi": 272.6
+      },
+      "densityIndex": {
+        "commercio": 1.672,
+        "ristorazione": 1.369,
+        "artigianato": 1.336,
+        "servizi": 1.097
+      }
+    },
+    {
+      "id": "catania",
+      "label": "Catania",
+      "provinceCode": "CT",
+      "regionId": "sicilia",
+      "regionLabel": "Sicilia",
+      "population": 296984,
+      "firmsTotal": 79957,
+      "firmsBySector": {
+        "commercio": 23717,
+        "ristorazione": 5785,
+        "artigianato": 5673,
+        "servizi": 5591
+      },
+      "firmsByAteco": {
+        "G": 23717,
+        "I": 5785,
+        "C": 5673,
+        "N": 2591,
+        "O": 3000
+      },
+      "rentEurPerSqmMonth": 10.0,
+      "monthlyRent": 800,
+      "densityPer10k": {
+        "commercio": 798.6,
+        "ristorazione": 194.79,
+        "artigianato": 191.02,
+        "servizi": 188.26
+      },
+      "densityIndex": {
+        "commercio": 1.352,
+        "ristorazione": 0.934,
+        "artigianato": 0.837,
+        "servizi": 0.757
+      }
+    },
+    {
+      "id": "padova",
+      "label": "Padova",
+      "provinceCode": "PD",
+      "regionId": "veneto",
+      "regionLabel": "Veneto",
+      "population": 207695,
+      "firmsTotal": 83575,
+      "firmsBySector": {
+        "commercio": 17825,
+        "ristorazione": 4342,
+        "artigianato": 9152,
+        "servizi": 7951
+      },
+      "firmsByAteco": {
+        "G": 17825,
+        "I": 4342,
+        "C": 9152,
+        "N": 4766,
+        "O": 3185
+      },
+      "rentEurPerSqmMonth": 11.0,
+      "monthlyRent": 880,
+      "densityPer10k": {
+        "commercio": 858.23,
+        "ristorazione": 209.06,
+        "artigianato": 440.65,
+        "servizi": 382.82
+      },
+      "densityIndex": {
+        "commercio": 1.453,
+        "ristorazione": 1.002,
+        "artigianato": 1.931,
+        "servizi": 1.54
+      }
+    },
+    {
+      "id": "brescia",
+      "label": "Brescia",
+      "provinceCode": "BS",
+      "regionId": "lombardia",
+      "regionLabel": "Lombardia",
+      "population": 196446,
+      "firmsTotal": 104481,
+      "firmsBySector": {
+        "commercio": 19242,
+        "ristorazione": 7465,
+        "artigianato": 12495,
+        "servizi": 11163
+      },
+      "firmsByAteco": {
+        "G": 19242,
+        "I": 7465,
+        "C": 12495,
+        "N": 6913,
+        "O": 4250
+      },
+      "rentEurPerSqmMonth": 10.5,
+      "monthlyRent": 840,
+      "densityPer10k": {
+        "commercio": 979.51,
+        "ristorazione": 380.0,
+        "artigianato": 636.05,
+        "servizi": 568.25
+      },
+      "densityIndex": {
+        "commercio": 1.658,
+        "ristorazione": 1.822,
+        "artigianato": 2.788,
+        "servizi": 2.286
+      }
+    },
+    {
+      "id": "bergamo",
+      "label": "Bergamo",
+      "provinceCode": "BG",
+      "regionId": "lombardia",
+      "regionLabel": "Lombardia",
+      "population": 119519,
+      "firmsTotal": 82803,
+      "firmsBySector": {
+        "commercio": 15523,
+        "ristorazione": 5540,
+        "artigianato": 9503,
+        "servizi": 7926
+      },
+      "firmsByAteco": {
+        "G": 15523,
+        "I": 5540,
+        "C": 9503,
+        "N": 4519,
+        "O": 3407
+      },
+      "rentEurPerSqmMonth": 11.0,
+      "monthlyRent": 880,
+      "densityPer10k": {
+        "commercio": 1298.79,
+        "ristorazione": 463.52,
+        "artigianato": 795.1,
+        "servizi": 663.16
+      },
+      "densityIndex": {
+        "commercio": 2.198,
+        "ristorazione": 2.222,
+        "artigianato": 3.485,
+        "servizi": 2.668
+      }
+    },
+    {
+      "id": "modena",
+      "label": "Modena",
+      "provinceCode": "MO",
+      "regionId": "emilia",
+      "regionLabel": "Emilia-Romagna",
+      "population": 184153,
+      "firmsTotal": 62890,
+      "firmsBySector": {
+        "commercio": 11577,
+        "ristorazione": 3887,
+        "artigianato": 7944,
+        "servizi": 5510
+      },
+      "firmsByAteco": {
+        "G": 11577,
+        "I": 3887,
+        "C": 7944,
+        "N": 3328,
+        "O": 2182
+      },
+      "rentEurPerSqmMonth": 10.0,
+      "monthlyRent": 800,
+      "densityPer10k": {
+        "commercio": 628.66,
+        "ristorazione": 211.07,
+        "artigianato": 431.38,
+        "servizi": 299.21
+      },
+      "densityIndex": {
+        "commercio": 1.064,
+        "ristorazione": 1.012,
+        "artigianato": 1.891,
+        "servizi": 1.204
+      }
+    },
+    {
+      "id": "parma",
+      "label": "Parma",
+      "provinceCode": "PR",
+      "regionId": "emilia",
+      "regionLabel": "Emilia-Romagna",
+      "population": 196887,
+      "firmsTotal": 38526,
+      "firmsBySector": {
+        "commercio": 7011,
+        "ristorazione": 2584,
+        "artigianato": 4673,
+        "servizi": 3602
+      },
+      "firmsByAteco": {
+        "G": 7011,
+        "I": 2584,
+        "C": 4673,
+        "N": 1995,
+        "O": 1607
+      },
+      "rentEurPerSqmMonth": 10.5,
+      "monthlyRent": 840,
+      "densityPer10k": {
+        "commercio": 356.09,
+        "ristorazione": 131.24,
+        "artigianato": 237.34,
+        "servizi": 182.95
+      },
+      "densityIndex": {
+        "commercio": 0.603,
+        "ristorazione": 0.629,
+        "artigianato": 1.04,
+        "servizi": 0.736
+      }
+    },
+    {
+      "id": "salerno",
+      "label": "Salerno",
+      "provinceCode": "SA",
+      "regionId": "campania",
+      "regionLabel": "Campania",
+      "population": 127247,
+      "firmsTotal": 99129,
+      "firmsBySector": {
+        "commercio": 28067,
+        "ristorazione": 9777,
+        "artigianato": 7679,
+        "servizi": 6653
+      },
+      "firmsByAteco": {
+        "G": 28067,
+        "I": 9777,
+        "C": 7679,
+        "N": 3348,
+        "O": 3305
+      },
+      "rentEurPerSqmMonth": 9.5,
+      "monthlyRent": 760,
+      "densityPer10k": {
+        "commercio": 2205.71,
+        "ristorazione": 768.35,
+        "artigianato": 603.47,
+        "servizi": 522.84
+      },
+      "densityIndex": {
+        "commercio": 3.733,
+        "ristorazione": 3.684,
+        "artigianato": 2.645,
+        "servizi": 2.103
+      }
+    },
+    {
+      "id": "messina",
+      "label": "Messina",
+      "provinceCode": "ME",
+      "regionId": "sicilia",
+      "regionLabel": "Sicilia",
+      "population": 216458,
+      "firmsTotal": 47845,
+      "firmsBySector": {
+        "commercio": 13194,
+        "ristorazione": 4505,
+        "artigianato": 3657,
+        "servizi": 3070
+      },
+      "firmsByAteco": {
+        "G": 13194,
+        "I": 4505,
+        "C": 3657,
+        "N": 1374,
+        "O": 1696
+      },
+      "rentEurPerSqmMonth": 9.0,
+      "monthlyRent": 720,
+      "densityPer10k": {
+        "commercio": 609.54,
+        "ristorazione": 208.12,
+        "artigianato": 168.95,
+        "servizi": 141.83
+      },
+      "densityIndex": {
+        "commercio": 1.032,
+        "ristorazione": 0.998,
+        "artigianato": 0.74,
+        "servizi": 0.571
+      }
+    },
+    {
+      "id": "cagliari",
+      "label": "Cagliari",
+      "provinceCode": "CA",
+      "regionId": "sardegna",
+      "regionLabel": "Sardegna",
+      "population": 148117,
+      "firmsTotal": 56362,
+      "firmsBySector": {
+        "commercio": 14361,
+        "ristorazione": 5175,
+        "artigianato": 3469,
+        "servizi": 4162
+      },
+      "firmsByAteco": {
+        "G": 14361,
+        "I": 5175,
+        "C": 3469,
+        "N": 1913,
+        "O": 2249
+      },
+      "rentEurPerSqmMonth": 10.0,
+      "monthlyRent": 800,
+      "densityPer10k": {
+        "commercio": 969.57,
+        "ristorazione": 349.39,
+        "artigianato": 234.21,
+        "servizi": 280.99
+      },
+      "densityIndex": {
+        "commercio": 1.641,
+        "ristorazione": 1.675,
+        "artigianato": 1.027,
+        "servizi": 1.13
+      }
+    }
+  ]
+}

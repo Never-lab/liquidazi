@@ -4,8 +4,8 @@ import { PayrollPanel } from "../components/PayrollPanel";
 import { ReportPanel } from "../components/ReportPanel";
 import { TaxPanel } from "../components/TaxPanel";
 import { formatCash } from "../components/formatCash";
-import { sectorById, zoneById } from "../config/market";
-import { marketModifiers } from "../sim/market";
+import { cityById, sectorById } from "../config/market";
+import { marketModifiersFromIndex } from "../sim/market";
 import { useGameStore } from "../store/gameStore";
 import styles from "./GameHUD.module.css";
 
@@ -18,9 +18,9 @@ export const GameHUD = () => {
   const company = useGameStore((s) => s.game.company);
   const calendar = useGameStore((s) => s.game.calendar);
   const doAdvanceMonth = useGameStore((s) => s.advanceMonth);
-  const mods = marketModifiers(company.rivals);
-  const zone = zoneById(company.zone);
+  const city = cityById(company.city);
   const sector = sectorById(company.sector);
+  const mods = marketModifiersFromIndex(company.densityIndex);
 
   return (
     <div className={styles.hud}>
@@ -44,11 +44,11 @@ export const GameHUD = () => {
       <section className={styles.card}>
         <h2 className={styles.cardLabel}>Mercato</h2>
         <p className={styles.cardValue}>
-          {zone.label} · {sector.label}
+          {city.label} · {sector.label}
         </p>
         <p className={styles.cardHint}>
-          {company.rivals} rivali ({mods.pressureLabel}) · affitto{" "}
-          {formatCash(company.monthlyRent)}/mese
+          {city.regionLabel} · {company.firmsInSector.toLocaleString("it-IT")} imprese in provincia
+          · pressione {mods.pressureLabel} · affitto {formatCash(company.monthlyRent)}/mese
         </p>
       </section>
 

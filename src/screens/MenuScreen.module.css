@@ -93,3 +93,8 @@
 .preview p:last-child {
   margin-bottom: 0;
 }
+
+.previewNote {
+  font-size: 12px !important;
+  color: var(--color-text-muted);
+}

@@ -1,5 +1,5 @@
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
-import { marketModifiers } from "./market";
+import { marketModifiersFromIndex } from "./market";
 import {
   round2,
   toMonthIndex,
@@ -11,7 +11,7 @@ import {
 const addInvoice = (state: GameState, kind: InvoiceKind, net: number): GameState => {
   const next = structuredClone(state);
   const idx = toMonthIndex(next.calendar);
-  const mods = marketModifiers(next.company.rivals);
+  const mods = marketModifiersFromIndex(next.company.densityIndex);
   const scaledNet = round2(net * (kind === "AR" ? mods.priceFactor : mods.costFactor));
   const vat = round2(scaledNet * snap.iva_standard_rate);
   next.invoices.push({

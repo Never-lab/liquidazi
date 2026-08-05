@@ -9,9 +9,10 @@ export const TutorialScreen = () => {
       <h2 className={styles.title}>Come funziona l&apos;Italia in questo gioco</h2>
       <ol className={styles.bullets}>
         <li>
-          <strong>Zona e concorrenza contano.</strong> Più rivali nello stesso
-          settore e nella stessa zona: prezzi di vendita più bassi e costi più
-          alti. L&apos;affitto mensile dipende dalla regione.
+          <strong>Regione, città e concorrenza contano.</strong> Lo stock
+          InfoCamere di imprese nel settore (provincia) e la densità rispetto
+          alla mediana del pack spostano prezzi e costi; l&apos;affitto usa
+          medie €/mq di mercato × 80 mq.
         </li>
         <li>
           <strong>Cassa ≠ utile.</strong> Le fatture incassano (e pagano) il

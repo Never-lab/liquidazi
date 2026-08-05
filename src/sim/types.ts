@@ -2,21 +2,23 @@
  * Core simulation types for Liquidazi.
  * Fiscal entities grow phase by phase; all rates come from
  * src/config/fiscalYearSnapshot.ts — never hardcoded here.
- * Zone/sector market pack lives in src/config/market.ts.
+ * Region/city market pack lives in src/config/market.ts (+ marketPack.json).
  */
 
-import { RIVALRY, zoneById, type SectorId, type ZoneId } from "../config/market";
+import { cityById, type CityId, type SectorId } from "../config/market";
 
-export type { SectorId, ZoneId };
+export type { CityId, SectorId };
 
 export interface Company {
   name: string;
   cash: number;
-  zone: ZoneId;
+  city: CityId;
   sector: SectorId;
-  /** competing firms already in the same zone+sector */
-  rivals: number;
-  /** monthly locale / rent cost from the chosen zone */
+  /** InfoCamere: imprese attive in provincia nel settore (ATECO mappato) */
+  firmsInSector: number;
+  /** densità settore vs mediana pack (1 = mediana) */
+  densityIndex: number;
+  /** monthly locale rent = €/mq annunci × 80 mq sede tipo */
   monthlyRent: number;
 }
 
@@ -146,24 +148,26 @@ export const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 export interface NewGameOptions {
   name?: string;
-  zone: ZoneId;
+  city: CityId;
   sector: SectorId;
 }
 
 export const createInitialGameState = (opts?: NewGameOptions): GameState => {
-  const zone = opts?.zone ?? "veneto";
+  // Bare createInitialGameState() (tests): Parma/servizi ≈ mediana densità, no rent.
+  // Setup UI always passes opts so real rent + InfoCamere density apply.
+  const city = opts?.city ?? "parma";
   const sector = opts?.sector ?? "servizi";
-  // Bare createInitialGameState() (tests / resume seed): neutral competition, no rent.
-  // Setup UI always passes opts so rent + real rivalry apply.
   const withMarket = Boolean(opts);
+  const spot = cityById(city);
   return {
     company: {
       name: opts?.name?.trim() || "La Mia SRL",
       cash: 10000,
-      zone,
+      city,
       sector,
-      rivals: withMarket ? RIVALRY[zone][sector] : 3,
-      monthlyRent: withMarket ? zoneById(zone).monthlyRent : 0,
+      firmsInSector: withMarket ? spot.firmsBySector[sector] : spot.firmsBySector[sector],
+      densityIndex: withMarket ? spot.densityIndex[sector] : 1,
+      monthlyRent: withMarket ? spot.monthlyRent : 0,
     },
     calendar: {
       month: 1,

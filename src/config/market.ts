@@ -1,64 +1,82 @@
 /**
- * Educational market pack: Italian zones + sectors + rivalry counts.
- * Numbers are game design, not ISTAT — they only teach "more rivals → harder margins".
+ * Market geography + competition pack.
+ * Raw figures live in marketPack.json (InfoCamere / ISTAT / rent averages).
+ * Do not invent rival counts — read from the pack.
  */
-
-export type ZoneId =
-  | "lombardia"
-  | "veneto"
-  | "emilia"
-  | "lazio"
-  | "campania"
-  | "sicilia";
+import pack from "./marketPack.json";
 
 export type SectorId = "commercio" | "servizi" | "artigianato" | "ristorazione";
-
-export interface ZoneDef {
-  id: ZoneId;
-  label: string;
-  /** flat monthly rent / locale cost (game euros) */
-  monthlyRent: number;
-}
+export type RegionId = (typeof pack.cities)[number]["regionId"];
+export type CityId = (typeof pack.cities)[number]["id"];
 
 export interface SectorDef {
   id: SectorId;
   label: string;
+  ateco: string;
 }
 
-export const ZONES: ZoneDef[] = [
-  { id: "lombardia", label: "Lombardia", monthlyRent: 900 },
-  { id: "veneto", label: "Veneto", monthlyRent: 700 },
-  { id: "emilia", label: "Emilia-Romagna", monthlyRent: 750 },
-  { id: "lazio", label: "Lazio", monthlyRent: 850 },
-  { id: "campania", label: "Campania", monthlyRent: 550 },
-  { id: "sicilia", label: "Sicilia", monthlyRent: 450 },
-];
+export interface RegionDef {
+  id: RegionId;
+  label: string;
+}
+
+export interface CityDef {
+  id: CityId;
+  label: string;
+  provinceCode: string;
+  regionId: RegionId;
+  regionLabel: string;
+  population: number;
+  firmsTotal: number;
+  firmsBySector: Record<SectorId, number>;
+  monthlyRent: number;
+  rentEurPerSqmMonth: number;
+  densityPer10k: Record<SectorId, number>;
+  densityIndex: Record<SectorId, number>;
+}
+
+export const MARKET_PACK_META = {
+  version: pack.version,
+  asOf: pack.asOf,
+  localeSqmAssumption: pack.localeSqmAssumption,
+  sources: pack.sources,
+  notes: pack.notes,
+} as const;
 
 export const SECTORS: SectorDef[] = [
-  { id: "commercio", label: "Commercio" },
-  { id: "servizi", label: "Servizi" },
-  { id: "artigianato", label: "Artigianato" },
-  { id: "ristorazione", label: "Ristorazione" },
+  { id: "commercio", label: "Commercio", ateco: "G" },
+  { id: "servizi", label: "Servizi professionali / supporto", ateco: "N+O" },
+  { id: "artigianato", label: "Manifattura / artigianato", ateco: "C" },
+  { id: "ristorazione", label: "Alloggio e ristorazione", ateco: "I" },
 ];
 
-/** Rivals already in that zone+sector when you open shop. */
-export const RIVALRY: Record<ZoneId, Record<SectorId, number>> = {
-  lombardia: { commercio: 6, servizi: 5, artigianato: 3, ristorazione: 7 },
-  veneto: { commercio: 4, servizi: 3, artigianato: 4, ristorazione: 5 },
-  emilia: { commercio: 3, servizi: 3, artigianato: 5, ristorazione: 4 },
-  lazio: { commercio: 5, servizi: 4, artigianato: 2, ristorazione: 6 },
-  campania: { commercio: 4, servizi: 2, artigianato: 3, ristorazione: 5 },
-  sicilia: { commercio: 2, servizi: 1, artigianato: 2, ristorazione: 3 },
+export const CITIES: CityDef[] = pack.cities as CityDef[];
+
+export const REGIONS: RegionDef[] = Array.from(
+  new Map(CITIES.map((c) => [c.regionId, { id: c.regionId, label: c.regionLabel }])).values(),
+).sort((a, b) => a.label.localeCompare(b.label, "it"));
+
+export const cityById = (id: CityId): CityDef => {
+  const c = CITIES.find((x) => x.id === id);
+  if (!c) throw new Error(`unknown city ${id}`);
+  return c;
 };
 
-export const zoneById = (id: ZoneId): ZoneDef => {
-  const z = ZONES.find((x) => x.id === id);
-  if (!z) throw new Error(`unknown zone ${id}`);
-  return z;
-};
+export const citiesInRegion = (regionId: RegionId): CityDef[] =>
+  CITIES.filter((c) => c.regionId === regionId).sort((a, b) =>
+    a.label.localeCompare(b.label, "it"),
+  );
 
 export const sectorById = (id: SectorId): SectorDef => {
   const s = SECTORS.find((x) => x.id === id);
   if (!s) throw new Error(`unknown sector ${id}`);
   return s;
 };
+
+/** Firms already active in the province for that game sector (InfoCamere). */
+export const firmsInSector = (cityId: CityId, sector: SectorId): number =>
+  cityById(cityId).firmsBySector[sector];
+
+/** Competition pressure index vs pack median (1 = median). */
+export const densityIndexFor = (cityId: CityId, sector: SectorId): number =>
+  cityById(cityId).densityIndex[sector];

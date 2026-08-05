@@ -54,17 +54,25 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: "liquidazi-save",
-      version: 2,
+      version: 3,
       partialize: (state) => ({ game: state.game, screen: state.screen }),
       migrate: (persisted) => {
         const state = persisted as { game?: GameState; screen?: Screen };
         const game = state.game ?? createInitialGameState();
-        // Old saves lack zone/sector — park them in a neutral market.
-        if (!game.company.zone) {
-          const patched = createInitialGameState({ zone: "veneto", sector: "servizi" });
-          patched.company.name = game.company.name;
-          patched.company.cash = game.company.cash;
-          return { game: { ...game, company: { ...game.company, ...patched.company } }, screen: state.screen ?? "menu" };
+        // Old saves without city — restart on a neutral Parma/servizi seed for location fields.
+        if (!("city" in game.company) || !(game.company as { city?: string }).city) {
+          const patched = createInitialGameState({ city: "parma", sector: "servizi" });
+          return {
+            game: {
+              ...game,
+              company: {
+                ...patched.company,
+                name: game.company.name,
+                cash: game.company.cash,
+              },
+            },
+            screen: state.screen === "setup" ? "setup" : (state.screen ?? "menu"),
+          };
         }
         return { game, screen: state.screen ?? "menu" };
       },
