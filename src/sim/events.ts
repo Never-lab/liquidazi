@@ -58,7 +58,7 @@ export const monthlyCapacity = (state: GameState): number => {
   const points = staffCapacityPoints(state);
   const core = Math.min(points, STAFF_FULL_VALUE);
   const extra = Math.max(0, points - STAFF_FULL_VALUE);
-  const staffSlots = core + Math.floor(extra / 3);
+  const staffSlots = Math.floor(core + Math.floor(extra / 3));
   const repBonus = Math.floor(state.company.reputation / 40);
   const processi = hasUpgrade(state.upgrades, "processi") ? 1 : 0;
   const temp = (state.tempCapacityMonths ?? 0) > 0 ? 1 : 0;

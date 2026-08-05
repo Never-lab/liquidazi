@@ -54,6 +54,15 @@ describe("ruoli differenziati", () => {
     expect(staffCapacityPoints(withImp)).toBe(0.35);
   });
 
+  it("1 Impiegato solo non aumenta monthlyCapacity (floor 0.35 → 0 slot)", () => {
+    const base = createInitialGameState({ city: "058091", sector: "servizi" });
+    const cap0 = monthlyCapacity(base);
+    const withImp = hireEmployee(base, "Impiegato");
+    expect(staffCapacityPoints(withImp)).toBe(0.35);
+    expect(monthlyCapacity(withImp)).toBe(cap0);
+    expect(monthlyCapacity(withImp) - cap0).toBe(0);
+  });
+
   it("Impiegato alza i lead sale vs solo Operaio a parità di nextId seed", () => {
     let op = createInitialGameState({ city: "058091", sector: "servizi" });
     op = hireEmployee(op, "Operaio");
