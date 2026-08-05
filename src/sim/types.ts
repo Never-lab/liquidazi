@@ -5,7 +5,14 @@
  * Region/city market pack lives in src/config/market.ts (+ marketPack.json).
  */
 
-import { cityById, type CityId, type SectorId } from "../config/market";
+import {
+  DEFAULT_CITY_ID,
+  densityIndexFor,
+  firmsInSector,
+  monthlyRentFor,
+  type CityId,
+  type SectorId,
+} from "../config/market";
 
 export type { CityId, SectorId };
 
@@ -16,9 +23,9 @@ export interface Company {
   sector: SectorId;
   /** InfoCamere: imprese attive in provincia nel settore (ATECO mappato) */
   firmsInSector: number;
-  /** densità settore vs mediana pack (1 = mediana) */
+  /** densità settore vs mediana capoluoghi (1 = mediana) */
   densityIndex: number;
-  /** monthly locale rent = €/mq annunci × 80 mq sede tipo */
+  /** monthly locale rent = €/mq × 80 mq sede tipo */
   monthlyRent: number;
 }
 
@@ -153,21 +160,20 @@ export interface NewGameOptions {
 }
 
 export const createInitialGameState = (opts?: NewGameOptions): GameState => {
-  // Bare createInitialGameState() (tests): Parma/servizi ≈ mediana densità, no rent.
+  // Bare createInitialGameState() (tests): densità forzata a 1, no rent.
   // Setup UI always passes opts so real rent + InfoCamere density apply.
-  const city = opts?.city ?? "parma";
+  const city = opts?.city ?? DEFAULT_CITY_ID;
   const sector = opts?.sector ?? "servizi";
   const withMarket = Boolean(opts);
-  const spot = cityById(city);
   return {
     company: {
       name: opts?.name?.trim() || "La Mia SRL",
       cash: 10000,
       city,
       sector,
-      firmsInSector: withMarket ? spot.firmsBySector[sector] : spot.firmsBySector[sector],
-      densityIndex: withMarket ? spot.densityIndex[sector] : 1,
-      monthlyRent: withMarket ? spot.monthlyRent : 0,
+      firmsInSector: firmsInSector(city, sector),
+      densityIndex: withMarket ? densityIndexFor(city, sector) : 1,
+      monthlyRent: withMarket ? monthlyRentFor(city) : 0,
     },
     calendar: {
       month: 1,

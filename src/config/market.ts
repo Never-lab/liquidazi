@@ -1,13 +1,12 @@
 /**
- * Market geography + competition pack.
- * Raw figures live in marketPack.json (InfoCamere / ISTAT / rent averages).
- * Do not invent rival counts — read from the pack.
+ * Market geography from ISTAT (all regions + comuni) + InfoCamere provincial firm stocks.
  */
-import pack from "./marketPack.json";
+import geo from "./istatGeo.json";
+import firms from "./provinceFirms.json";
 
 export type SectorId = "commercio" | "servizi" | "artigianato" | "ristorazione";
-export type RegionId = (typeof pack.cities)[number]["regionId"];
-export type CityId = (typeof pack.cities)[number]["id"];
+export type RegionId = string;
+export type CityId = string; // ISTAT codice comune alfanumerico (6)
 
 export interface SectorDef {
   id: SectorId;
@@ -23,24 +22,22 @@ export interface RegionDef {
 export interface CityDef {
   id: CityId;
   label: string;
-  provinceCode: string;
   regionId: RegionId;
   regionLabel: string;
-  population: number;
-  firmsTotal: number;
-  firmsBySector: Record<SectorId, number>;
-  monthlyRent: number;
-  rentEurPerSqmMonth: number;
-  densityPer10k: Record<SectorId, number>;
-  densityIndex: Record<SectorId, number>;
+  provinceCode: string;
+  provinceLabel: string;
+  capoluogo: boolean;
+  population: number | null;
 }
 
 export const MARKET_PACK_META = {
-  version: pack.version,
-  asOf: pack.asOf,
-  localeSqmAssumption: pack.localeSqmAssumption,
-  sources: pack.sources,
-  notes: pack.notes,
+  geoSource: geo.source,
+  geoAsOf: geo.asOf,
+  firmsSource: firms.source,
+  firmsAsOf: firms.asOf,
+  localeSqmAssumption: firms.localeSqmAssumption,
+  notes: firms.notes,
+  populationSource: geo.populationSource,
 } as const;
 
 export const SECTORS: SectorDef[] = [
@@ -50,22 +47,35 @@ export const SECTORS: SectorDef[] = [
   { id: "ristorazione", label: "Alloggio e ristorazione", ateco: "I" },
 ];
 
-export const CITIES: CityDef[] = pack.cities as CityDef[];
+export const REGIONS: RegionDef[] = (geo.regions as RegionDef[]).slice().sort((a, b) =>
+  a.label.localeCompare(b.label, "it"),
+);
 
-export const REGIONS: RegionDef[] = Array.from(
-  new Map(CITIES.map((c) => [c.regionId, { id: c.regionId, label: c.regionLabel }])).values(),
-).sort((a, b) => a.label.localeCompare(b.label, "it"));
+const regionLabel = Object.fromEntries(REGIONS.map((r) => [r.id, r.label]));
+
+export const CITIES: CityDef[] = (geo.comuni as Array<{
+  id: string;
+  label: string;
+  regionId: string;
+  provinceCode: string;
+  provinceLabel: string;
+  capoluogo: boolean;
+  population: number | null;
+}>).map((c) => ({
+  ...c,
+  regionLabel: regionLabel[c.regionId] ?? c.regionId,
+}));
+
+const cityIndex = new Map(CITIES.map((c) => [c.id, c]));
 
 export const cityById = (id: CityId): CityDef => {
-  const c = CITIES.find((x) => x.id === id);
+  const c = cityIndex.get(id);
   if (!c) throw new Error(`unknown city ${id}`);
   return c;
 };
 
 export const citiesInRegion = (regionId: RegionId): CityDef[] =>
-  CITIES.filter((c) => c.regionId === regionId).sort((a, b) =>
-    a.label.localeCompare(b.label, "it"),
-  );
+  CITIES.filter((c) => c.regionId === regionId);
 
 export const sectorById = (id: SectorId): SectorDef => {
   const s = SECTORS.find((x) => x.id === id);
@@ -73,10 +83,51 @@ export const sectorById = (id: SectorId): SectorDef => {
   return s;
 };
 
-/** Firms already active in the province for that game sector (InfoCamere). */
-export const firmsInSector = (cityId: CityId, sector: SectorId): number =>
-  cityById(cityId).firmsBySector[sector];
+const provinceFirms = firms.provinces as Record<
+  string,
+  {
+    firmsBySector: Record<SectorId, number>;
+    firmsTotal: number;
+  }
+>;
 
-/** Competition pressure index vs pack median (1 = median). */
-export const densityIndexFor = (cityId: CityId, sector: SectorId): number =>
-  cityById(cityId).densityIndex[sector];
+const medians = firms.densityMediansPer10k as Record<SectorId, number>;
+const provinceRent = firms.provinceRentEurPerSqmMonth as Record<string, number>;
+const regionRent = firms.regionRentEurPerSqmMonth as Record<string, number>;
+const localeSqm = firms.localeSqmAssumption as number;
+
+export const firmsInSector = (cityId: CityId, sector: SectorId): number => {
+  const city = cityById(cityId);
+  return provinceFirms[city.provinceCode]?.firmsBySector[sector] ?? 0;
+};
+
+export const densityPer10k = (cityId: CityId, sector: SectorId): number => {
+  const city = cityById(cityId);
+  const firmsN = firmsInSector(cityId, sector);
+  const pop = city.population;
+  if (!pop || pop <= 0) return medians[sector] ?? 1;
+  return (firmsN / pop) * 10000;
+};
+
+export const densityIndexFor = (cityId: CityId, sector: SectorId): number => {
+  const d = densityPer10k(cityId, sector);
+  const med = medians[sector] || 1;
+  return d / med;
+};
+
+export const monthlyRentFor = (cityId: CityId): number => {
+  const city = cityById(cityId);
+  const eurMq =
+    provinceRent[city.provinceCode] ??
+    regionRent[city.regionId] ??
+    10;
+  return Math.round(eurMq * localeSqm);
+};
+
+export const rentEurPerSqmFor = (cityId: CityId): number => {
+  const city = cityById(cityId);
+  return provinceRent[city.provinceCode] ?? regionRent[city.regionId] ?? 10;
+};
+
+/** Default city for tests / bare init: Parma (ISTAT 034027). */
+export const DEFAULT_CITY_ID: CityId = "034027";

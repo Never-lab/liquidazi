@@ -54,27 +54,15 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: "liquidazi-save",
-      version: 3,
+      version: 4,
       partialize: (state) => ({ game: state.game, screen: state.screen }),
       migrate: (persisted) => {
         const state = persisted as { game?: GameState; screen?: Screen };
-        const game = state.game ?? createInitialGameState();
-        // Old saves without city — restart on a neutral Parma/servizi seed for location fields.
-        if (!("city" in game.company) || !(game.company as { city?: string }).city) {
-          const patched = createInitialGameState({ city: "parma", sector: "servizi" });
-          return {
-            game: {
-              ...game,
-              company: {
-                ...patched.company,
-                name: game.company.name,
-                cash: game.company.cash,
-              },
-            },
-            screen: state.screen === "setup" ? "setup" : (state.screen ?? "menu"),
-          };
-        }
-        return { game, screen: state.screen ?? "menu" };
+        // City ids are now ISTAT codes — old slug saves reset location fields.
+        return {
+          game: createInitialGameState(),
+          screen: state.screen === "game" ? "menu" : (state.screen ?? "menu"),
+        };
       },
     },
   ),

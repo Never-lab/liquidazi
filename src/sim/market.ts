@@ -1,19 +1,20 @@
-import { densityIndexFor, firmsInSector, type CityId, type SectorId } from "../config/market";
+import {
+  densityIndexFor,
+  densityPer10k,
+  firmsInSector,
+  type CityId,
+  type SectorId,
+} from "../config/market";
 
 export interface MarketModifiers {
-  /** multiplies customer invoice net ( >1 bonus, <1 malus ) */
   priceFactor: number;
-  /** multiplies supplier cost net ( >1 more expensive inputs under pressure ) */
   costFactor: number;
   pressureLabel: "bassa" | "media" | "alta" | "molto alta";
   densityIndex: number;
+  densityPer10k: number;
   firmsInSector: number;
 }
 
-/**
- * Map InfoCamere density index (city vs pack median) onto price/cost factors.
- * Index 1.0 = mediana del pack; above = more crowded sector locally.
- */
 export const marketModifiersFromIndex = (
   densityIndex: number,
 ): Pick<MarketModifiers, "priceFactor" | "costFactor" | "pressureLabel"> => {
@@ -34,6 +35,7 @@ export const marketModifiersFor = (cityId: CityId, sector: SectorId): MarketModi
   return {
     ...marketModifiersFromIndex(densityIndex),
     densityIndex,
+    densityPer10k: densityPer10k(cityId, sector),
     firmsInSector: firmsInSector(cityId, sector),
   };
 };

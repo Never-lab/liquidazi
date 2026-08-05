@@ -4,7 +4,7 @@ import { PayrollPanel } from "../components/PayrollPanel";
 import { ReportPanel } from "../components/ReportPanel";
 import { TaxPanel } from "../components/TaxPanel";
 import { formatCash } from "../components/formatCash";
-import { cityById, sectorById } from "../config/market";
+import { cityById } from "../config/market";
 import { marketModifiersFromIndex } from "../sim/market";
 import { useGameStore } from "../store/gameStore";
 import styles from "./GameHUD.module.css";
@@ -19,7 +19,6 @@ export const GameHUD = () => {
   const calendar = useGameStore((s) => s.game.calendar);
   const doAdvanceMonth = useGameStore((s) => s.advanceMonth);
   const city = cityById(company.city);
-  const sector = sectorById(company.sector);
   const mods = marketModifiersFromIndex(company.densityIndex);
 
   return (
@@ -44,11 +43,11 @@ export const GameHUD = () => {
       <section className={styles.card}>
         <h2 className={styles.cardLabel}>Mercato</h2>
         <p className={styles.cardValue}>
-          {city.label} · {sector.label}
+          {city.label} ({city.provinceCode})
         </p>
         <p className={styles.cardHint}>
           {city.regionLabel} · {company.firmsInSector.toLocaleString("it-IT")} imprese in provincia
-          · pressione {mods.pressureLabel} · affitto {formatCash(company.monthlyRent)}/mese
+          · {mods.pressureLabel} · affitto {formatCash(company.monthlyRent)}/mese
         </p>
       </section>
 
