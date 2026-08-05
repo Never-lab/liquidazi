@@ -8,6 +8,9 @@ import {
 } from "../config/staffPay";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { round2 } from "./types";
+import { hireEmployee } from "./actions";
+import { generateOpportunities, monthlyCapacity, staffCapacityPoints } from "./events";
+import { createInitialGameState } from "./types";
 
 describe("staffPay config", () => {
   it("tre ruoli con punti distinti", () => {
@@ -31,5 +34,36 @@ describe("staffPay config", () => {
     const expected =
       g * (1 + snap.inps_employer_rate) + g * snap.tfr_accrual_factor;
     expect(employerCostMonthly(g)).toBe(round2(expected));
+  });
+});
+
+describe("ruoli differenziati", () => {
+  it("hire usa lordo settore", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s = hireEmployee(s, "Operaio");
+    expect(s.employees[0]!.grossMonthly).toBe(1650);
+    expect(s.employees[0]!.senioritySteps).toBe(0);
+  });
+
+  it("1 Operaio dà più capacità di 1 Impiegato", () => {
+    const base = createInitialGameState({ city: "058091", sector: "servizi" });
+    const withOp = hireEmployee(base, "Operaio");
+    const withImp = hireEmployee(base, "Impiegato");
+    expect(monthlyCapacity(withOp)).toBeGreaterThan(monthlyCapacity(withImp));
+    expect(staffCapacityPoints(withOp)).toBe(1);
+    expect(staffCapacityPoints(withImp)).toBe(0.35);
+  });
+
+  it("Impiegato alza i lead sale vs solo Operaio a parità di nextId seed", () => {
+    let op = createInitialGameState({ city: "058091", sector: "servizi" });
+    op = hireEmployee(op, "Operaio");
+    let imp = createInitialGameState({ city: "058091", sector: "servizi" });
+    imp = hireEmployee(imp, "Impiegato");
+    // Force same board seed inputs
+    op = { ...op, nextId: 50, monthsPlayed: 2 };
+    imp = { ...imp, nextId: 50, monthsPlayed: 2 };
+    const salesOp = generateOpportunities(op).ops.filter((o) => o.kind === "sale").length;
+    const salesImp = generateOpportunities(imp).ops.filter((o) => o.kind === "sale").length;
+    expect(salesImp).toBeGreaterThanOrEqual(salesOp);
   });
 });

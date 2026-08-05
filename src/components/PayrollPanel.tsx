@@ -1,4 +1,4 @@
-import { PRESET_ROLES } from "../sim/actions";
+import { STAFF_ROLES } from "../sim/actions";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
 import styles from "./panels.module.css";
@@ -15,13 +15,13 @@ export const PayrollPanel = () => {
       <h2 className={styles.panelTitle}>Personale</h2>
 
       <div className={styles.row}>
-        {PRESET_ROLES.map((r) => (
+        {STAFF_ROLES.map((r) => (
           <button
             key={r.role}
             className={styles.buttonSecondary}
             onClick={() => hire(r.role)}
           >
-            Assumi {r.role} ({formatCash(r.grossMonthly)} lordi)
+            Assumi {r.role} ({r.blurb})
           </button>
         ))}
       </div>

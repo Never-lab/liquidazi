@@ -4,7 +4,7 @@ import { tickContracts } from "./contracts";
 import { rollPressure, shouldRollPressure, tickPressure } from "./pressures";
 import { applyRivalSteal, seedRival } from "./rival";
 import { createInitialGameState } from "./types";
-import { hireEmployee, PRESET_ROLES } from "./actions";
+import { hireEmployee } from "./actions";
 
 const base = () => {
   let s = createInitialGameState({
@@ -42,7 +42,7 @@ describe("pressures", () => {
       monthsLeft: 2,
     };
     const before = s.employees.length;
-    s = hireEmployee(s, PRESET_ROLES[0].role);
+    s = hireEmployee(s, "Operaio");
     expect(s.employees.length).toBe(before);
   });
 });

@@ -1,5 +1,6 @@
 import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
+import { capacityPointsFor } from "../config/staffPay";
 import { hasUpgrade } from "../config/upgrades";
 import { rng } from "./rng";
 import {
@@ -41,21 +42,30 @@ const STAFF_FULL_VALUE = 6;
 
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
 
+/** Sum of per-role capacity points across all employees (Operaio 1, Impiegato 0.35, Responsabile 0.5). */
+export const staffCapacityPoints = (state: GameState): number =>
+  state.employees.reduce((s, e) => s + capacityPointsFor(e.role), 0);
+
+/** Count employees with a given role (e.g. "Impiegato"). */
+export const countRole = (state: GameState, role: string): number =>
+  state.employees.filter((e) => e.role === role).length;
+
 /**
- * Sale slots / month. First 6 employees count 1:1; extras count 1/3.
+ * Sale slots / month. First 6 capacity points count 1:1; extras count 1/3.
  * Processi upgrade adds +1 without headcount.
  */
 export const monthlyCapacity = (state: GameState): number => {
-  const staff = state.employees.length;
-  const core = Math.min(staff, STAFF_FULL_VALUE);
-  const extra = Math.max(0, staff - STAFF_FULL_VALUE);
+  const points = staffCapacityPoints(state);
+  const core = Math.min(points, STAFF_FULL_VALUE);
+  const extra = Math.max(0, points - STAFF_FULL_VALUE);
+  const staffSlots = core + Math.floor(extra / 3);
   const repBonus = Math.floor(state.company.reputation / 40);
   const processi = hasUpgrade(state.upgrades, "processi") ? 1 : 0;
   const temp = (state.tempCapacityMonths ?? 0) > 0 ? 1 : 0;
   const growth = state.growthCapacityBonus ?? 0;
   const subCap = (state.subsidiaries ?? []).reduce((s, sub) => s + sub.capacityBonus, 0);
   const base =
-    1 + core + Math.floor(extra / 3) + repBonus + processi + temp + growth + subCap;
+    1 + staffSlots + repBonus + processi + temp + growth + subCap;
   const afterContracts = base - contractSlotsUsed(state);
   const penalized = afterContracts - capacityPressurePenalty(state);
   // Soft floor: don't soft-lock a board with 0 free slots when you have no contracts
@@ -71,11 +81,12 @@ export const salesAcceptedThisMonth = (state: GameState): number => {
   return state.invoices.filter((i) => i.kind === "AR" && i.issuedIdx === idx).length;
 };
 
-/** Ticket ceiling grows a bit with staff; commerciale bumps further. Soft anti-exploit. */
+/** Ticket ceiling grows a bit with staff; Impiegati raise it further; commerciale bumps further. Soft anti-exploit. */
 const ticketCeiling = (state: GameState): number => {
   const staff = state.employees.length;
+  const impiegati = countRole(state, "Impiegato");
   const growthBump = Math.min(6000, (state.growthCapacityBonus ?? 0) * 2000);
-  const base = 18000 + Math.min(12000, staff * 800) + growthBump;
+  const base = 18000 + Math.min(12000, staff * 800) + impiegati * 1200 + growthBump;
   return hasUpgrade(state.upgrades, "commerciale") ? base + 4000 : base;
 };
 
@@ -176,8 +187,9 @@ export const generateOpportunities = (
   const cap = maxDealNet(state);
   const capacity = monthlyCapacity(state);
   const commercialeBonus = hasUpgrade(state.upgrades, "commerciale") ? 1 : 0;
+  const impiegati = countRole(state, "Impiegato");
   const jitter = Math.floor(rand() * 3) - 1; // -1, 0, +1
-  let saleTarget = Math.max(1, capacity + jitter + commercialeBonus);
+  let saleTarget = Math.max(1, capacity + jitter + commercialeBonus + impiegati);
   let supplyTarget = Math.max(0, Math.round(saleTarget * (0.28 + rand() * 0.1)));
   // Never soft-lock: if scorte are empty, always offer at least one supply.
   if ((state.supplyMonths ?? 0) <= 0) {

@@ -1,5 +1,10 @@
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import {
+  STAFF_ROLES,
+  baseGrossFor,
+  type StaffRole,
+} from "../config/staffPay";
+import {
   UPGRADES,
   type UpgradeId,
 } from "../config/upgrades";
@@ -73,12 +78,7 @@ export const recordSupplierCost = (
   return addInvoice(state, "AP", net, { termMonths });
 };
 
-/** Ruoli assumibili nel MVP (retribuzioni di gioco, non tabelle CCNL). */
-export const PRESET_ROLES = [
-  { role: "Operaio", grossMonthly: 1800 },
-  { role: "Impiegato", grossMonthly: 2200 },
-  { role: "Responsabile", grossMonthly: 3000 },
-] as const;
+export { STAFF_ROLES };
 
 export const hireEmployee = (state: GameState, role: string): GameState => {
   if (hasPressure(state, "hiring_freeze")) {
@@ -92,13 +92,14 @@ export const hireEmployee = (state: GameState, role: string): GameState => {
     blocked.log = blocked.log.slice(0, 12);
     return blocked;
   }
-  const preset = PRESET_ROLES.find((r) => r.role === role);
-  if (!preset) return state;
+  const def = STAFF_ROLES.find((r) => r.role === role);
+  if (!def) return state;
+  const staffRole = def.role as StaffRole;
   const next = structuredClone(state);
   next.employees.push({
     id: next.nextId++,
-    role: preset.role,
-    grossMonthly: preset.grossMonthly,
+    role: staffRole,
+    grossMonthly: baseGrossFor(next.company.sector, staffRole),
     hireMonthIdx: toMonthIndex(next.calendar),
     tfrAccrued: 0,
     senioritySteps: 0,
