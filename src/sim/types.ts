@@ -63,6 +63,23 @@ export interface PayrollRun {
   tfrAccrued: number;
 }
 
+/** P&L accumulator for the current fiscal year (competenza). */
+export interface YearToDate {
+  revenue: number;
+  purchases: number;
+  payrollCost: number;
+  interest: number;
+  otherCosts: number;
+}
+
+export interface YearReport extends YearToDate {
+  year: number;
+  profit: number;
+  irapBase: number;
+  ires: number;
+  irap: number;
+}
+
 export interface GameState {
   company: Company;
   calendar: Calendar;
@@ -75,6 +92,12 @@ export interface GameState {
   lastPayroll: PayrollRun | null;
   /** 0-100 reputation with the tax authorities; drops when F24s are skipped */
   compliance: number;
+  ytd: YearToDate;
+  /** taxes computed at last year close; basis for June/November acconti */
+  priorYearTax: { ires: number; irap: number } | null;
+  /** acconti already charged (as liabilities) against the current year */
+  accontiCharged: { ires: number; irap: number };
+  lastYearReport: YearReport | null;
   nextId: number;
 }
 
@@ -99,5 +122,9 @@ export const createInitialGameState = (): GameState => ({
   tfrFund: 0,
   lastPayroll: null,
   compliance: 100,
+  ytd: { revenue: 0, purchases: 0, payrollCost: 0, interest: 0, otherCosts: 0 },
+  priorYearTax: null,
+  accontiCharged: { ires: 0, irap: 0 },
+  lastYearReport: null,
   nextId: 1,
 });
