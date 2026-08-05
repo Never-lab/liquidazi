@@ -15,6 +15,7 @@ const withEmployee = (gross: number): GameState => {
         grossMonthly: gross,
         hireMonthIdx: 2024 * 12,
         tfrAccrued: 0,
+        senioritySteps: 0,
       },
     ],
     nextId: s.nextId + 1,

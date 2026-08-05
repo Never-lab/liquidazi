@@ -86,6 +86,8 @@ export interface Employee {
   hireMonthIdx: number;
   /** TFR matured for this person (paid out on fire) */
   tfrAccrued: number;
+  /** Scatti anzianità (ogni 24 mesi di servizio, cap 5). */
+  senioritySteps: number;
 }
 
 /** Aggregated monthly payroll result (cedolino semplificato). */

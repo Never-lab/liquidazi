@@ -101,6 +101,7 @@ export const hireEmployee = (state: GameState, role: string): GameState => {
     grossMonthly: preset.grossMonthly,
     hireMonthIdx: toMonthIndex(next.calendar),
     tfrAccrued: 0,
+    senioritySteps: 0,
   });
   return next;
 };
