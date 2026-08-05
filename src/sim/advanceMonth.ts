@@ -327,7 +327,8 @@ export const advanceMonth = (state: GameState): GameState => {
     next.ytd.purchases + issuedNow.filter((i) => i.kind === "AP").reduce((s2, i) => s2 + i.net, 0),
   );
 
-  // 5. loan installment
+  // 5. loan installment (rata francese: rimborso costante, quota capitale
+  // cresce col tempo; l'ultima rata e i casi limite azzerano l'outstanding)
   if (next.loan && next.loan.outstanding > 0) {
     const b = next.company.cash;
     const loan = next.loan;
@@ -336,8 +337,16 @@ export const advanceMonth = (state: GameState): GameState => {
         ? loan.fixedAnnualRate!
         : euriborAt(next.monthsPlayed) + loan.spreadBps / 10000;
     const interest = round2((loan.outstanding * annualRate) / 12);
-    const principalShare = Math.min(round2(loan.principal / loan.tenorMonths), loan.outstanding);
-    next.company.cash = round2(next.company.cash - interest - principalShare);
+    let principalShare = round2(loan.monthlyPayment - interest);
+    if (
+      loan.monthsPaid + 1 >= loan.tenorMonths ||
+      principalShare > loan.outstanding ||
+      principalShare < 0
+    ) {
+      principalShare = loan.outstanding;
+    }
+    const payment = round2(interest + principalShare);
+    next.company.cash = round2(next.company.cash - payment);
     loan.outstanding = round2(loan.outstanding - principalShare);
     loan.monthsPaid += 1;
     loan.lastInstallment = { interest, principal: principalShare };

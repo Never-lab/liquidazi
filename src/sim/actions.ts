@@ -145,6 +145,60 @@ export const euriborAt = (monthsPlayed: number): number => {
   return path[Math.min(monthsPlayed, path.length - 1)];
 };
 
+/** Tasso annuale → tasso mensile (semplice, non composto). */
+export const monthlyRateFromAnnual = (annual: number): number => annual / 12;
+
+/** Rata costante di ammortamento francese; rata lineare se tasso ≤ 0. */
+export const frenchPayment = (
+  principal: number,
+  annualRate: number,
+  tenorMonths: number,
+): number => {
+  if (tenorMonths <= 0) return 0;
+  const r = monthlyRateFromAnnual(annualRate);
+  if (r <= 0) return round2(principal / tenorMonths);
+  const pow = (1 + r) ** tenorMonths;
+  return round2((principal * r * pow) / (pow - 1));
+};
+
+export type ScheduleRow = {
+  monthIndex: number; // 1-based installment number
+  interest: number;
+  principal: number;
+  payment: number;
+  residual: number;
+};
+
+/** Piano di ammortamento francese da un capitale residuo, a tasso costante. */
+export const remainingSchedule = (
+  outstanding: number,
+  annualRate: number,
+  monthsLeft: number,
+): ScheduleRow[] => {
+  const rows: ScheduleRow[] = [];
+  if (monthsLeft <= 0 || outstanding <= 0) return rows;
+  const payment = frenchPayment(outstanding, annualRate, monthsLeft);
+  const r = monthlyRateFromAnnual(annualRate);
+  let residual = outstanding;
+  for (let i = 1; i <= monthsLeft; i++) {
+    const interest = round2(residual * r);
+    let principal = round2(payment - interest);
+    if (i === monthsLeft || principal > residual || principal < 0) {
+      principal = residual;
+    }
+    residual = round2(residual - principal);
+    rows.push({ monthIndex: i, interest, principal, payment: round2(interest + principal), residual });
+  }
+  return rows;
+};
+
+/** Piano di ammortamento francese completo, simulato dal capitale erogato. */
+export const buildLoanSchedule = (
+  principal: number,
+  annualRate: number,
+  tenorMonths: number,
+): ScheduleRow[] => remainingSchedule(principal, annualRate, tenorMonths);
+
 /**
  * Offerta di salvataggio: copre il buco + cuscinetto, Fondo PMI se serve.
  */
@@ -201,16 +255,19 @@ export const requestLoan = (state: GameState, req: LoanRequest): GameState => {
   const wasDistressed = next.company.cash < 0 || next.loanOffer !== null;
   const spreadBps =
     spreadForGuarantee(req.guarantee) + complianceSpreadPenaltyBps(next.compliance);
+  // rata francese fissa alla firma: per il variabile usiamo il tasso corrente
+  // come stima attesa; il rimborso capitale si adatta mese per mese al tasso reale.
+  const originationAnnualRate = euriborAt(next.monthsPlayed) + spreadBps / 10000;
   next.loan = {
     principal: req.principal,
     outstanding: req.principal,
     tenorMonths: req.tenorMonths,
     monthsPaid: 0,
     rateType: req.rateType,
-    fixedAnnualRate:
-      req.rateType === "fixed" ? euriborAt(next.monthsPlayed) + spreadBps / 10000 : null,
+    fixedAnnualRate: req.rateType === "fixed" ? originationAnnualRate : null,
     spreadBps,
     guarantee: req.guarantee,
+    monthlyPayment: frenchPayment(req.principal, originationAnnualRate, req.tenorMonths),
     lastInstallment: null,
   };
   next.company.cash = round2(next.company.cash + req.principal);

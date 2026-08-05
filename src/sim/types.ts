@@ -112,6 +112,8 @@ export interface Loan {
   fixedAnnualRate: number | null;
   spreadBps: number;
   guarantee: LoanGuarantee;
+  /** constant French installment computed at origination (rata fissa). */
+  monthlyPayment: number;
   lastInstallment: { interest: number; principal: number } | null;
 }
 
