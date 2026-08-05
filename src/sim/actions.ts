@@ -55,3 +55,18 @@ export const fireEmployee = (state: GameState, id: number): GameState => {
   next.employees = next.employees.filter((e) => e.id !== id);
   return next;
 };
+
+/** Paga in batch tutte le liability F24 dovute (IVA + IRPEF + INPS + IRES/IRAP). */
+export const payF24 = (state: GameState): GameState => {
+  const next = structuredClone(state);
+  const idx = toMonthIndex(next.calendar);
+  let total = 0;
+  for (const l of next.liabilities) {
+    if (!l.paid && l.dueIdx <= idx) {
+      l.paid = true;
+      total = round2(total + l.amount);
+    }
+  }
+  next.company.cash = round2(next.company.cash - total);
+  return next;
+};

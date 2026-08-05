@@ -24,6 +24,8 @@ export interface FiscalYearSnapshot {
   acconto_split_second: number;
   penalty_late_pct: number;
   interest_late_pct: number;
+  /** points subtracted from the compliance score per skipped F24 */
+  compliance_malus_late: number;
   diritto_camerale_flat: number;
   euribor_3m_path: number[];
   fondo_garanzia_coverage_investment: number;
@@ -48,6 +50,7 @@ export const fiscalYearSnapshot: FiscalYearSnapshot = {
   acconto_split_second: 0.6,
   penalty_late_pct: 0.15,
   interest_late_pct: 0.04,
+  compliance_malus_late: 10,
   diritto_camerale_flat: 200,
   euribor_3m_path: [0.035, 0.035, 0.034, 0.034, 0.033, 0.033, 0.032, 0.032, 0.031, 0.031, 0.030, 0.030],
   fondo_garanzia_coverage_investment: 0.8,

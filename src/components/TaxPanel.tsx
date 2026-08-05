@@ -1,3 +1,4 @@
+import { dueF24Total } from "../sim/selectors";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
 import styles from "./panels.module.css";
@@ -11,17 +12,20 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export const TaxPanel = () => {
-  const liabilities = useGameStore((s) => s.game.liabilities);
-  const vatCredit = useGameStore((s) => s.game.vat.credit);
+  const game = useGameStore((s) => s.game);
+  const doPayF24 = useGameStore((s) => s.payF24);
 
-  const openLiabilities = liabilities.filter((l) => !l.paid);
+  const openLiabilities = game.liabilities.filter((l) => !l.paid);
+  const dueNow = dueF24Total(game);
 
   return (
     <section className={styles.panel}>
       <h2 className={styles.panelTitle}>Debiti fiscali</h2>
 
-      {vatCredit > 0 && (
-        <p className={styles.muted}>Credito IVA a riporto: {formatCash(vatCredit)}</p>
+      {game.vat.credit > 0 && (
+        <p className={styles.muted}>
+          Credito IVA a riporto: {formatCash(game.vat.credit)}
+        </p>
       )}
 
       {openLiabilities.length === 0 ? (
@@ -39,6 +43,17 @@ export const TaxPanel = () => {
           ))}
         </ul>
       )}
+
+      <div className={styles.row}>
+        <button className={styles.button} disabled={dueNow <= 0} onClick={doPayF24}>
+          Paga F24 ({formatCash(dueNow)})
+        </button>
+      </div>
+      <p className={styles.muted}>
+        Scadenza F24: giorno 16 del mese successivo alla competenza. Saltarla
+        costa sanzioni, interessi e reputazione.
+      </p>
+      <p className={styles.muted}>Compliance: {game.compliance}/100</p>
     </section>
   );
 };

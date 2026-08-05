@@ -73,6 +73,8 @@ export interface GameState {
   /** cumulative TFR liability (accrual only in MVP, never paid out) */
   tfrFund: number;
   lastPayroll: PayrollRun | null;
+  /** 0-100 reputation with the tax authorities; drops when F24s are skipped */
+  compliance: number;
   nextId: number;
 }
 
@@ -96,5 +98,6 @@ export const createInitialGameState = (): GameState => ({
   employees: [],
   tfrFund: 0,
   lastPayroll: null,
+  compliance: 100,
   nextId: 1,
 });

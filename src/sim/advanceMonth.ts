@@ -5,10 +5,11 @@ import { round2, toMonthIndex, type GameState } from "./types";
  * Pure simulation step: closes the current month and moves the calendar
  * forward. Order of operations:
  *   1. settle invoices due (cash in/out of the gross amount)
- *   2. payroll: pay net salaries, accrue IRPEF/INPS liabilities + TFR
- *   3. liquidate month IVA (output - input - credit) → liability due next
- *      month; cash untouched until the F24 is paid (Phase 4)
- *   4. advance calendar
+ *   2. penalize skipped F24s (one-shot penalty + interest + compliance malus)
+ *   3. payroll: pay net salaries, accrue IRPEF/INPS liabilities + TFR
+ *   4. liquidate month IVA (output - input - credit) → liability due next
+ *      month; cash untouched until the F24 is paid
+ *   5. advance calendar
  */
 export const advanceMonth = (state: GameState): GameState => {
   const next = structuredClone(state);
@@ -24,7 +25,17 @@ export const advanceMonth = (state: GameState): GameState => {
     }
   }
 
-  // 2. payroll (cedolino semplificato: ritenute flat sul lordo)
+  // 2. skipped F24s: one-shot penalty + interest + compliance malus.
+  // Runs before new liabilities are pushed (those are due next month).
+  for (const l of next.liabilities) {
+    if (!l.paid && !l.penalized && l.dueIdx <= idx) {
+      l.penalized = true;
+      l.amount = round2(l.amount * (1 + snap.penalty_late_pct + snap.interest_late_pct));
+      next.compliance = Math.max(0, next.compliance - snap.compliance_malus_late);
+    }
+  }
+
+  // 3. payroll (cedolino semplificato: ritenute flat sul lordo)
   if (next.employees.length > 0) {
     let totalGross = 0;
     let totalNet = 0;
@@ -61,7 +72,7 @@ export const advanceMonth = (state: GameState): GameState => {
     next.lastPayroll = null;
   }
 
-  // 3. IVA liquidation for invoices issued this month (competenza)
+  // 4. IVA liquidation for invoices issued this month (competenza)
   const issuedNow = next.invoices.filter((i) => i.issuedIdx === idx);
   const output = issuedNow
     .filter((i) => i.kind === "AR")
@@ -84,7 +95,7 @@ export const advanceMonth = (state: GameState): GameState => {
     next.vat.credit = -netVat;
   }
 
-  // 4. calendar
+  // 5. calendar
   const isDecember = next.calendar.month === 12;
   next.calendar = {
     month: isDecember ? 1 : next.calendar.month + 1,
