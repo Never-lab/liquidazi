@@ -63,7 +63,8 @@ export const PayrollPanel = () => {
             <li key={e.id}>
               <span>
                 {e.role} · {formatCash(e.grossMonthly)} lordo ·{" "}
-                {capacityPointsFor(e.role)} pt · {e.senioritySteps} scatti
+                {capacityPointsFor(e.role)} pt · {e.senioritySteps}{" "}
+                {e.senioritySteps === 1 ? "scatto" : "scatti"}
               </span>
               <button
                 type="button"
