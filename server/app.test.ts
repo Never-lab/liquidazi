@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -115,5 +115,47 @@ describe("cloud saves", () => {
       }),
     });
     expect(put.status).toBe(413);
+  });
+});
+
+describe("static spa", () => {
+  let staticBase: string;
+  let staticServer: ReturnType<typeof createServer>;
+  let staticDist: string;
+
+  beforeAll(async () => {
+    staticDist = mkdtempSync(join(tmpdir(), "liquidazi-dist-"));
+    writeFileSync(join(staticDist, "index.html"), "<!doctype html><title>L</title>");
+    mkdirSync(join(staticDist, "assets"), { recursive: true });
+    writeFileSync(join(staticDist, "assets", "app.js"), "console.log(1)");
+    const handler = createHandler({
+      dataDir: mkdtempSync(join(tmpdir(), "liquidazi-d2-")),
+      secret: SECRET,
+      distDir: staticDist,
+    });
+    staticServer = createServer(handler);
+    await new Promise<void>((resolve) => staticServer.listen(0, "127.0.0.1", resolve));
+    const addr = staticServer.address();
+    if (!addr || typeof addr === "string") throw new Error("no port");
+    staticBase = `http://127.0.0.1:${addr.port}`;
+  });
+
+  afterAll(() => {
+    staticServer.close();
+    rmSync(staticDist, { recursive: true, force: true });
+  });
+
+  it("serves index and js; SPA fallback for client route", async () => {
+    const idx = await fetch(`${staticBase}/`);
+    expect(idx.status).toBe(200);
+    expect(await idx.text()).toContain("<title>L</title>");
+
+    const js = await fetch(`${staticBase}/assets/app.js`);
+    expect(js.status).toBe(200);
+    expect(await js.text()).toBe("console.log(1)");
+
+    const spa = await fetch(`${staticBase}/saves`);
+    expect(spa.status).toBe(200);
+    expect(await spa.text()).toContain("<title>L</title>");
   });
 });

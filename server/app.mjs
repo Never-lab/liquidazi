@@ -3,10 +3,37 @@
  * Zero deps: node:http, crypto, fs.
  */
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, createReadStream, statSync } from "node:fs";
+import { join, extname } from "node:path";
 
 const MAX_SAVE_BYTES = 1_000_000;
+
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".ico": "image/x-icon",
+  ".woff2": "font/woff2",
+  ".map": "application/json",
+};
+
+const safeJoin = (root, reqPath) => {
+  const decoded = decodeURIComponent(reqPath.split("?")[0]);
+  const rel = decoded === "/" ? "/index.html" : decoded;
+  const full = join(root, rel);
+  if (!full.startsWith(root)) return null;
+  return full;
+};
+
+const sendFile = (res, filePath) => {
+  const ext = extname(filePath);
+  res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+  createReadStream(filePath).pipe(res);
+};
+
 const emptySlots = () => [
   { label: "Slot 1", game: null, updatedAt: null },
   { label: "Slot 2", game: null, updatedAt: null },
@@ -301,6 +328,31 @@ export function createHandler({ dataDir, secret, distDir }) {
           200,
           Object.entries(BOARDS).map(([id, b]) => ({ id, label: b.label })),
         );
+      }
+
+      if (distDir && (req.method === "GET" || req.method === "HEAD")) {
+        let filePath = safeJoin(distDir, path);
+        const trySend = (p) => {
+          try {
+            const st = statSync(p);
+            if (st.isFile()) {
+              if (req.method === "HEAD") {
+                res.writeHead(200, { "Content-Type": MIME[extname(p)] || "application/octet-stream" });
+                res.end();
+                return true;
+              }
+              sendFile(res, p);
+              return true;
+            }
+          } catch {
+            /* missing */
+          }
+          return false;
+        };
+        if (filePath && trySend(filePath)) return;
+        const indexPath = join(distDir, "index.html");
+        if (!extname(path) && trySend(indexPath)) return;
+        return json(res, 404, { error: "Not found" });
       }
 
       return json(res, 404, { error: "Not found" });
