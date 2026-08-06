@@ -78,14 +78,58 @@
 }
 
 @media (max-width: 560px) {
+  .desk {
+    gap: 18px;
+    padding-bottom: 56px;
+    overflow-x: hidden;
+  }
+
+  .deskBody {
+    gap: 18px;
+  }
+
   .sticky {
     grid-template-columns: 1fr;
     align-items: start;
+    gap: 14px;
+    padding-top: 14px;
+    padding-bottom: 14px;
   }
 
   .stickyActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
-    justify-content: space-between;
+    gap: 12px 16px;
+    align-items: end;
+  }
+
+  .stickyActions > div {
+    min-width: 0;
+  }
+
+  .closeStack {
+    grid-column: 1 / -1;
+  }
+
+  .closeBtn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .cash {
+    font-size: clamp(1rem, 5.4vw, 1.25rem);
+  }
+
+  .opsTabs {
+    gap: 10px;
+  }
+
+  .opsTab,
+  .opsTabActive {
+    flex: 1 1 135px;
+    min-height: 44px;
+    padding: 11px 12px;
   }
 }
 
