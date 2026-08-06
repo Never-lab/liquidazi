@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { AuthSession } from "../api/client";
-import { login as apiLogin, register as apiRegister } from "../api/client";
+import {
+  fetchSaves,
+  login as apiLogin,
+  putSaves,
+  register as apiRegister,
+} from "../api/client";
 import type { DifficultyId } from "../config/difficulty";
 import { advanceMonth } from "../sim/advanceMonth";
 import {
@@ -102,6 +107,25 @@ interface GameStore {
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
+let cloudTimer: ReturnType<typeof setTimeout> | null = null;
+
+const queueCloudSave = (get: () => GameStore) => {
+  const { auth } = get();
+  if (!auth) return;
+  if (cloudTimer) clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => {
+    const s = get();
+    if (!s.auth) return;
+    void putSaves(s.auth.token, {
+      slots: s.slots,
+      activeSlot: s.activeSlot,
+      preferredDifficulty: s.preferredDifficulty,
+      coachOn: s.coachOn,
+    }).catch(() => {
+      get().flashToast("Salvataggio cloud non riuscito", "bad");
+    });
+  }, 1000);
+};
 
 const syncSlot = (
   slots: SaveSlot[],
@@ -133,14 +157,46 @@ export const useGameStore = create<GameStore>()(
       setScreen: (screen) => set({ screen }),
       login: async (username, password) => {
         const session = await apiLogin(username, password);
-        set({ auth: session, screen: "menu" });
+        const saves = await fetchSaves(session.token);
+        const slots = saves.slots as SaveSlot[];
+        const active = slots[saves.activeSlot] ?? slots[0];
+        const game = active?.game
+          ? structuredClone(active.game)
+          : createInitialGameState();
+        set({
+          auth: session,
+          slots,
+          activeSlot: saves.activeSlot ?? 0,
+          preferredDifficulty: saves.preferredDifficulty ?? get().preferredDifficulty,
+          coachOn: saves.coachOn ?? get().coachOn,
+          game,
+          screen: "menu",
+        });
       },
       register: async (username, password) => {
         const session = await apiRegister(username, password);
-        set({ auth: session, screen: "menu" });
+        const saves = await fetchSaves(session.token);
+        set({
+          auth: session,
+          slots: saves.slots as SaveSlot[],
+          activeSlot: saves.activeSlot ?? 0,
+          preferredDifficulty: saves.preferredDifficulty ?? "normal",
+          coachOn: saves.coachOn ?? true,
+          game: createInitialGameState(),
+          screen: "menu",
+        });
       },
       continueAsGuest: () => set({ auth: null, screen: "menu" }),
-      logout: () => set({ auth: null, screen: "auth" }),
+      logout: () => {
+        if (cloudTimer) clearTimeout(cloudTimer);
+        set({
+          auth: null,
+          screen: "auth",
+          slots: emptySlots(),
+          activeSlot: 0,
+          game: createInitialGameState(),
+        });
+      },
       dismissCoach: () => set({ coachOn: false }),
       enableCoach: () => set({ coachOn: true }),
       setPreferredDifficulty: (d) => set({ preferredDifficulty: d }),
@@ -406,3 +462,16 @@ export const useGameStore = create<GameStore>()(
     },
   ),
 );
+
+useGameStore.subscribe((state, prev) => {
+  if (!state.auth) return;
+  if (
+    state.slots === prev.slots &&
+    state.activeSlot === prev.activeSlot &&
+    state.preferredDifficulty === prev.preferredDifficulty &&
+    state.coachOn === prev.coachOn
+  ) {
+    return;
+  }
+  queueCloudSave(() => useGameStore.getState());
+});

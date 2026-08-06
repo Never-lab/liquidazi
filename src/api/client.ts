@@ -1,6 +1,21 @@
+import type { DifficultyId } from "../config/difficulty";
+
 export type AuthSession = {
   token: string;
   username: string;
+};
+
+export type CloudSaveSlot = {
+  label: string;
+  game: unknown | null;
+  updatedAt: string | null;
+};
+
+export type CloudSaves = {
+  slots: CloudSaveSlot[];
+  activeSlot: number;
+  preferredDifficulty?: DifficultyId;
+  coachOn?: boolean;
 };
 
 export type LeaderboardBoard =
@@ -64,6 +79,16 @@ export const login = (username: string, password: string) =>
 
 export const fetchMe = (token: string) =>
   api<{ username: string }>("/api/auth/me", { token });
+
+export const fetchSaves = (token: string) =>
+  api<CloudSaves>("/api/saves", { token });
+
+export const putSaves = (token: string, saves: CloudSaves) =>
+  api<CloudSaves>("/api/saves", {
+    method: "PUT",
+    token,
+    body: JSON.stringify(saves),
+  });
 
 export const submitRun = (token: string, run: RunPayload) =>
   api<{ id: string }>("/api/runs", {

@@ -32,8 +32,8 @@ export const AuthScreen = () => {
         {mode === "login" ? "Accedi allo studio." : "Apri un account."}
       </h2>
       <p className={styles.lede}>
-        Puoi giocare subito come ospite. L&apos;account serve solo per la classifica (`npm run
-        dev:api`).
+        Puoi giocare subito come ospite. L&apos;account salva le partite sul cloud e
+        sblocca la classifica.
       </p>
 
       <div className={styles.menu} style={{ margin: "0 0 16px", maxWidth: "100%" }}>
