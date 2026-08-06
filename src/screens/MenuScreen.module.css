@@ -171,6 +171,40 @@
   font-size: 15px;
 }
 
+.passwordRow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  position: relative;
+}
+
+.passwordRow input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 48px;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  padding: 0;
+}
+
+.passwordToggle:hover {
+  color: var(--color-text);
+}
+
 .preview {
   text-align: left;
   background: var(--color-bg);
