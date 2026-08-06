@@ -48,7 +48,7 @@ export const MenuScreen = () => {
           </button>
         ) : (
           <button type="button" className={styles.navLink} onClick={() => setScreen("auth")}>
-            Accedi per la classifica
+            Accedi per cloud e classifica
           </button>
         )}
       </nav>

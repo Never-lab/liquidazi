@@ -3,10 +3,19 @@
  * Zero deps: node:http, crypto, fs.
  */
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync, existsSync, createReadStream, statSync } from "node:fs";
-import { join, extname } from "node:path";
+import {
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  renameSync,
+  createReadStream,
+  statSync,
+} from "node:fs";
+import { join, extname, sep } from "node:path";
 
 const MAX_SAVE_BYTES = 1_000_000;
+const MAX_BODY_BYTES = 64_000;
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -24,7 +33,7 @@ const safeJoin = (root, reqPath) => {
   const decoded = decodeURIComponent(reqPath.split("?")[0]);
   const rel = decoded === "/" ? "/index.html" : decoded;
   const full = join(root, rel);
-  if (!full.startsWith(root)) return null;
+  if (!full.startsWith(root + sep)) return null;
   return full;
 };
 
@@ -56,9 +65,18 @@ export function createHandler({ dataDir, secret, distDir }) {
   const load = (name, fallback) => {
     const p = join(dataDir, name);
     if (!existsSync(p)) return fallback;
-    return JSON.parse(readFileSync(p, "utf8"));
+    try {
+      return JSON.parse(readFileSync(p, "utf8"));
+    } catch {
+      return fallback;
+    }
   };
-  const save = (name, data) => writeFileSync(join(dataDir, name), JSON.stringify(data, null, 2));
+  const writeJson = (path, data, space) => {
+    const tmp = `${path}.tmp`;
+    writeFileSync(tmp, JSON.stringify(data, null, space));
+    renameSync(tmp, path);
+  };
+  const save = (name, data) => writeJson(join(dataDir, name), data, 2);
 
   /** @type {{ id: string, username: string, hash: string, salt: string }[]} */
   let users = load("users.json", []);
@@ -70,7 +88,11 @@ export function createHandler({ dataDir, secret, distDir }) {
   const loadUserSaves = (userId) => {
     const p = savePath(userId);
     if (!existsSync(p)) return emptySaves();
-    return JSON.parse(readFileSync(p, "utf8"));
+    try {
+      return JSON.parse(readFileSync(p, "utf8"));
+    } catch {
+      return emptySaves();
+    }
   };
 
   const hashPassword = (password, salt = randomBytes(16).toString("hex")) => {
@@ -116,20 +138,6 @@ export function createHandler({ dataDir, secret, distDir }) {
     });
     res.end(JSON.stringify(data));
   };
-
-  const readBody = (req) =>
-    new Promise((resolve, reject) => {
-      const chunks = [];
-      req.on("data", (c) => chunks.push(c));
-      req.on("end", () => {
-        try {
-          resolve(chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {});
-        } catch (e) {
-          reject(e);
-        }
-      });
-      req.on("error", reject);
-    });
 
   const readBodyLimited = (req, maxBytes) =>
     new Promise((resolve, reject) => {
@@ -180,7 +188,16 @@ export function createHandler({ dataDir, secret, distDir }) {
       }
 
       if (req.method === "POST" && path === "/api/auth/register") {
-        const body = await readBody(req);
+        let body;
+        try {
+          body = await readBodyLimited(req, MAX_BODY_BYTES);
+        } catch (e) {
+          return json(
+            res,
+            e && e.code === "ENTITY_TOO_LARGE" ? 413 : 400,
+            { error: e && e.code === "ENTITY_TOO_LARGE" ? "Richiesta troppo grande" : "JSON non valido" },
+          );
+        }
         const username = String(body.username || "").trim();
         const password = String(body.password || "");
         if (!USER_RE.test(username)) {
@@ -200,7 +217,16 @@ export function createHandler({ dataDir, secret, distDir }) {
       }
 
       if (req.method === "POST" && path === "/api/auth/login") {
-        const body = await readBody(req);
+        let body;
+        try {
+          body = await readBodyLimited(req, MAX_BODY_BYTES);
+        } catch (e) {
+          return json(
+            res,
+            e && e.code === "ENTITY_TOO_LARGE" ? 413 : 400,
+            { error: e && e.code === "ENTITY_TOO_LARGE" ? "Richiesta troppo grande" : "JSON non valido" },
+          );
+        }
         const username = String(body.username || "").trim();
         const password = String(body.password || "");
         const user = users.find((u) => u.username.toLowerCase() === username.toLowerCase());
@@ -248,14 +274,23 @@ export function createHandler({ dataDir, secret, distDir }) {
           coachOn: body.coachOn,
         };
         mkdirSync(join(dataDir, "saves"), { recursive: true });
-        writeFileSync(savePath(user.id), JSON.stringify(payload));
+        writeJson(savePath(user.id), payload);
         return json(res, 200, payload);
       }
 
       if (req.method === "POST" && path === "/api/runs") {
         const user = parseToken(req.headers.authorization);
         if (!user) return json(res, 401, { error: "Login richiesto" });
-        const body = await readBody(req);
+        let body;
+        try {
+          body = await readBodyLimited(req, MAX_BODY_BYTES);
+        } catch (e) {
+          return json(
+            res,
+            e && e.code === "ENTITY_TOO_LARGE" ? 413 : 400,
+            { error: e && e.code === "ENTITY_TOO_LARGE" ? "Richiesta troppo grande" : "JSON non valido" },
+          );
+        }
         const monthsPlayed = Number(body.monthsPlayed);
         const peakCash = Number(body.peakCash);
         const peakDebt = Number(body.peakDebt);
@@ -328,6 +363,10 @@ export function createHandler({ dataDir, secret, distDir }) {
           200,
           Object.entries(BOARDS).map(([id, b]) => ({ id, label: b.label })),
         );
+      }
+
+      if (path.startsWith("/api")) {
+        return json(res, 404, { error: "Not found" });
       }
 
       if (distDir && (req.method === "GET" || req.method === "HEAD")) {

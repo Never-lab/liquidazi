@@ -37,6 +37,28 @@ describe("cloud saves", () => {
     expect(status).toBe(401);
   });
 
+  it("rejects oversized auth and run request bodies", async () => {
+    const oversized = JSON.stringify({ username: "a".repeat(64_000), password: "secret1" });
+    const register = await api("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: oversized,
+    });
+    expect(register.status).toBe(413);
+
+    const auth = await api("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "run_user", password: "secret1" }),
+    });
+    const run = await api("/api/runs", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${(auth.data as { token: string }).token}` },
+      body: JSON.stringify({ companyName: "x".repeat(64_000) }),
+    });
+    expect(run.status).toBe(413);
+  });
+
   it("register → empty saves → PUT → GET roundtrip; other user isolated", async () => {
     const reg = await api("/api/auth/register", {
       method: "POST",
@@ -157,5 +179,12 @@ describe("static spa", () => {
     const spa = await fetch(`${staticBase}/saves`);
     expect(spa.status).toBe(200);
     expect(await spa.text()).toContain("<title>L</title>");
+  });
+
+  it("returns a JSON 404 for unknown API routes", async () => {
+    const res = await fetch(`${staticBase}/api/missing`);
+    expect(res.status).toBe(404);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    await expect(res.json()).resolves.toEqual({ error: "Not found" });
   });
 });

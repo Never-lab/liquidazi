@@ -50,6 +50,16 @@ export type RunPayload = {
   finalCash: number;
 };
 
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 const api = async <T>(
   path: string,
   opts: RequestInit & { token?: string } = {},
@@ -61,7 +71,7 @@ const api = async <T>(
   if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
   const res = await fetch(path, { ...opts, headers });
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new Error(data.error || `Errore ${res.status}`);
+  if (!res.ok) throw new ApiError(data.error || `Errore ${res.status}`, res.status);
   return data;
 };
 

@@ -1,11 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AuthSession } from "../api/client";
 import {
+  ApiError,
   fetchSaves,
   login as apiLogin,
   putSaves,
   register as apiRegister,
+  type AuthSession,
 } from "../api/client";
 import type { DifficultyId } from "../config/difficulty";
 import { advanceMonth } from "../sim/advanceMonth";
@@ -175,14 +176,22 @@ export const useGameStore = create<GameStore>()(
       },
       register: async (username, password) => {
         const session = await apiRegister(username, password);
-        const saves = await fetchSaves(session.token);
+        const localSaves = {
+          slots: get().slots,
+          activeSlot: get().activeSlot,
+          preferredDifficulty: get().preferredDifficulty,
+          coachOn: get().coachOn,
+        };
+        const saves = await putSaves(session.token, localSaves);
+        const slots = saves.slots as SaveSlot[];
+        const active = slots[saves.activeSlot] ?? slots[0];
         set({
           auth: session,
-          slots: saves.slots as SaveSlot[],
+          slots,
           activeSlot: saves.activeSlot ?? 0,
           preferredDifficulty: saves.preferredDifficulty ?? "normal",
           coachOn: saves.coachOn ?? true,
-          game: createInitialGameState(),
+          game: active?.game ? structuredClone(active.game) : createInitialGameState(),
           screen: "menu",
         });
       },
@@ -459,6 +468,34 @@ export const useGameStore = create<GameStore>()(
         slots: emptySlots(),
         activeSlot: 0,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (!state?.auth) return;
+        const { token } = state.auth;
+        void fetchSaves(token)
+          .then((saves) => {
+            const current = useGameStore.getState();
+            if (current.auth?.token !== token) return;
+            const slots = saves.slots as SaveSlot[];
+            const activeSlot = saves.activeSlot ?? 0;
+            const active = slots[activeSlot] ?? slots[0];
+            useGameStore.setState({
+              slots,
+              activeSlot,
+              preferredDifficulty: saves.preferredDifficulty ?? current.preferredDifficulty,
+              coachOn: saves.coachOn ?? current.coachOn,
+              game: active?.game ? structuredClone(active.game) : createInitialGameState(),
+            });
+          })
+          .catch((error: unknown) => {
+            const current = useGameStore.getState();
+            if (current.auth?.token !== token) return;
+            if (error instanceof ApiError && error.status === 401) {
+              current.logout();
+              return;
+            }
+            current.flashToast("Impossibile aggiornare i salvataggi cloud", "bad");
+          });
+      },
     },
   ),
 );
