@@ -1,3 +1,4 @@
+import { CloudSavePill } from "./components/CloudSavePill";
 import { DisclaimerFooter } from "./components/DisclaimerFooter";
 import { ToastHost } from "./components/Toast";
 import { AuthScreen } from "./screens/AuthScreen";
@@ -41,6 +42,7 @@ function App() {
       </main>
 
       <ToastHost />
+      <CloudSavePill />
       <DisclaimerFooter />
     </div>
   );

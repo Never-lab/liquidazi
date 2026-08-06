@@ -29,3 +29,8 @@ tsc -b && vite build
 ```
 
 `npm run build` emits Vite's existing chunk-size warning for the main bundle; it exits successfully.
+
+## UI: cloud save pill vs toast (Important)
+
+- Moved `CloudSavePill` to bottom-left and raised it (`bottom: 44px + safe-area`) so it no longer stacks with centered toasts at `bottom: 28px`.
+- Added safe-area bottom padding on `DisclaimerFooter` so disclaimer text stays readable on short menu/auth viewports when the pill is visible.
