@@ -1,6 +1,24 @@
 import { useGameStore } from "../store/gameStore";
 import { Button } from "../components/ui/Button";
+import { Icon } from "../ui/icons";
 import styles from "./MenuScreen.module.css";
+
+const NavItem = ({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: Parameters<typeof Icon>[0]["name"];
+  label: string;
+  onClick: () => void;
+}) => (
+  <button type="button" className={styles.navLink} onClick={onClick}>
+    <span className={styles.navRow}>
+      <Icon name={icon} size={20} />
+      <span>{label}</span>
+    </span>
+  </button>
+);
 
 export const MenuScreen = () => {
   const setScreen = useGameStore((s) => s.setScreen);
@@ -23,9 +41,13 @@ export const MenuScreen = () => {
           12 mesi in rosso e sei KO.
         </p>
         <div className={styles.ctaRow}>
-          <Button onClick={() => setScreen("setup")}>Nuova partita</Button>
+          <Button onClick={() => setScreen("setup")}>
+            <Icon name="play" size={18} />
+            Nuova partita
+          </Button>
           {canResume && (
             <Button variant="secondary" onClick={() => setScreen("game")}>
+              <Icon name="resume" size={18} />
               Riprendi
             </Button>
           )}
@@ -33,23 +55,14 @@ export const MenuScreen = () => {
       </div>
 
       <nav className={styles.secondaryNav} aria-label="Altro">
-        <button type="button" className={styles.navLink} onClick={() => setScreen("saves")}>
-          Salvataggi
-        </button>
-        <button type="button" className={styles.navLink} onClick={() => setScreen("leaderboard")}>
-          Classifiche
-        </button>
-        <button type="button" className={styles.navLink} onClick={() => setScreen("tutorial")}>
-          Tutorial
-        </button>
+        <NavItem icon="save" label="Salvataggi" onClick={() => setScreen("saves")} />
+        <NavItem icon="trophy" label="Classifiche" onClick={() => setScreen("leaderboard")} />
+        <NavItem icon="book" label="Tutorial" onClick={() => setScreen("tutorial")} />
+        <NavItem icon="feedback" label="Segnala / migliora" onClick={() => setScreen("feedback")} />
         {auth ? (
-          <button type="button" className={styles.navLink} onClick={logout}>
-            Esci ({auth.username})
-          </button>
+          <NavItem icon="logout" label={`Esci (${auth.username})`} onClick={logout} />
         ) : (
-          <button type="button" className={styles.navLink} onClick={() => setScreen("auth")}>
-            Accedi per cloud e classifica
-          </button>
+          <NavItem icon="login" label="Accedi (cloud + classifica)" onClick={() => setScreen("auth")} />
         )}
       </nav>
     </div>

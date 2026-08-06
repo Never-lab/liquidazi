@@ -52,7 +52,8 @@ export type Screen =
   | "tutorial"
   | "gameover"
   | "leaderboard"
-  | "saves";
+  | "saves"
+  | "feedback";
 
 export type ToastTone = "good" | "bad" | "neutral";
 

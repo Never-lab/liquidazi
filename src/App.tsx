@@ -2,6 +2,7 @@ import { CloudSavePill } from "./components/CloudSavePill";
 import { DisclaimerFooter } from "./components/DisclaimerFooter";
 import { ToastHost } from "./components/Toast";
 import { AuthScreen } from "./screens/AuthScreen";
+import { FeedbackScreen } from "./screens/FeedbackScreen";
 import { EndScreen } from "./screens/EndScreen";
 import { GameHUD } from "./screens/GameHUD";
 import { IntroScreen } from "./screens/IntroScreen";
@@ -39,6 +40,7 @@ function App() {
         {screen === "gameover" && <EndScreen />}
         {screen === "leaderboard" && <LeaderboardScreen />}
         {screen === "saves" && <SavesScreen />}
+        {screen === "feedback" && <FeedbackScreen />}
       </main>
 
       <ToastHost />
