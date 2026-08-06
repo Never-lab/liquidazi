@@ -31,9 +31,9 @@ npm test
 ## Deploy (Railway)
 
 1. Push `main` to GitHub (`Never-lab/liquidazi`).
-2. New Railway project → Deploy from repo.
+2. New Railway project → Deploy from repo (Node **22** via `nixpacks.toml` / `engines`).
 3. Variables: set `LIQUIDAZI_SECRET` to a long random string (required).
-4. Volume: mount persistent volume at `/app/server/data`.
+4. Volume: mount **only** at `/app/server/data` (never `/app` — that locks `node_modules` and breaks the build).
 5. Generate domain → open URL → register → play → reload on another browser: same slots.
 
 Local production-ish check:

@@ -1,6 +1,7 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm ci --include=dev && npm run build"
+# Prefer install over ci: Railway volume/cache can EBUSY rmdir on node_modules/.cache.
+buildCommand = "npm install --include=dev && npm run build"
 
 [deploy]
 startCommand = "npm start"
