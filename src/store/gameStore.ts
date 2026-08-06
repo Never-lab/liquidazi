@@ -37,9 +37,11 @@ import {
 import type { UpgradeId } from "../config/upgrades";
 import { sfxBad, sfxGood, sfxMonthClose, sfxPay } from "../ui/sfx";
 import { formatCash } from "../components/formatCash";
+import { markIntroSeen, screenAfterAuth } from "../ui/introGate";
 
 export type Screen =
   | "auth"
+  | "intro"
   | "menu"
   | "setup"
   | "game"
@@ -75,6 +77,8 @@ interface GameStore {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
   continueAsGuest: () => void;
+  skipIntro: () => void;
+  finishIntro: () => void;
   logout: () => void;
   dismissCoach: () => void;
   enableCoach: () => void;
@@ -171,7 +175,7 @@ export const useGameStore = create<GameStore>()(
           preferredDifficulty: saves.preferredDifficulty ?? get().preferredDifficulty,
           coachOn: saves.coachOn ?? get().coachOn,
           game,
-          screen: "menu",
+          screen: screenAfterAuth(),
         });
       },
       register: async (username, password) => {
@@ -192,10 +196,18 @@ export const useGameStore = create<GameStore>()(
           preferredDifficulty: saves.preferredDifficulty ?? "normal",
           coachOn: saves.coachOn ?? true,
           game: active?.game ? structuredClone(active.game) : createInitialGameState(),
-          screen: "menu",
+          screen: screenAfterAuth(),
         });
       },
-      continueAsGuest: () => set({ auth: null, screen: "menu" }),
+      continueAsGuest: () => set({ auth: null, screen: screenAfterAuth() }),
+      skipIntro: () => {
+        markIntroSeen();
+        set({ screen: "menu" });
+      },
+      finishIntro: () => {
+        markIntroSeen();
+        set({ screen: "setup" });
+      },
       logout: () => {
         if (cloudTimer) clearTimeout(cloudTimer);
         set({

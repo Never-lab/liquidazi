@@ -3,6 +3,7 @@ import { ToastHost } from "./components/Toast";
 import { AuthScreen } from "./screens/AuthScreen";
 import { EndScreen } from "./screens/EndScreen";
 import { GameHUD } from "./screens/GameHUD";
+import { IntroScreen } from "./screens/IntroScreen";
 import { LeaderboardScreen } from "./screens/LeaderboardScreen";
 import { MenuScreen } from "./screens/MenuScreen";
 import { SavesScreen } from "./screens/SavesScreen";
@@ -15,7 +16,8 @@ function App() {
   const screen = useGameStore((s) => s.screen);
   const auth = useGameStore((s) => s.auth);
   const inGame = screen === "game";
-  const bareShell = screen === "menu" || screen === "auth" || screen === "gameover";
+  const bareShell =
+    screen === "menu" || screen === "auth" || screen === "gameover" || screen === "intro";
 
   return (
     <div className={styles.app}>
@@ -28,6 +30,7 @@ function App() {
 
       <main className={`${styles.main} ${styles.screenIn}`} key={screen}>
         {screen === "auth" && <AuthScreen />}
+        {screen === "intro" && <IntroScreen />}
         {screen === "menu" && <MenuScreen />}
         {screen === "setup" && <SetupScreen />}
         {screen === "tutorial" && <TutorialScreen />}
