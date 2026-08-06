@@ -28,6 +28,25 @@ npm run build
 npm test
 ```
 
+## Deploy (Railway)
+
+1. Push `main` to GitHub (`Never-lab/liquidazi`).
+2. New Railway project → Deploy from repo.
+3. Variables: set `LIQUIDAZI_SECRET` to a long random string (required).
+4. Volume: mount persistent volume at `server/data` relative to the service working directory (repo root).
+5. Generate domain → open URL → register → play → reload on another browser: same slots.
+
+Local production-ish check:
+
+```bash
+npm run build
+set LIQUIDAZI_SECRET=dev-only-local
+set NODE_ENV=production
+npm start
+```
+
+Then open `http://127.0.0.1:8787`.
+
 Crea un account (username + password), gioca, al KO la run va in classifica.
 
 ### Classifiche
