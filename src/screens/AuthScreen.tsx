@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { ApiError } from "../api/client";
 import { useGameStore } from "../store/gameStore";
+import { Icon } from "../ui/icons";
 import styles from "./MenuScreen.module.css";
 
 export const AuthScreen = () => {
@@ -142,10 +143,16 @@ export const AuthScreen = () => {
             disabled={busy}
             onClick={() => continueAsGuest()}
           >
-            Continua senza account
+            <span className={styles.btnInner}>
+              <Icon name="guest" size={18} />
+              Continua senza account
+            </span>
           </button>
           <button type="submit" className={styles.secondary} disabled={busy}>
-            {busy ? "Attendi…" : mode === "login" ? "Entra" : "Registrati"}
+            <span className={styles.btnInner}>
+              <Icon name={mode === "login" ? "login" : "user"} size={18} />
+              {busy ? "Attendi…" : mode === "login" ? "Entra" : "Registrati"}
+            </span>
           </button>
           {suggestLogin && (
             <button
@@ -154,11 +161,17 @@ export const AuthScreen = () => {
               disabled={busy}
               onClick={switchToLogin}
             >
-              Accedi con questo username
+              <span className={styles.btnInner}>
+                <Icon name="login" size={18} />
+                Accedi con questo username
+              </span>
             </button>
           )}
           <button type="button" className={styles.secondary} disabled={busy} onClick={switchMode}>
-            {mode === "login" ? "Non hai un account? Registrati" : "Hai già un account? Accedi"}
+            <span className={styles.btnInner}>
+              <Icon name="user" size={18} />
+              {mode === "login" ? "Non hai un account? Registrati" : "Hai già un account? Accedi"}
+            </span>
           </button>
         </div>
       </form>
