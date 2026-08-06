@@ -22,4 +22,20 @@ describe("introGate", () => {
     expect(hasSeenIntro()).toBe(true);
     expect(screenAfterAuth()).toBe("menu");
   });
+
+  it("storage throw degrades safely", () => {
+    const getItem = localStorage.getItem.bind(localStorage);
+    const setItem = localStorage.setItem.bind(localStorage);
+    localStorage.getItem = () => {
+      throw new Error("blocked");
+    };
+    localStorage.setItem = () => {
+      throw new Error("blocked");
+    };
+    expect(hasSeenIntro()).toBe(false);
+    expect(() => markIntroSeen()).not.toThrow();
+    expect(screenAfterAuth()).toBe("intro");
+    localStorage.getItem = getItem;
+    localStorage.setItem = setItem;
+  });
 });
