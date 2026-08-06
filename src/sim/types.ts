@@ -86,6 +86,8 @@ export interface Employee {
   hireMonthIdx: number;
   /** TFR matured for this person (paid out on fire) */
   tfrAccrued: number;
+  /** Scatti anzianità (ogni 24 mesi di servizio, cap 5). */
+  senioritySteps: number;
 }
 
 /** Aggregated monthly payroll result (cedolino semplificato). */
@@ -110,6 +112,8 @@ export interface Loan {
   fixedAnnualRate: number | null;
   spreadBps: number;
   guarantee: LoanGuarantee;
+  /** constant French installment computed at origination (rata fissa). */
+  monthlyPayment: number;
   lastInstallment: { interest: number; principal: number } | null;
 }
 
@@ -127,6 +131,8 @@ export interface LoanOffer {
 export interface Fido {
   limit: number;
   drawn: number;
+  /** interessi addebitati nell'ultimo mese (null se mai usato) */
+  lastInterest?: number;
 }
 
 export type OpportunityKind = "sale" | "supply";
@@ -320,6 +326,8 @@ export interface GameState {
   activeContracts: ActiveContract[];
   /** Local rival (heat 0–100) */
   rival: Rival | null;
+  /** monthsPlayed when last forced shock was queued (cooldown) */
+  lastShockAt: number | null;
 }
 
 export type MilestoneId =
@@ -343,6 +351,22 @@ export const CAMPAIGN_WIN_MONTHS = 24;
 
 /** Absolute month index: comparable across year boundaries. */
 export const toMonthIndex = (c: Calendar): number => c.year * 12 + (c.month - 1);
+
+export const calendarFromIndex = (idx: number): Calendar => ({
+  year: Math.floor(idx / 12),
+  month: (idx % 12) + 1,
+});
+
+const MESI_IT = [
+  "Gen", "Feb", "Mar", "Apr", "Mag", "Giu",
+  "Lug", "Ago", "Set", "Ott", "Nov", "Dic",
+];
+
+/** Short label e.g. "Mar 2024". */
+export const formatMonthIdx = (idx: number): string => {
+  const c = calendarFromIndex(idx);
+  return `${MESI_IT[c.month - 1]} ${c.year}`;
+};
 
 export const round2 = (n: number): number => Math.round(n * 100) / 100;
 
@@ -438,5 +462,6 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     quarterPressure: null,
     activeContracts: [],
     rival: null,
+    lastShockAt: null,
   };
 };

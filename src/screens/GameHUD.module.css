@@ -4,29 +4,98 @@
   gap: 14px;
   padding: 0 16px 48px;
   max-width: var(--desk-max);
+  width: 100%;
   margin: 0 auto;
+}
+
+.deskBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.deskMain {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.deskSide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
 .sticky {
   position: sticky;
   top: 0;
   z-index: 20;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px 0 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px 16px;
+  padding: 12px 16px;
   margin: 0 -16px;
-  padding-left: 16px;
-  padding-right: 16px;
   background: color-mix(in srgb, var(--color-bg) 92%, #fff);
   border-bottom: 1px solid var(--color-border);
   backdrop-filter: blur(6px);
 }
 
 .stickyMeta {
-  flex: 1 1 200px;
   min-width: 0;
+}
+
+.stickyActions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.closeStack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.closeBtn {
+  min-width: 8.5rem;
+}
+
+.closeHint {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--color-text-muted);
+  max-width: 9.5rem;
+}
+
+@media (max-width: 560px) {
+  .sticky {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .stickyActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (min-width: 720px) {
+  .sticky {
+    margin-left: -24px;
+    margin-right: -24px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
 }
 
 .kicker {
@@ -40,21 +109,28 @@
 .company {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  font-size: clamp(1.2rem, 3.5vw, 1.65rem);
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .monthLine {
   margin: 4px 0 0;
   font-size: 13px;
   color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chip {
-  margin: 8px 0 0;
+  margin: 0;
   display: inline-block;
+  max-width: 100%;
   padding: 3px 8px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
@@ -62,13 +138,21 @@
   font-weight: 600;
   color: var(--color-text);
   background: var(--color-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.stickyActions {
+.chips {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 14px;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.chipEffect {
+  font-weight: 500;
+  color: var(--color-text-muted);
 }
 
 .statLabel {
@@ -95,10 +179,6 @@
 
 .dueWarn {
   color: var(--color-warning);
-}
-
-.closeBtn {
-  min-width: 8.5rem;
 }
 
 .statPulse {
@@ -147,17 +227,49 @@
 }
 
 .monthSummary {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  font-size: 13px;
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
+  animation: summaryIn 0.35s ease-out;
 }
 
-.monthSummary p {
+.monthGood {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.monthBad {
+  border-color: #c48a82;
+  background: var(--color-danger-soft);
+}
+
+.monthDelta {
   margin: 0;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.monthLines {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes summaryIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .f24Due,
@@ -232,6 +344,38 @@
   gap: 12px;
 }
 
+@media (min-width: 960px) {
+  .deskBody {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+    align-items: start;
+    gap: 20px;
+  }
+
+  .deskSide {
+    position: sticky;
+    top: 88px;
+  }
+
+  .auxToggle {
+    display: none;
+  }
+}
+
+@media (min-width: 720px) {
+  .desk {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .sticky {
+    margin-left: -24px;
+    margin-right: -24px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
 .opsTabs {
   display: flex;
   flex-wrap: wrap;
@@ -298,18 +442,4 @@
   line-height: 1.45;
   max-width: 42rem;
   color: var(--color-text);
-}
-
-@media (min-width: 720px) {
-  .desk {
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-
-  .sticky {
-    margin-left: -24px;
-    margin-right: -24px;
-    padding-left: 24px;
-    padding-right: 24px;
-  }
 }

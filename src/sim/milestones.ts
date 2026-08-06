@@ -55,6 +55,8 @@ export const unlockMilestones = (state: GameState): { state: GameState; unlocked
 
 export const formatCloseToast = (summary: MonthCloseSummary): string => {
   const sign = summary.delta >= 0 ? "+" : "";
+  const mood =
+    summary.delta >= 800 ? "Mese solido" : summary.delta >= 0 ? "Mese chiuso" : "Mese in perdita";
   const top = summary.lines
     .filter((l) => Math.abs(l.amount) >= 1)
     .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
@@ -62,6 +64,6 @@ export const formatCloseToast = (summary: MonthCloseSummary): string => {
     .map((l) => `${l.label} ${l.amount >= 0 ? "+" : ""}${Math.round(l.amount)}`)
     .join(" · ");
   return top
-    ? `Mese chiuso ${sign}${Math.round(summary.delta)} € · ${top}`
-    : `Mese chiuso · cassa ${sign}${Math.round(summary.delta)} €`;
+    ? `${mood} ${sign}${Math.round(summary.delta)} € · ${top}`
+    : `${mood} · cassa ${sign}${Math.round(summary.delta)} €`;
 };

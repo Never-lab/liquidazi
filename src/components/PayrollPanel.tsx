@@ -1,29 +1,58 @@
-import { PRESET_ROLES } from "../sim/actions";
+import {
+  STAFF_ROLES,
+  baseGrossFor,
+  capacityPointsFor,
+  employerCostMonthly,
+} from "../config/staffPay";
+import { sectorById } from "../config/market";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
 import styles from "./panels.module.css";
 
 export const PayrollPanel = () => {
-  const employees = useGameStore((s) => s.game.employees);
-  const lastPayroll = useGameStore((s) => s.game.lastPayroll);
-  const tfrFund = useGameStore((s) => s.game.tfrFund);
+  const game = useGameStore((s) => s.game);
+  const employees = game.employees;
+  const sector = game.company.sector;
+  const lastPayroll = game.lastPayroll;
+  const tfrFund = game.tfrFund;
   const hire = useGameStore((s) => s.hireEmployee);
   const fire = useGameStore((s) => s.fireEmployee);
 
+  const sectorLabel = sectorById(sector).label;
+
   return (
     <section className={styles.panel}>
-      <h2 className={styles.panelTitle}>Personale</h2>
+      <div className={styles.panelHead}>
+        <h2 className={styles.panelTitle}>Personale</h2>
+        <span className={styles.badge}>CCNL {sectorLabel}</span>
+      </div>
 
-      <div className={styles.row}>
-        {PRESET_ROLES.map((r) => (
-          <button
-            key={r.role}
-            className={styles.buttonSecondary}
-            onClick={() => hire(r.role)}
-          >
-            Assumi {r.role} ({formatCash(r.grossMonthly)} lordi)
-          </button>
-        ))}
+      <div className={styles.cards}>
+        {STAFF_ROLES.map((r) => {
+          const base = baseGrossFor(sector, r.role);
+          return (
+            <article key={r.role} className={styles.deal}>
+              <div>
+                <h3 className={styles.dealTitle}>Assumi {r.role}</h3>
+                <p className={styles.dealMeta}>
+                  {r.blurb}
+                  <br />
+                  Lordo {formatCash(base)} · costo az. ~
+                  {formatCash(employerCostMonthly(base))}/mese
+                </p>
+              </div>
+              <div className={styles.dealActions}>
+                <button
+                  type="button"
+                  className={styles.buttonSecondary}
+                  onClick={() => hire(r.role)}
+                >
+                  Assumi
+                </button>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       {employees.length === 0 ? (
@@ -33,9 +62,15 @@ export const PayrollPanel = () => {
           {employees.map((e) => (
             <li key={e.id}>
               <span>
-                {e.role} — {formatCash(e.grossMonthly)} lordi/mese
+                {e.role} · {formatCash(e.grossMonthly)} lordo ·{" "}
+                {capacityPointsFor(e.role)} pt · {e.senioritySteps}{" "}
+                {e.senioritySteps === 1 ? "scatto" : "scatti"}
               </span>
-              <button className={styles.buttonDanger} onClick={() => fire(e.id)}>
+              <button
+                type="button"
+                className={styles.buttonDanger}
+                onClick={() => fire(e.id)}
+              >
                 Licenzia
                 {e.tfrAccrued > 0 ? ` (−${formatCash(e.tfrAccrued)} TFR)` : ""}
               </button>

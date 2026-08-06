@@ -1,4 +1,9 @@
-import { maxDealNet, monthlyCapacity, salesAcceptedThisMonth } from "../sim/events";
+import {
+  EMERGENCY_SUPPLY_NET,
+  maxDealNet,
+  monthlyCapacity,
+  salesAcceptedThisMonth,
+} from "../sim/events";
 import { formatCash } from "./formatCash";
 import { useGameStore } from "../store/gameStore";
 import styles from "./panels.module.css";
@@ -7,9 +12,12 @@ export const OpportunitiesPanel = () => {
   const game = useGameStore((s) => s.game);
   const accept = useGameStore((s) => s.acceptOpportunity);
   const decline = useGameStore((s) => s.declineOpportunity);
+  const emergency = useGameStore((s) => s.orderEmergencySupply);
   const cap = maxDealNet(game);
   const capacity = monthlyCapacity(game);
   const taken = salesAcceptedThisMonth(game);
+  const emptyStock = (game.supplyMonths ?? 0) <= 0;
+  const boardHasSupply = game.opportunities.some((o) => o.kind === "supply");
 
   return (
     <section className={styles.panelWide}>
@@ -24,10 +32,20 @@ export const OpportunitiesPanel = () => {
         </span>
       </div>
       <p className={styles.muted}>
-        {(game.supplyMonths ?? 0) <= 0
-          ? "Scorte a zero: ticket −28% e più insoluti. Ordina una fornitura."
+        {emptyStock
+          ? "Scorte a zero: ticket −28% e più insoluti. C'è sempre almeno una fornitura sul tabellone; in alternativa usa l'ordine d'emergenza."
           : "Forniture = scorte (mesi). Contratti bloccano 1 slot per 3 mesi. PA paga tardi; i privati a volte non pagano."}
       </p>
+      {emptyStock && (
+        <p className={styles.row}>
+          <button type="button" className={styles.buttonSecondary} onClick={emergency}>
+            Ordina fornitura d&apos;emergenza ({formatCash(EMERGENCY_SUPPLY_NET)} + IVA → +2 mesi)
+          </button>
+          {!boardHasSupply && (
+            <span className={styles.warning}>Nessuna fornitura in lista — usa l&apos;emergenza.</span>
+          )}
+        </p>
+      )}
       {game.opportunities.length === 0 ? (
         <p className={styles.muted}>Nessuna offerta aperta — avanza il mese.</p>
       ) : (

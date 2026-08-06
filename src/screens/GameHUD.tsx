@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CashSparkline, ChartsPanel } from "../components/Charts";
 import { CoachBanner } from "../components/CoachBanner";
 import { EventChoiceBanner } from "../components/EventChoiceBanner";
 import { EventFeed } from "../components/EventFeed";
 import { InvestmentsPanel } from "../components/InvestmentsPanel";
 import { LoanPanel } from "../components/LoanPanel";
+import { SchedulePanel } from "../components/SchedulePanel";
 import { OpportunitiesPanel } from "../components/OpportunitiesPanel";
 import { PayrollPanel } from "../components/PayrollPanel";
 import { ReportPanel } from "../components/ReportPanel";
@@ -16,7 +17,8 @@ import { formatCash } from "../components/formatCash";
 import { DIFFICULTIES } from "../config/difficulty";
 import { cityById } from "../config/market";
 import { MILESTONE_DEFS } from "../sim/milestones";
-import { dueF24Total } from "../sim/selectors";
+import { pressureEffectBlurb } from "../sim/pressures";
+import { dueF24Total, openInvoiceSchedule, scheduleTotals, thisCloseRows } from "../sim/selectors";
 import { LOSE_MONTHS_BELOW_ZERO } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
 import styles from "./GameHUD.module.css";
@@ -42,27 +44,37 @@ export const GameHUD = () => {
   const [auxOpen, setAuxOpen] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 720px)").matches : false,
   );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 960px)");
+    const sync = () => {
+      if (mq.matches) setAuxOpen(true);
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const [cashPulse, setCashPulse] = useState(0);
   const city = cityById(game.company.city);
   const openTax = game.liabilities.filter((l) => !l.paid).reduce((s, l) => s + l.amount, 0);
   const f24Due = dueF24Total(game);
+  const closeInvoiceTot = scheduleTotals(thisCloseRows(openInvoiceSchedule(game)));
   const offer = game.loanOffer;
   const pending = game.pendingEvent;
   const summary = game.lastCloseSummary;
   const done = new Set(game.milestones ?? []);
   const diffLabel = DIFFICULTIES[game.difficulty ?? "normal"].label;
+  const seasonHint =
+    game.calendar.month === 8
+      ? "Agosto · stagione bassa"
+      : game.calendar.month === 9
+        ? "Settembre · ripresa"
+        : null;
 
   const closeMonth = () => {
     doAdvanceMonth();
     setCashPulse((n) => n + 1);
   };
-
-  const chipParts = [
-    game.quarterPressure
-      ? `Q · ${game.quarterPressure.label} · ${game.quarterPressure.monthsLeft}m`
-      : null,
-    game.rival ? `${game.rival.name} · ${Math.round(game.rival.heat)}` : null,
-  ].filter(Boolean);
 
   return (
     <div className={styles.desk}>
@@ -70,6 +82,7 @@ export const GameHUD = () => {
         <div className={styles.stickyMeta}>
           <p className={styles.kicker}>
             {city.label} · {diffLabel}
+            {seasonHint ? ` · ${seasonHint}` : ""}
           </p>
           <h2 className={styles.company}>{game.company.name}</h2>
           <p className={styles.monthLine}>
@@ -81,9 +94,21 @@ export const GameHUD = () => {
               ? ` · rosso ${game.monthsBelowZero}/${LOSE_MONTHS_BELOW_ZERO}`
               : ""}
           </p>
-          {chipParts.length > 0 && (
-            <p className={styles.chip}>{chipParts.join(" · ")}</p>
-          )}
+          <div className={styles.chips}>
+            {game.quarterPressure && (
+              <p
+                className={styles.chip}
+                title={pressureEffectBlurb(game.quarterPressure.id)}
+              >
+                Q · {game.quarterPressure.label} · {game.quarterPressure.monthsLeft}m
+              </p>
+            )}
+            {game.rival && (
+              <p className={styles.chip}>
+                {game.rival.name} · {Math.round(game.rival.heat)}
+              </p>
+            )}
+          </div>
         </div>
         <div className={styles.stickyActions}>
           <div key={cashPulse} className={styles.statPulse}>
@@ -101,14 +126,22 @@ export const GameHUD = () => {
               {formatCash(openTax)}
             </strong>
           </div>
-          <Button
-            className={styles.closeBtn}
-            onClick={closeMonth}
-            disabled={Boolean(pending)}
-            title={pending ? "Risolvi prima l'evento" : undefined}
-          >
-            {pending ? "Risolvi evento…" : "Chiudi mese"}
-          </Button>
+          <div className={styles.closeStack}>
+            <Button
+              className={styles.closeBtn}
+              onClick={closeMonth}
+              disabled={Boolean(pending)}
+              title={pending ? "Risolvi prima l'evento" : undefined}
+            >
+              {pending ? "Risolvi evento…" : "Chiudi mese"}
+            </Button>
+            {closeInvoiceTot.count > 0 && !pending && (
+              <p className={styles.closeHint}>
+                {closeInvoiceTot.net >= 0 ? "+" : ""}
+                {formatCash(closeInvoiceTot.net)} · {closeInvoiceTot.count} scad.
+              </p>
+            )}
+          </div>
         </div>
       </header>
 
@@ -130,23 +163,27 @@ export const GameHUD = () => {
         <EventChoiceBanner />
 
         {summary && game.monthsPlayed > 0 && (
-          <div className={styles.monthSummary} role="status">
-            <p>
-              <strong>Ultima chiusura:</strong>{" "}
-              {summary.delta >= 0 ? "+" : ""}
+          <div
+            key={game.monthsPlayed}
+            className={`${styles.monthSummary} ${
+              summary.delta >= 0 ? styles.monthGood : styles.monthBad
+            }`}
+            role="status"
+          >
+            <p className={styles.monthDelta}>
+              {summary.delta >= 0 ? "Δ cassa +" : "Δ cassa "}
               {formatCash(summary.delta)}
-              {summary.lines.length > 0 && (
-                <>
-                  {" · "}
-                  {summary.lines
-                    .slice()
-                    .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
-                    .slice(0, 4)
-                    .map((l) => `${l.label} ${l.amount >= 0 ? "+" : ""}${formatCash(l.amount)}`)
-                    .join(" · ")}
-                </>
-              )}
             </p>
+            {summary.lines.length > 0 && (
+              <p className={styles.monthLines}>
+                {summary.lines
+                  .slice()
+                  .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
+                  .slice(0, 4)
+                  .map((l) => `${l.label} ${l.amount >= 0 ? "+" : ""}${formatCash(l.amount)}`)
+                  .join(" · ")}
+              </p>
+            )}
           </div>
         )}
 
@@ -176,37 +213,42 @@ export const GameHUD = () => {
         )}
       </div>
 
-      <OpportunitiesPanel />
+      <div className={styles.deskBody}>
+        <div className={styles.deskMain}>
+          <OpportunitiesPanel />
+          <SchedulePanel compact />
 
-      <div className={styles.toolbar}>
-        <Button variant="secondary" onClick={() => setOpsOpen(true)}>
-          Operazioni
-        </Button>
-        <button
-          type="button"
-          className={styles.auxToggle}
-          onClick={() => setAuxOpen((v) => !v)}
-        >
-          {auxOpen ? "Nascondi grafici / feed" : "Grafici e cronologia"}
-        </button>
-        <div className={styles.toolbarRight}>
-          {!coachOn && (
-            <Button variant="ghost" onClick={enableCoach}>
-              Guide
+          <div className={styles.toolbar}>
+            <Button variant="secondary" onClick={() => setOpsOpen(true)}>
+              Operazioni
             </Button>
-          )}
-          <Button variant="ghost" onClick={() => setScreen("menu")}>
-            Menu
-          </Button>
+            <button
+              type="button"
+              className={styles.auxToggle}
+              onClick={() => setAuxOpen((v) => !v)}
+            >
+              {auxOpen ? "Nascondi grafici / feed" : "Grafici e cronologia"}
+            </button>
+            <div className={styles.toolbarRight}>
+              {!coachOn && (
+                <Button variant="ghost" onClick={enableCoach}>
+                  Guide
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setScreen("menu")}>
+                Menu
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {auxOpen && (
-        <div className={styles.aux}>
-          <ChartsPanel history={game.history} />
-          <EventFeed />
-        </div>
-      )}
+        {auxOpen && (
+          <aside className={styles.deskSide}>
+            <ChartsPanel history={game.history} />
+            <EventFeed />
+          </aside>
+        )}
+      </div>
 
       <Sheet open={opsOpen} title="Operazioni" onClose={() => setOpsOpen(false)}>
         <div className={styles.opsTabs}>
@@ -229,12 +271,13 @@ export const GameHUD = () => {
           ))}
         </div>
         <div className={styles.ops}>
-          {opsTab === "fisco" && (
-            <>
-              <PayrollPanel />
-              <TaxPanel />
-            </>
-          )}
+            {opsTab === "fisco" && (
+              <>
+                <PayrollPanel />
+                <TaxPanel />
+                <SchedulePanel />
+              </>
+            )}
           {opsTab === "credito" && <LoanPanel />}
           {opsTab === "crescita" && (
             <>

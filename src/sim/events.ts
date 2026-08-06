@@ -1,5 +1,6 @@
 import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
+import { capacityPointsFor } from "../config/staffPay";
 import { hasUpgrade } from "../config/upgrades";
 import { rng } from "./rng";
 import {
@@ -41,22 +42,38 @@ const STAFF_FULL_VALUE = 6;
 
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
 
+/** Sum of per-role capacity points across all employees (Operaio 1, Impiegato 0.35, Responsabile 0.5). */
+export const staffCapacityPoints = (state: GameState): number =>
+  state.employees.reduce((s, e) => s + capacityPointsFor(e.role), 0);
+
+/** Count employees with a given role (e.g. "Impiegato"). */
+export const countRole = (state: GameState, role: string): number =>
+  state.employees.filter((e) => e.role === role).length;
+
 /**
- * Sale slots / month. First 6 employees count 1:1; extras count 1/3.
+ * Sale slots / month. First 6 capacity points count 1:1; extras count 1/3.
  * Processi upgrade adds +1 without headcount.
  */
 export const monthlyCapacity = (state: GameState): number => {
-  const staff = state.employees.length;
-  const core = Math.min(staff, STAFF_FULL_VALUE);
-  const extra = Math.max(0, staff - STAFF_FULL_VALUE);
+  const points = staffCapacityPoints(state);
+  const core = Math.min(points, STAFF_FULL_VALUE);
+  const extra = Math.max(0, points - STAFF_FULL_VALUE);
+  const staffSlots = Math.floor(core + Math.floor(extra / 3));
   const repBonus = Math.floor(state.company.reputation / 40);
   const processi = hasUpgrade(state.upgrades, "processi") ? 1 : 0;
   const temp = (state.tempCapacityMonths ?? 0) > 0 ? 1 : 0;
   const growth = state.growthCapacityBonus ?? 0;
   const subCap = (state.subsidiaries ?? []).reduce((s, sub) => s + sub.capacityBonus, 0);
   const base =
-    1 + core + Math.floor(extra / 3) + repBonus + processi + temp + growth + subCap;
-  return Math.max(0, base - contractSlotsUsed(state) - capacityPressurePenalty(state));
+    1 + staffSlots + repBonus + processi + temp + growth + subCap;
+  const afterContracts = base - contractSlotsUsed(state);
+  const penalized = afterContracts - capacityPressurePenalty(state);
+  // Soft floor: don't soft-lock a board with 0 free slots when you have no contracts
+  // (pa_wave + scorte 0 still hurts via ticket ×0.72).
+  if (penalized <= 0 && contractSlotsUsed(state) === 0) {
+    return Math.max(0, Math.min(1, afterContracts));
+  }
+  return Math.max(0, penalized);
 };
 
 export const salesAcceptedThisMonth = (state: GameState): number => {
@@ -64,11 +81,13 @@ export const salesAcceptedThisMonth = (state: GameState): number => {
   return state.invoices.filter((i) => i.kind === "AR" && i.issuedIdx === idx).length;
 };
 
-/** Ticket ceiling grows a bit with staff; commerciale bumps further. Soft anti-exploit. */
+/** Ticket ceiling grows a bit with staff; Impiegati raise it further; commerciale bumps further. Soft anti-exploit. */
 const ticketCeiling = (state: GameState): number => {
   const staff = state.employees.length;
+  const impiegati = countRole(state, "Impiegato");
   const growthBump = Math.min(6000, (state.growthCapacityBonus ?? 0) * 2000);
-  const base = 18000 + Math.min(12000, staff * 800) + growthBump;
+  const base =
+    18000 + Math.min(12000, staff * 800) + Math.min(6000, impiegati * 1200) + growthBump;
   return hasUpgrade(state.upgrades, "commerciale") ? base + 4000 : base;
 };
 
@@ -169,14 +188,25 @@ export const generateOpportunities = (
   const cap = maxDealNet(state);
   const capacity = monthlyCapacity(state);
   const commercialeBonus = hasUpgrade(state.upgrades, "commerciale") ? 1 : 0;
+  const impiegati = countRole(state, "Impiegato");
   const jitter = Math.floor(rand() * 3) - 1; // -1, 0, +1
-  let saleTarget = Math.max(1, capacity + jitter + commercialeBonus);
+  let saleTarget = Math.max(1, capacity + jitter + commercialeBonus + impiegati);
   let supplyTarget = Math.max(0, Math.round(saleTarget * (0.28 + rand() * 0.1)));
+  // Never soft-lock: if scorte are empty, always offer at least one supply.
+  if ((state.supplyMonths ?? 0) <= 0) {
+    supplyTarget = Math.max(1, supplyTarget);
+  }
   const total = saleTarget + supplyTarget;
   if (total > BOARD_MAX_OPS) {
     const scale = BOARD_MAX_OPS / total;
     saleTarget = Math.max(1, Math.round(saleTarget * scale));
-    supplyTarget = Math.max(0, BOARD_MAX_OPS - saleTarget);
+    supplyTarget = Math.max(
+      (state.supplyMonths ?? 0) <= 0 ? 1 : 0,
+      BOARD_MAX_OPS - saleTarget,
+    );
+    if (saleTarget + supplyTarget > BOARD_MAX_OPS) {
+      saleTarget = BOARD_MAX_OPS - supplyTarget;
+    }
   }
 
   const ops: Opportunity[] = [];
@@ -190,20 +220,47 @@ export const generateOpportunities = (
   return { ops, nextId: id };
 };
 
+/** Fixed emergency restock when board supply was skipped — always available at scorte 0. */
+export const EMERGENCY_SUPPLY_NET = 750;
+
+export const orderEmergencySupply = (state: GameState): GameState => {
+  if ((state.supplyMonths ?? 0) > 0) return state;
+  let next = recordSupplierCost(state, EMERGENCY_SUPPLY_NET, 1);
+  next = structuredClone(next);
+  next.supplyMonths = Math.min(6, (next.supplyMonths ?? 0) + 2);
+  next.log.unshift({
+    id: next.nextId++,
+    monthIdx: toMonthIndex(next.calendar),
+    tone: "good",
+    text: `Fornitura d'emergenza ordinata · ${EMERGENCY_SUPPLY_NET.toLocaleString("it-IT")} € + IVA. Scorte ${next.supplyMonths} mesi.`,
+  });
+  next.log = next.log.slice(0, 12);
+  return next;
+};
+
 export const acceptOpportunity = (state: GameState, opportunityId: number): GameState => {
   const op = state.opportunities.find((o) => o.id === opportunityId);
   if (!op) return state;
-  const cap = maxDealNet(state);
-  if (op.net > cap + 0.01) return state;
 
   if (op.kind === "sale" && op.contractMonths && op.contractMonths >= 2) {
+    if ((state.activeContracts ?? []).length >= 2) {
+      const blocked = structuredClone(state);
+      blocked.log.unshift({
+        id: blocked.nextId++,
+        monthIdx: toMonthIndex(blocked.calendar),
+        tone: "bad",
+        text: "Hai già 2 contratti attivi: chiudine uno prima di firmarne un altro.",
+      });
+      blocked.log = blocked.log.slice(0, 12);
+      return blocked;
+    }
     if (salesAcceptedThisMonth(state) >= monthlyCapacity(state)) {
       const blocked = structuredClone(state);
       blocked.log.unshift({
         id: blocked.nextId++,
         monthIdx: toMonthIndex(blocked.calendar),
         tone: "bad",
-        text: `Capacità piena: non puoi bloccare uno slot contratto.`,
+        text: `Capacità piena (${monthlyCapacity(state)} slot): non puoi bloccare un contratto.`,
       });
       blocked.log = blocked.log.slice(0, 12);
       return blocked;
@@ -214,11 +271,15 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
 
   if (op.kind === "sale" && salesAcceptedThisMonth(state) >= monthlyCapacity(state)) {
     const blocked = structuredClone(state);
+    const cap = monthlyCapacity(state);
     blocked.log.unshift({
       id: blocked.nextId++,
       monthIdx: toMonthIndex(blocked.calendar),
       tone: "bad",
-      text: `Capacità piena (${monthlyCapacity(state)} commesse/mese). Assumi con giudizio: oltre 6 dipendenti rendono meno.`,
+      text:
+        cap <= 0
+          ? "Nessuno slot libero (contratti, pressione o scorte a zero). Libera capacità o ordina forniture."
+          : `Capacità piena (${cap} commesse/mese). Assumi o chiudi un contratto.`,
     });
     blocked.log = blocked.log.slice(0, 12);
     return blocked;
@@ -263,11 +324,20 @@ export const declineOpportunity = (state: GameState, opportunityId: number): Gam
   const op = next.opportunities.find((o) => o.id === opportunityId);
   if (!op) return state;
   next.opportunities = next.opportunities.filter((o) => o.id !== opportunityId);
+  if (op.kind === "sale" && next.rival) {
+    next.rival = {
+      ...next.rival,
+      heat: Math.min(100, next.rival.heat + 2),
+    };
+  }
   next.log.unshift({
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),
     tone: "neutral",
-    text: `Lasciata scadere: ${op.title}.`,
+    text:
+      op.kind === "sale" && next.rival
+        ? `Lasciata scadere: ${op.title}. ${next.rival.name} guadagna spazio (heat ${Math.round(next.rival.heat)}).`
+        : `Lasciata scadere: ${op.title}.`,
   });
   next.log = next.log.slice(0, 12);
   return next;

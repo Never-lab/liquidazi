@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { advanceMonth } from "./advanceMonth";
-import { buyUpgrade, hireEmployee, PRESET_ROLES } from "./actions";
+import { buyUpgrade, hireEmployee } from "./actions";
 import {
   BOARD_MAX_OPS,
   generateOpportunities,
@@ -12,12 +12,12 @@ describe("Staff board + upgrades lite", () => {
   it("capacity: primi 6 full, poi 1/3; 100 dipendenti non = 100 slot", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     const base = monthlyCapacity(s);
-    for (let i = 0; i < 6; i++) s = hireEmployee(s, PRESET_ROLES[0].role);
+    for (let i = 0; i < 6; i++) s = hireEmployee(s, "Operaio");
     expect(monthlyCapacity(s)).toBe(base + 6);
-    for (let i = 0; i < 9; i++) s = hireEmployee(s, PRESET_ROLES[0].role);
+    for (let i = 0; i < 9; i++) s = hireEmployee(s, "Operaio");
     // +9 extra → floor(9/3)=3, not +9
     expect(monthlyCapacity(s)).toBe(base + 6 + 3);
-    for (let i = 0; i < 85; i++) s = hireEmployee(s, PRESET_ROLES[0].role);
+    for (let i = 0; i < 85; i++) s = hireEmployee(s, "Operaio");
     expect(monthlyCapacity(s)).toBeLessThan(50);
   });
 
@@ -27,7 +27,7 @@ describe("Staff board + upgrades lite", () => {
     const salesFew = few.filter((o) => o.kind === "sale").length;
 
     let hired = solo;
-    for (let i = 0; i < 4; i++) hired = hireEmployee(hired, PRESET_ROLES[0].role);
+    for (let i = 0; i < 4; i++) hired = hireEmployee(hired, "Operaio");
     const { ops: more } = generateOpportunities({ ...hired, nextId: 50, monthsPlayed: 2 });
     const salesMore = more.filter((o) => o.kind === "sale").length;
 

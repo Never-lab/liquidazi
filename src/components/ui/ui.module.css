@@ -108,7 +108,7 @@
 .sheet {
   position: relative;
   z-index: 1;
-  width: min(100%, 720px);
+  width: min(100%, 960px);
   max-height: min(88vh, 820px);
   display: flex;
   flex-direction: column;

@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AuthSession } from "../api/client";
-import { login as apiLogin, register as apiRegister } from "../api/client";
+import {
+  ApiError,
+  fetchSaves,
+  login as apiLogin,
+  putSaves,
+  register as apiRegister,
+  type AuthSession,
+} from "../api/client";
 import type { DifficultyId } from "../config/difficulty";
 import { advanceMonth } from "../sim/advanceMonth";
 import {
@@ -21,7 +27,7 @@ import {
 } from "../sim/actions";
 import { buyAcquisition, refreshAcquisitionBoard } from "../sim/acquisitions";
 import { resolveEventOption } from "../sim/eventCatalog";
-import { acceptOpportunity, declineOpportunity, seedNewGame } from "../sim/events";
+import { acceptOpportunity, declineOpportunity, seedNewGame, orderEmergencySupply } from "../sim/events";
 import { formatCloseToast, unlockMilestones } from "../sim/milestones";
 import {
   createInitialGameState,
@@ -79,6 +85,7 @@ interface GameStore {
   continueAfterWin: () => void;
   acceptOpportunity: (id: number) => void;
   declineOpportunity: (id: number) => void;
+  orderEmergencySupply: () => void;
   hireEmployee: (role: string) => void;
   fireEmployee: (id: number) => void;
   payF24: () => void;
@@ -101,6 +108,25 @@ interface GameStore {
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
+let cloudTimer: ReturnType<typeof setTimeout> | null = null;
+
+const queueCloudSave = (get: () => GameStore) => {
+  const { auth } = get();
+  if (!auth) return;
+  if (cloudTimer) clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => {
+    const s = get();
+    if (!s.auth) return;
+    void putSaves(s.auth.token, {
+      slots: s.slots,
+      activeSlot: s.activeSlot,
+      preferredDifficulty: s.preferredDifficulty,
+      coachOn: s.coachOn,
+    }).catch(() => {
+      get().flashToast("Salvataggio cloud non riuscito", "bad");
+    });
+  }, 1000);
+};
 
 const syncSlot = (
   slots: SaveSlot[],
@@ -132,14 +158,54 @@ export const useGameStore = create<GameStore>()(
       setScreen: (screen) => set({ screen }),
       login: async (username, password) => {
         const session = await apiLogin(username, password);
-        set({ auth: session, screen: "menu" });
+        const saves = await fetchSaves(session.token);
+        const slots = saves.slots as SaveSlot[];
+        const active = slots[saves.activeSlot] ?? slots[0];
+        const game = active?.game
+          ? structuredClone(active.game)
+          : createInitialGameState();
+        set({
+          auth: session,
+          slots,
+          activeSlot: saves.activeSlot ?? 0,
+          preferredDifficulty: saves.preferredDifficulty ?? get().preferredDifficulty,
+          coachOn: saves.coachOn ?? get().coachOn,
+          game,
+          screen: "menu",
+        });
       },
       register: async (username, password) => {
         const session = await apiRegister(username, password);
-        set({ auth: session, screen: "menu" });
+        const localSaves = {
+          slots: get().slots,
+          activeSlot: get().activeSlot,
+          preferredDifficulty: get().preferredDifficulty,
+          coachOn: get().coachOn,
+        };
+        const saves = await putSaves(session.token, localSaves);
+        const slots = saves.slots as SaveSlot[];
+        const active = slots[saves.activeSlot] ?? slots[0];
+        set({
+          auth: session,
+          slots,
+          activeSlot: saves.activeSlot ?? 0,
+          preferredDifficulty: saves.preferredDifficulty ?? "normal",
+          coachOn: saves.coachOn ?? true,
+          game: active?.game ? structuredClone(active.game) : createInitialGameState(),
+          screen: "menu",
+        });
       },
       continueAsGuest: () => set({ auth: null, screen: "menu" }),
-      logout: () => set({ auth: null, screen: "auth" }),
+      logout: () => {
+        if (cloudTimer) clearTimeout(cloudTimer);
+        set({
+          auth: null,
+          screen: "auth",
+          slots: emptySlots(),
+          activeSlot: 0,
+          game: createInitialGameState(),
+        });
+      },
       dismissCoach: () => set({ coachOn: false }),
       enableCoach: () => set({ coachOn: true }),
       setPreferredDifficulty: (d) => set({ preferredDifficulty: d }),
@@ -186,9 +252,10 @@ export const useGameStore = create<GameStore>()(
           get().flashToast(`Decisione: ${game.pendingEvent.title}`, "neutral");
           sfxMonthClose();
         } else if (game.lastCloseSummary) {
+          const d = game.lastCloseSummary.delta;
           get().flashToast(
             formatCloseToast(game.lastCloseSummary),
-            game.lastCloseSummary.delta < 0 ? "bad" : "neutral",
+            d < 0 ? "bad" : d > 0 ? "good" : "neutral",
           );
           sfxMonthClose();
         } else {
@@ -205,13 +272,33 @@ export const useGameStore = create<GameStore>()(
         get().flashToast("Continui oltre i 24 mesi", "neutral");
       },
       acceptOpportunity: (id) => {
-        const game = acceptOpportunity(get().game, id);
+        const before = get().game;
+        const game = acceptOpportunity(before, id);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-        sfxGood();
+        const tookDeal = game.opportunities.every((o) => o.id !== id);
+        if (tookDeal) {
+          sfxGood();
+        } else {
+          const msg =
+            game.log[0] && game.log[0].id !== before.log[0]?.id
+              ? game.log[0].text
+              : "Commessa non accettata";
+          get().flashToast(msg, "bad");
+          sfxBad();
+        }
       },
       declineOpportunity: (id) => {
         const game = declineOpportunity(get().game, id);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+      },
+      orderEmergencySupply: () => {
+        const before = get().game.supplyMonths ?? 0;
+        const game = orderEmergencySupply(get().game);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if ((game.supplyMonths ?? 0) > before) {
+          get().flashToast("Fornitura d'emergenza ordinata (+2 mesi scorte)", "good");
+          sfxGood();
+        }
       },
       hireEmployee: (role) => {
         const game = hireEmployee(get().game, role);
@@ -362,7 +449,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: "liquidazi-save",
-      version: 9,
+      version: 10,
       partialize: (state) => ({
         game: state.game,
         screen: state.screen === "auth" ? "auth" : state.screen,
@@ -381,6 +468,47 @@ export const useGameStore = create<GameStore>()(
         slots: emptySlots(),
         activeSlot: 0,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (!state?.auth) return;
+        const { token } = state.auth;
+        void fetchSaves(token)
+          .then((saves) => {
+            const current = useGameStore.getState();
+            if (current.auth?.token !== token) return;
+            const slots = saves.slots as SaveSlot[];
+            const activeSlot = saves.activeSlot ?? 0;
+            const active = slots[activeSlot] ?? slots[0];
+            useGameStore.setState({
+              slots,
+              activeSlot,
+              preferredDifficulty: saves.preferredDifficulty ?? current.preferredDifficulty,
+              coachOn: saves.coachOn ?? current.coachOn,
+              game: active?.game ? structuredClone(active.game) : createInitialGameState(),
+            });
+          })
+          .catch((error: unknown) => {
+            const current = useGameStore.getState();
+            if (current.auth?.token !== token) return;
+            if (error instanceof ApiError && error.status === 401) {
+              current.logout();
+              return;
+            }
+            current.flashToast("Impossibile aggiornare i salvataggi cloud", "bad");
+          });
+      },
     },
   ),
 );
+
+useGameStore.subscribe((state, prev) => {
+  if (!state.auth) return;
+  if (
+    state.slots === prev.slots &&
+    state.activeSlot === prev.activeSlot &&
+    state.preferredDifficulty === prev.preferredDifficulty &&
+    state.coachOn === prev.coachOn
+  ) {
+    return;
+  }
+  queueCloudSave(() => useGameStore.getState());
+});

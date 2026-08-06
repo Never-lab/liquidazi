@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { advanceMonth } from "./advanceMonth";
-import { fireEmployee, hireEmployee, PRESET_ROLES } from "./actions";
+import { fireEmployee, hireEmployee } from "./actions";
+import { baseGrossFor } from "../config/staffPay";
 import { createInitialGameState, round2, type GameState } from "./types";
 
 const withEmployee = (gross: number): GameState => {
@@ -15,6 +16,7 @@ const withEmployee = (gross: number): GameState => {
         grossMonthly: gross,
         hireMonthIdx: 2024 * 12,
         tfrAccrued: 0,
+        senioritySteps: 0,
       },
     ],
     nextId: s.nextId + 1,
@@ -61,9 +63,9 @@ describe("Phase 3 — cedolino semplificato", () => {
 
   it("assunzione e licenziamento aggiornano l'organico", () => {
     let s = createInitialGameState();
-    s = hireEmployee(s, PRESET_ROLES[0].role);
+    s = hireEmployee(s, "Operaio");
     expect(s.employees).toHaveLength(1);
-    expect(s.employees[0].grossMonthly).toBe(PRESET_ROLES[0].grossMonthly);
+    expect(s.employees[0].grossMonthly).toBe(baseGrossFor(s.company.sector, "Operaio"));
 
     s = fireEmployee(s, s.employees[0].id);
     expect(s.employees).toHaveLength(0);

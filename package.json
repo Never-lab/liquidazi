@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "node server/index.mjs",
     "dev": "vite",
     "dev:api": "node server/index.mjs",
     "build": "tsc -b && vite build",

@@ -7,6 +7,7 @@ import {
   euriborAt,
   FIDO_SPREAD_BPS,
   complianceSpreadPenaltyBps,
+  frenchPayment,
   treasuryAnnualRate,
 } from "./actions";
 import { applySubsidiaryMonth, refreshAcquisitionBoard } from "./acquisitions";
@@ -32,8 +33,17 @@ import {
   type GameState,
   type LiabilityKind,
 } from "./types";
+import {
+  baseGrossFor,
+  grossWithSeniority,
+  MAX_SENIORITY_STEPS,
+  SENIORITY_MONTHS,
+  STAFF_ROLES,
+  type StaffRole,
+} from "../config/staffPay";
 
 const YEAR_REPORTS_MAX = 8;
+const STAFF_ROLE_NAMES: ReadonlySet<string> = new Set(STAFF_ROLES.map((r) => r.role));
 
 const pushLiability = (
   state: GameState,
@@ -130,6 +140,25 @@ export const advanceMonth = (state: GameState): GameState => {
   next.activeContracts ??= [];
   next.quarterPressure ??= null;
   if (!next.rival) next.rival = seedRival(next);
+  // Defensive defaults: fields added after some saves were created should
+  // never resurrect as undefined/NaN on load (see persist migration above).
+  if (next.loan) {
+    const loanAnnualRate =
+      next.loan.rateType === "fixed"
+        ? (next.loan.fixedAnnualRate ?? euriborAt(next.monthsPlayed) + next.loan.spreadBps / 10000)
+        : euriborAt(next.monthsPlayed) + next.loan.spreadBps / 10000;
+    next.loan.monthlyPayment ??= frenchPayment(
+      next.loan.outstanding,
+      loanAnnualRate,
+      Math.max(1, next.loan.tenorMonths - next.loan.monthsPaid),
+    );
+  }
+  for (const emp of next.employees) {
+    emp.senioritySteps ??= 0;
+  }
+  if (next.fido) {
+    next.fido.lastInterest ??= 0;
+  }
   const cashBefore = next.company.cash;
   const lines: { label: string; amount: number }[] = [];
   const note = (label: string, before: number) => {
@@ -265,6 +294,33 @@ export const advanceMonth = (state: GameState): GameState => {
     }
   }
 
+  // 2b. scatti anzianità (ogni SENIORITY_MONTHS mesi di servizio, cap MAX_SENIORITY_STEPS)
+  for (const emp of next.employees) {
+    const months = idx - emp.hireMonthIdx;
+    const steps = Math.min(
+      MAX_SENIORITY_STEPS,
+      Math.max(0, Math.floor(months / SENIORITY_MONTHS)),
+    );
+    if (steps !== emp.senioritySteps) {
+      emp.senioritySteps = steps;
+      // Unknown/legacy roles (e.g. test fixtures) have no CCNL entry — leave
+      // their gross unchanged rather than recomputing from an undefined base.
+      if (STAFF_ROLE_NAMES.has(emp.role)) {
+        emp.grossMonthly = grossWithSeniority(
+          baseGrossFor(next.company.sector, emp.role as StaffRole),
+          steps,
+        );
+      }
+    }
+  }
+
+  // 2c. Responsabile: tiene a bada il fisco (+compliance); l'effetto sul
+  // rivale (−heat) è applicato dopo tickRivalHeat, a fine mese.
+  const nResp = next.employees.filter((e) => e.role === "Responsabile").length;
+  if (nResp > 0) {
+    next.compliance = Math.min(100, next.compliance + 2 * nResp);
+  }
+
   // 3. payroll (+ 13ª in dicembre)
   {
     const b = next.company.cash;
@@ -295,7 +351,8 @@ export const advanceMonth = (state: GameState): GameState => {
     next.ytd.purchases + issuedNow.filter((i) => i.kind === "AP").reduce((s2, i) => s2 + i.net, 0),
   );
 
-  // 5. loan installment
+  // 5. loan installment (rata francese: rimborso costante, quota capitale
+  // cresce col tempo; l'ultima rata e i casi limite azzerano l'outstanding)
   if (next.loan && next.loan.outstanding > 0) {
     const b = next.company.cash;
     const loan = next.loan;
@@ -304,8 +361,14 @@ export const advanceMonth = (state: GameState): GameState => {
         ? loan.fixedAnnualRate!
         : euriborAt(next.monthsPlayed) + loan.spreadBps / 10000;
     const interest = round2((loan.outstanding * annualRate) / 12);
-    const principalShare = Math.min(round2(loan.principal / loan.tenorMonths), loan.outstanding);
-    next.company.cash = round2(next.company.cash - interest - principalShare);
+    let principalShare = round2(loan.monthlyPayment - interest);
+    if (loan.monthsPaid + 1 >= loan.tenorMonths || principalShare > loan.outstanding) {
+      principalShare = loan.outstanding;
+    } else if (principalShare < 0) {
+      principalShare = 0;
+    }
+    const payment = round2(interest + principalShare);
+    next.company.cash = round2(next.company.cash - payment);
     loan.outstanding = round2(loan.outstanding - principalShare);
     loan.monthsPaid += 1;
     loan.lastInstallment = { interest, principal: principalShare };
@@ -322,12 +385,16 @@ export const advanceMonth = (state: GameState): GameState => {
     const interest = round2((next.fido.drawn * annual) / 12);
     next.company.cash = round2(next.company.cash - interest);
     next.ytd.interest = round2(next.ytd.interest + interest);
+    next.fido.lastInterest = interest;
     if (next.company.cash > 0 && next.fido.drawn > 0) {
       const repay = round2(Math.min(next.company.cash, next.fido.drawn));
       next.company.cash = round2(next.company.cash - repay);
       next.fido.drawn = round2(next.fido.drawn - repay);
     }
     note("Fido", b);
+  }
+  if (next.fido && next.fido.drawn === 0) {
+    next.fido.lastInterest = 0;
   }
 
   // 6. annual events
@@ -458,16 +525,22 @@ export const advanceMonth = (state: GameState): GameState => {
     next.status = "won";
   }
 
-  next.history = [
-    ...next.history,
-    {
-      monthIdx: closedIdx,
-      label: closedLabel,
-      cash: next.company.cash,
-      revenue: round2(monthRevenue),
-      costs: monthCosts,
-    },
-  ].slice(-36);
+  const point = {
+    monthIdx: closedIdx,
+    label: closedLabel,
+    cash: next.company.cash,
+    revenue: round2(monthRevenue),
+    costs: monthCosts,
+  };
+  const hist = [...next.history];
+  const last = hist[hist.length - 1];
+  // Opening seed uses the same monthIdx as the first close — replace, don't duplicate.
+  if (last && last.monthIdx === closedIdx) {
+    hist[hist.length - 1] = point;
+  } else {
+    hist.push(point);
+  }
+  next.history = hist.slice(-36);
 
   if (next.tempCapacityMonths > 0) {
     next.tempCapacityMonths -= 1;
@@ -497,6 +570,11 @@ export const advanceMonth = (state: GameState): GameState => {
   {
     const heated = tickRivalHeat(next, salesClosed, Math.max(1, monthlyCapacity(next)));
     next.rival = heated.rival;
+  }
+
+  // Responsabile: tiene a bada il rivale (−heat), applicato dopo la deriva mensile.
+  if (nResp > 0 && next.rival) {
+    next.rival = { ...next.rival, heat: Math.max(0, next.rival.heat - nResp) };
   }
 
   next.lastCloseSummary = {

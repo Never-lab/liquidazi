@@ -3,8 +3,10 @@ import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { advanceMonth } from "./advanceMonth";
 import {
   acceptLoanOffer,
+  buildLoanSchedule,
   canRequestLoan,
   drawFido,
+  frenchPayment,
   requestFido,
   requestLoan,
 } from "./actions";
@@ -43,7 +45,7 @@ describe("Phase 6 — prestito", () => {
     expect(withFondo.loan?.outstanding).toBe(10000);
   });
 
-  it("rata fissa: quota capitale costante + interessi sull'outstanding", () => {
+  it("rata fissa (francese): rata costante, quota capitale cresce nel tempo", () => {
     let s = createInitialGameState();
     s = requestLoan(s, {
       principal: 12000,
@@ -53,12 +55,24 @@ describe("Phase 6 — prestito", () => {
     });
     const cashAfterLoan = s.company.cash;
     const annualRate = snap.euribor_3m_path[0] + snap.loan_base_spread_bps / 10000;
-    const interest1 = round2((12000 * annualRate) / 12);
+    const schedule = buildLoanSchedule(12000, annualRate, 12);
+    const row1 = schedule[0]!;
+    const payment = frenchPayment(12000, annualRate, 12);
+
+    expect(s.loan?.monthlyPayment).toBeCloseTo(payment);
 
     s = advanceMonth(s);
-    expect(s.loan?.outstanding).toBe(11000);
-    expect(s.company.cash).toBeCloseTo(cashAfterLoan - 1000 - interest1);
-    expect(s.loan?.lastInstallment?.interest).toBeCloseTo(interest1);
+    expect(s.loan?.outstanding).toBeCloseTo(row1.residual);
+    expect(s.company.cash).toBeCloseTo(cashAfterLoan - row1.payment);
+    expect(s.loan?.lastInstallment?.interest).toBeCloseTo(row1.interest);
+    expect(s.loan?.lastInstallment?.principal).toBeCloseTo(row1.principal);
+
+    // rata costante (a tasso fisso) su più mensilità
+    s = advanceMonth(s);
+    expect(s.loan?.lastInstallment?.interest! + s.loan?.lastInstallment?.principal!).toBeCloseTo(
+      payment,
+    );
+    expect(s.loan?.lastInstallment?.principal).toBeGreaterThan(row1.principal);
   });
 
   it("tasso variabile: segue il path Euribor dello snapshot", () => {
@@ -69,14 +83,55 @@ describe("Phase 6 — prestito", () => {
       rateType: "floating",
       guarantee: "none",
     });
+    const spread = snap.loan_base_spread_bps / 10000;
+    const originationRate = snap.euribor_3m_path[0] + spread;
+    const payment = frenchPayment(12000, originationRate, 12);
+    expect(s.loan?.monthlyPayment).toBeCloseTo(payment);
+
+    // ricalcolo indipendente mese per mese col tasso Euribor reale del path
+    let outstanding = 12000;
+    let expectedInterestMonth3 = 0;
+    for (let m = 0; m < 3; m++) {
+      const annualRate = snap.euribor_3m_path[m] + spread;
+      const interest = round2((outstanding * annualRate) / 12);
+      let principal = round2(payment - interest);
+      if (m + 1 >= 12 || principal > outstanding) principal = outstanding;
+      else if (principal < 0) principal = 0;
+      outstanding = round2(outstanding - principal);
+      expectedInterestMonth3 = interest;
+    }
+
     s = advanceMonth(s); // mese 0: euribor[0]
     s = advanceMonth(s); // mese 1: euribor[1]
     s = advanceMonth(s); // mese 2: euribor[2] = 0.034 (diverso da [0])
 
-    const spread = snap.loan_base_spread_bps / 10000;
-    const expected = round2((10000 * (snap.euribor_3m_path[2] + spread)) / 12);
-    expect(s.loan?.lastInstallment?.interest).toBeCloseTo(expected);
+    expect(s.loan?.lastInstallment?.interest).toBeCloseTo(expectedInterestMonth3);
+    expect(s.loan?.outstanding).toBeCloseTo(outstanding);
     expect(snap.euribor_3m_path[2]).not.toBe(snap.euribor_3m_path[0]);
+  });
+
+  it("rate spike: principalShare negativo → solo interessi, niente estinzione anticipata", () => {
+    let s = createInitialGameState();
+    s = requestLoan(s, {
+      principal: 10000,
+      tenorMonths: 12,
+      rateType: "fixed",
+      guarantee: "none",
+    });
+    // monthlyPayment fissato a origination; tasso effettivo sale → interessi > rata
+    s = {
+      ...s,
+      loan: {
+        ...s.loan!,
+        monthlyPayment: 100,
+        fixedAnnualRate: 0.24,
+      },
+    };
+    const outstandingBefore = s.loan!.outstanding;
+    s = advanceMonth(s);
+    expect(s.loan?.lastInstallment?.principal).toBe(0);
+    expect(s.loan?.outstanding).toBe(outstandingBefore);
+    expect(s.loan?.lastInstallment?.interest).toBeCloseTo(200);
   });
 
   it("estinzione: dopo il tenor l'outstanding è zero e non escono più rate", () => {

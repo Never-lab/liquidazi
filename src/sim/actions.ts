@@ -1,5 +1,10 @@
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import {
+  STAFF_ROLES,
+  baseGrossFor,
+  type StaffRole,
+} from "../config/staffPay";
+import {
   UPGRADES,
   type UpgradeId,
 } from "../config/upgrades";
@@ -73,12 +78,7 @@ export const recordSupplierCost = (
   return addInvoice(state, "AP", net, { termMonths });
 };
 
-/** Ruoli assumibili nel MVP (retribuzioni di gioco, non tabelle CCNL). */
-export const PRESET_ROLES = [
-  { role: "Operaio", grossMonthly: 1800 },
-  { role: "Impiegato", grossMonthly: 2200 },
-  { role: "Responsabile", grossMonthly: 3000 },
-] as const;
+export { STAFF_ROLES };
 
 export const hireEmployee = (state: GameState, role: string): GameState => {
   if (hasPressure(state, "hiring_freeze")) {
@@ -92,15 +92,17 @@ export const hireEmployee = (state: GameState, role: string): GameState => {
     blocked.log = blocked.log.slice(0, 12);
     return blocked;
   }
-  const preset = PRESET_ROLES.find((r) => r.role === role);
-  if (!preset) return state;
+  const def = STAFF_ROLES.find((r) => r.role === role);
+  if (!def) return state;
+  const staffRole = def.role as StaffRole;
   const next = structuredClone(state);
   next.employees.push({
     id: next.nextId++,
-    role: preset.role,
-    grossMonthly: preset.grossMonthly,
+    role: staffRole,
+    grossMonthly: baseGrossFor(next.company.sector, staffRole),
     hireMonthIdx: toMonthIndex(next.calendar),
     tfrAccrued: 0,
+    senioritySteps: 0,
   });
   return next;
 };
@@ -129,7 +131,8 @@ export const fireEmployee = (state: GameState, id: number): GameState => {
   return next;
 };
 
-const spreadForGuarantee = (guarantee: LoanGuarantee): number => {
+/** Spread (bps) applicato dalla banca in base alla garanzia scelta. */
+export const spreadForGuarantee = (guarantee: LoanGuarantee): number => {
   if (guarantee === "fondo_garanzia_pmi")
     return snap.loan_base_spread_bps - snap.fondo_garanzia_spread_discount_bps;
   if (guarantee === "fideiussione")
@@ -142,6 +145,62 @@ export const euriborAt = (monthsPlayed: number): number => {
   const path = snap.euribor_3m_path;
   return path[Math.min(monthsPlayed, path.length - 1)];
 };
+
+/** Tasso annuale → tasso mensile (semplice, non composto). */
+export const monthlyRateFromAnnual = (annual: number): number => annual / 12;
+
+/** Rata costante di ammortamento francese; rata lineare se tasso ≤ 0. */
+export const frenchPayment = (
+  principal: number,
+  annualRate: number,
+  tenorMonths: number,
+): number => {
+  if (tenorMonths <= 0) return 0;
+  const r = monthlyRateFromAnnual(annualRate);
+  if (r <= 0) return round2(principal / tenorMonths);
+  const pow = (1 + r) ** tenorMonths;
+  return round2((principal * r * pow) / (pow - 1));
+};
+
+export type ScheduleRow = {
+  monthIndex: number; // 1-based installment number
+  interest: number;
+  principal: number;
+  payment: number;
+  residual: number;
+};
+
+/** Piano di ammortamento francese da un capitale residuo, a tasso costante. */
+export const remainingSchedule = (
+  outstanding: number,
+  annualRate: number,
+  monthsLeft: number,
+): ScheduleRow[] => {
+  const rows: ScheduleRow[] = [];
+  if (monthsLeft <= 0 || outstanding <= 0) return rows;
+  const payment = frenchPayment(outstanding, annualRate, monthsLeft);
+  const r = monthlyRateFromAnnual(annualRate);
+  let residual = outstanding;
+  for (let i = 1; i <= monthsLeft; i++) {
+    const interest = round2(residual * r);
+    let principal = round2(payment - interest);
+    if (i === monthsLeft || principal > residual) {
+      principal = residual;
+    } else if (principal < 0) {
+      principal = 0;
+    }
+    residual = round2(residual - principal);
+    rows.push({ monthIndex: i, interest, principal, payment: round2(interest + principal), residual });
+  }
+  return rows;
+};
+
+/** Piano di ammortamento francese completo, simulato dal capitale erogato. */
+export const buildLoanSchedule = (
+  principal: number,
+  annualRate: number,
+  tenorMonths: number,
+): ScheduleRow[] => remainingSchedule(principal, annualRate, tenorMonths);
 
 /**
  * Offerta di salvataggio: copre il buco + cuscinetto, Fondo PMI se serve.
@@ -176,15 +235,7 @@ export const canRequestLoan = (
   state: GameState,
   principal: number,
   guarantee: LoanGuarantee,
-): boolean => {
-  if (state.loan && state.loan.outstanding > 0) return false;
-  if (principal <= 0) return false;
-  const max =
-    guarantee === "fondo_garanzia_pmi"
-      ? snap.loan_max_principal_fondo
-      : snap.loan_max_principal_base;
-  return principal <= max;
-};
+): boolean => loanRefusalReason(state, principal, guarantee) === null;
 
 export interface LoanRequest {
   principal: number;
@@ -193,22 +244,95 @@ export interface LoanRequest {
   guarantee: LoanGuarantee;
 }
 
+/** Perché la banca rifiuterebbe questo mutuo, o null se approvabile. */
+export const loanRefusalReason = (
+  state: GameState,
+  principal: number,
+  guarantee: LoanGuarantee,
+): string | null => {
+  if (state.loan && state.loan.outstanding > 0) return "Hai già un mutuo attivo";
+  if (principal <= 0) return "Inserisci un importo positivo";
+  const max =
+    guarantee === "fondo_garanzia_pmi"
+      ? snap.loan_max_principal_fondo
+      : snap.loan_max_principal_base;
+  if (principal > max) return "Importo oltre il tetto: serve una garanzia / Fondo PMI";
+  return null;
+};
+
+export type LoanOfferCard = LoanRequest & {
+  id: string;
+  label: string;
+  annualRate: number;
+  monthlyPayment: number;
+  disabledReason: string | null;
+};
+
+const LOAN_OFFER_TEMPLATES: ReadonlyArray<{
+  id: string;
+  label: string;
+  principal: number;
+  tenorMonths: number;
+  guarantee: LoanGuarantee;
+}> = [
+  { id: "small", label: "Piccolo", principal: 10000, tenorMonths: 12, guarantee: "none" },
+  { id: "medium", label: "Medio", principal: 25000, tenorMonths: 24, guarantee: "none" },
+  {
+    id: "fondo",
+    label: "Fondo PMI",
+    principal: 40000,
+    tenorMonths: 36,
+    guarantee: "fondo_garanzia_pmi",
+  },
+];
+
+/** Le 3 offerte precalcolate mostrate in Credito, con rata e motivo di rifiuto. */
+export const buildLoanOffers = (state: GameState): LoanOfferCard[] =>
+  LOAN_OFFER_TEMPLATES.map((tpl) => {
+    // Il template "medio" prova prima senza garanzia; se il tetto lo blocca,
+    // ripiega su fideiussione (stesso tetto oggi, ma a prova di futuri snapshot).
+    const guarantee =
+      tpl.guarantee === "none" &&
+      loanRefusalReason(state, tpl.principal, "none") !== null &&
+      loanRefusalReason(state, tpl.principal, "fideiussione") === null
+        ? "fideiussione"
+        : tpl.guarantee;
+    const spreadBps =
+      spreadForGuarantee(guarantee) + complianceSpreadPenaltyBps(state.compliance);
+    const annualRate = euriborAt(state.monthsPlayed) + spreadBps / 10000;
+    const monthlyPayment = frenchPayment(tpl.principal, annualRate, tpl.tenorMonths);
+    return {
+      id: tpl.id,
+      label: tpl.label,
+      principal: tpl.principal,
+      tenorMonths: tpl.tenorMonths,
+      rateType: "fixed",
+      guarantee,
+      annualRate,
+      monthlyPayment,
+      disabledReason: loanRefusalReason(state, tpl.principal, guarantee),
+    };
+  });
+
 export const requestLoan = (state: GameState, req: LoanRequest): GameState => {
   if (!canRequestLoan(state, req.principal, req.guarantee)) return state;
   const next = structuredClone(state);
   const wasDistressed = next.company.cash < 0 || next.loanOffer !== null;
   const spreadBps =
     spreadForGuarantee(req.guarantee) + complianceSpreadPenaltyBps(next.compliance);
+  // rata francese fissa alla firma: per il variabile usiamo il tasso corrente
+  // come stima attesa; il rimborso capitale si adatta mese per mese al tasso reale.
+  const originationAnnualRate = euriborAt(next.monthsPlayed) + spreadBps / 10000;
   next.loan = {
     principal: req.principal,
     outstanding: req.principal,
     tenorMonths: req.tenorMonths,
     monthsPaid: 0,
     rateType: req.rateType,
-    fixedAnnualRate:
-      req.rateType === "fixed" ? euriborAt(next.monthsPlayed) + spreadBps / 10000 : null,
+    fixedAnnualRate: req.rateType === "fixed" ? originationAnnualRate : null,
     spreadBps,
     guarantee: req.guarantee,
+    monthlyPayment: frenchPayment(req.principal, originationAnnualRate, req.tenorMonths),
     lastInstallment: null,
   };
   next.company.cash = round2(next.company.cash + req.principal);

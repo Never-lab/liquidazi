@@ -28,6 +28,25 @@ npm run build
 npm test
 ```
 
+## Deploy (Railway)
+
+1. Push `main` to GitHub (`Never-lab/liquidazi`).
+2. New Railway project → Deploy from repo.
+3. Variables: set `LIQUIDAZI_SECRET` to a long random string (required).
+4. Volume: mount persistent volume at `/app/server/data`.
+5. Generate domain → open URL → register → play → reload on another browser: same slots.
+
+Local production-ish check:
+
+```powershell
+npm run build
+$env:LIQUIDAZI_SECRET="dev-only-local"
+$env:NODE_ENV="production"
+npm start
+```
+
+Then open `http://127.0.0.1:8787`.
+
 Crea un account (username + password), gioca, al KO la run va in classifica.
 
 ### Classifiche
@@ -39,7 +58,8 @@ Crea un account (username + password), gioca, al KO la run va in classifica.
 
 Dati in `server/data/` (gitignored). Secret: `LIQUIDAZI_SECRET`.
 
-Il salvataggio partita resta in `localStorage` (`liquidazi-save`); la sessione utente pure.
+`localStorage` (`liquidazi-save`) conserva una cache locale e la sessione utente. Per gli account,
+i tre slot e le preferenze vengono sincronizzati con il cloud.
 
 ## Cosa è semplificato (di proposito)
 

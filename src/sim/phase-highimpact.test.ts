@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { advanceMonth } from "./advanceMonth";
-import { fireEmployee, hireEmployee, issueCustomerInvoice, PRESET_ROLES } from "./actions";
+import { fireEmployee, hireEmployee, issueCustomerInvoice } from "./actions";
+import { baseGrossFor } from "../config/staffPay";
 import {
   acceptOpportunity,
   generateOpportunities,
@@ -18,7 +19,7 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
     expect(maxDealNet(servizi)).toBeGreaterThan(maxDealNet(bare));
     expect(monthlyCapacity(bare)).toBe(1 + Math.floor(50 / 40));
 
-    let hired = hireEmployee(bare, PRESET_ROLES[0].role);
+    let hired = hireEmployee(bare, "Operaio");
     expect(monthlyCapacity(hired)).toBe(monthlyCapacity(bare) + 1);
   });
 
@@ -139,7 +140,7 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
 
   it("licenziamento liquida il TFR maturato", () => {
     let s = createInitialGameState();
-    s = hireEmployee(s, PRESET_ROLES[0].role);
+    s = hireEmployee(s, "Operaio");
     s = advanceMonth(s);
     s = advanceMonth(s);
     const emp = s.employees[0]!;
@@ -155,9 +156,9 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
 
   it("dicembre: 13ª raddoppia il cedolino", () => {
     let s = createInitialGameState();
-    s = hireEmployee(s, PRESET_ROLES[1].role);
+    s = hireEmployee(s, "Impiegato");
     s = { ...s, calendar: { month: 12, year: 2024 } };
-    const gross = PRESET_ROLES[1].grossMonthly;
+    const gross = baseGrossFor(s.company.sector, "Impiegato");
     const expectedGross = round2(gross * 2);
     const inpsEmployee = round2(expectedGross * snap.inps_employee_rate);
     const irpef = round2(expectedGross * snap.irpef_withholding_simplified_rate);

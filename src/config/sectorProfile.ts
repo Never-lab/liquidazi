@@ -28,7 +28,7 @@ export const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
     privateTerms: [1, 1, 1, 2],
     paTerms: [3, 4, 6],
     defaultChance: 0.06,
-    seasonality: [0.85, 0.9, 1, 1, 1.05, 1, 0.9, 0.85, 1.05, 1.1, 1.2, 1.35],
+    seasonality: [0.85, 0.9, 1, 1, 1.05, 1, 0.9, 0.72, 1.18, 1.1, 1.2, 1.35],
   },
   servizi: {
     id: "servizi",
@@ -38,7 +38,7 @@ export const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
     privateTerms: [1, 1, 2, 2],
     paTerms: [3, 4, 6, 6],
     defaultChance: 0.05,
-    seasonality: [0.95, 1, 1.05, 1.05, 1, 0.95, 0.85, 0.8, 1.1, 1.1, 1.05, 0.9],
+    seasonality: [0.95, 1, 1.05, 1.05, 1, 0.95, 0.85, 0.7, 1.18, 1.1, 1.05, 0.9],
   },
   artigianato: {
     id: "artigianato",
@@ -48,7 +48,7 @@ export const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
     privateTerms: [1, 2, 2, 3],
     paTerms: [3, 4, 6],
     defaultChance: 0.07,
-    seasonality: [0.9, 1, 1.05, 1.1, 1.1, 1.05, 0.95, 0.85, 1.05, 1.1, 1.05, 0.95],
+    seasonality: [0.9, 1, 1.05, 1.1, 1.1, 1.05, 0.95, 0.72, 1.15, 1.1, 1.05, 0.95],
   },
   ristorazione: {
     id: "ristorazione",
@@ -58,6 +58,6 @@ export const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
     privateTerms: [1, 1, 1, 1],
     paTerms: [2, 3],
     defaultChance: 0.04,
-    seasonality: [0.75, 0.8, 0.9, 1, 1.05, 1.15, 1.25, 1.2, 1.1, 1, 0.9, 1.3],
+    seasonality: [0.75, 0.8, 0.9, 1, 1.05, 1.15, 1.25, 1.22, 1.12, 1, 0.9, 1.3],
   },
 };

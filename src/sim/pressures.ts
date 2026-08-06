@@ -17,6 +17,24 @@ const PRESSURES: { id: PressureId; label: string }[] = [
 export const pressureLabel = (id: PressureId): string =>
   PRESSURES.find((p) => p.id === id)?.label ?? id;
 
+/** One-line effect for HUD chip. */
+export const pressureEffectBlurb = (id: PressureId): string => {
+  switch (id) {
+    case "cash_crunch":
+      return "Affitto +15%";
+    case "pa_wave":
+      return "Più PA; −1 slot se scorte 0";
+    case "inspection":
+      return "F24 saltati: compliance ×2";
+    case "hiring_freeze":
+      return "Niente assunzioni";
+    case "boom":
+      return "Ticket +12%; scorte −2×";
+    default:
+      return "";
+  }
+};
+
 export const hasPressure = (state: GameState, id: PressureId): boolean =>
   state.quarterPressure?.id === id && (state.quarterPressure.monthsLeft ?? 0) > 0;
 
@@ -42,7 +60,7 @@ export const rollPressure = (state: GameState): GameState => {
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),
     tone: "neutral",
-    text: `Pressione trimestre: ${pick.label} (3 mesi).`,
+    text: `Pressione trimestre: ${pick.label} — ${pressureEffectBlurb(pick.id)} (3 mesi).`,
   });
   next.log = next.log.slice(0, 12);
   return next;
