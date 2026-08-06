@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useGameStore } from "../store/gameStore";
 import styles from "./MenuScreen.module.css";
 
@@ -12,17 +12,29 @@ export const AuthScreen = () => {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const submit = async () => {
+  const submit = async (form: HTMLFormElement) => {
+    // Autofill often paints the DOM without firing React onChange — read FormData.
+    const data = new FormData(form);
+    const user = String(data.get("username") ?? username).trim();
+    const pass = String(data.get("password") ?? password);
+    setUsername(user);
+    setPassword(pass);
+
     setError("");
     setBusy(true);
     try {
-      if (mode === "login") await login(username.trim(), password);
-      else await register(username.trim(), password);
+      if (mode === "login") await login(user, pass);
+      else await register(user, pass);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Errore");
     } finally {
       setBusy(false);
     }
+  };
+
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    void submit(e.currentTarget);
   };
 
   return (
@@ -36,10 +48,16 @@ export const AuthScreen = () => {
         sblocca la classifica.
       </p>
 
-      <div className={styles.menu} style={{ margin: "0 0 16px", maxWidth: "100%" }}>
+      <form
+        className={styles.menu}
+        style={{ margin: "0 0 16px", maxWidth: "100%" }}
+        onSubmit={onSubmit}
+        autoComplete="on"
+      >
         <label className={styles.field}>
           <span>Username</span>
           <input
+            name="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
@@ -50,11 +68,11 @@ export const AuthScreen = () => {
         <label className={styles.field}>
           <span>Password</span>
           <input
+            name="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete={mode === "login" ? "current-password" : "new-password"}
-            onKeyDown={(e) => e.key === "Enter" && void submit()}
           />
         </label>
 
@@ -69,12 +87,7 @@ export const AuthScreen = () => {
           >
             Continua senza account
           </button>
-          <button
-            type="button"
-            className={styles.secondary}
-            disabled={busy}
-            onClick={() => void submit()}
-          >
+          <button type="submit" className={styles.secondary} disabled={busy}>
             {busy ? "Attendi…" : mode === "login" ? "Entra" : "Registrati"}
           </button>
           <button
@@ -89,7 +102,7 @@ export const AuthScreen = () => {
             {mode === "login" ? "Non hai un account? Registrati" : "Hai già un account? Accedi"}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };
