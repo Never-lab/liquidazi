@@ -57,6 +57,9 @@ export const MenuScreen = () => {
       <nav className={styles.secondaryNav} aria-label="Altro">
         <NavItem icon="save" label="Salvataggi" onClick={() => setScreen("saves")} />
         <NavItem icon="trophy" label="Classifiche" onClick={() => setScreen("leaderboard")} />
+        {auth?.admin && (
+          <NavItem icon="spark" label="Controllo" onClick={() => setScreen("admin")} />
+        )}
         <NavItem icon="book" label="Tutorial" onClick={() => setScreen("tutorial")} />
         <NavItem icon="feedback" label="Segnala / migliora" onClick={() => setScreen("feedback")} />
         {auth ? (

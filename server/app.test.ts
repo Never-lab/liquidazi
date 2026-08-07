@@ -146,6 +146,101 @@ describe("cloud saves", () => {
   });
 });
 
+describe("admin stats", () => {
+  let adminBase: string;
+  let adminServer: ReturnType<typeof createServer>;
+  let adminDataDir: string;
+
+  beforeAll(async () => {
+    adminDataDir = mkdtempSync(join(tmpdir(), "liquidazi-admin-"));
+    const handler = createHandler({
+      dataDir: adminDataDir,
+      secret: SECRET,
+      distDir: null,
+      storage: "volume",
+      adminUsernames: ["boss"],
+    });
+    adminServer = createServer(handler);
+    await new Promise<void>((resolve) => adminServer.listen(0, "127.0.0.1", resolve));
+    const addr = adminServer.address();
+    if (!addr || typeof addr === "string") throw new Error("no port");
+    adminBase = `http://127.0.0.1:${addr.port}`;
+  });
+
+  afterAll(() => {
+    adminServer.close();
+    rmSync(adminDataDir, { recursive: true, force: true });
+  });
+
+  const adminApi = async (path: string, opts: RequestInit = {}) => {
+    const res = await fetch(`${adminBase}${path}`, opts);
+    const data = await res.json().catch(() => ({}));
+    return { status: res.status, data };
+  };
+
+  it("marks admin on login/me; rejects non-admin; returns counters", async () => {
+    const boss = await adminApi("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "boss", password: "secret1" }),
+    });
+    expect(boss.status).toBe(201);
+    expect((boss.data as { admin: boolean }).admin).toBe(true);
+    const bossToken = (boss.data as { token: string }).token;
+
+    const me = await adminApi("/api/auth/me", {
+      headers: { Authorization: `Bearer ${bossToken}` },
+    });
+    expect(me.status).toBe(200);
+    expect(me.data).toMatchObject({ username: "boss", admin: true });
+
+    const peon = await adminApi("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "peon", password: "secret1" }),
+    });
+    const peonToken = (peon.data as { token: string }).token;
+    expect((peon.data as { admin: boolean }).admin).toBe(false);
+
+    const denied = await adminApi("/api/admin/stats", {
+      headers: { Authorization: `Bearer ${peonToken}` },
+    });
+    expect(denied.status).toBe(403);
+
+    await adminApi("/api/runs", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${bossToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        companyName: "Boss SRL",
+        city: "MI",
+        sector: "servizi",
+        monthsPlayed: 12,
+        peakCash: 1000,
+        peakDebt: 0,
+        lifetimeRevenue: 5000,
+        finalCash: 200,
+      }),
+    });
+
+    const stats = await adminApi("/api/admin/stats", {
+      headers: { Authorization: `Bearer ${bossToken}` },
+    });
+    expect(stats.status).toBe(200);
+    expect(stats.data).toMatchObject({
+      users: 2,
+      runs: 1,
+      runs24h: 1,
+      cloudSaves: 0,
+      storage: "volume",
+      longestMonths: 12,
+    });
+    expect((stats.data as { recent: unknown[] }).recent).toHaveLength(1);
+  });
+});
+
 describe("static spa", () => {
   let staticBase: string;
   let staticServer: ReturnType<typeof createServer>;

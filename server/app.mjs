@@ -10,6 +10,7 @@ import {
   existsSync,
   renameSync,
   createReadStream,
+  readdirSync,
   statSync,
 } from "node:fs";
 import { join, extname, sep } from "node:path";
@@ -56,11 +57,27 @@ const emptySaves = () => ({
 });
 
 /**
- * @param {{ dataDir: string, secret: string, distDir: string | null, storage?: "volume" | "local" }} opts
+ * @param {{
+ *   dataDir: string,
+ *   secret: string,
+ *   distDir: string | null,
+ *   storage?: "volume" | "local",
+ *   adminUsernames?: string[],
+ * }} opts
  * @returns {(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse) => void}
  */
-export function createHandler({ dataDir, secret, distDir, storage = "local" }) {
+export function createHandler({
+  dataDir,
+  secret,
+  distDir,
+  storage = "local",
+  adminUsernames = [],
+}) {
   mkdirSync(dataDir, { recursive: true });
+  const adminSet = new Set(
+    adminUsernames.map((u) => String(u).trim().toLowerCase()).filter(Boolean),
+  );
+  const isAdmin = (user) => Boolean(user && adminSet.has(user.username.toLowerCase()));
 
   const load = (name, fallback) => {
     const p = join(dataDir, name);
@@ -213,7 +230,11 @@ export function createHandler({ dataDir, secret, distDir, storage = "local" }) {
         const user = { id: randomBytes(8).toString("hex"), username, hash, salt };
         users.push(user);
         save("users.json", users);
-        return json(res, 201, { token: makeToken(user.id), username: user.username });
+        return json(res, 201, {
+          token: makeToken(user.id),
+          username: user.username,
+          admin: isAdmin(user),
+        });
       }
 
       if (req.method === "POST" && path === "/api/auth/login") {
@@ -233,13 +254,80 @@ export function createHandler({ dataDir, secret, distDir, storage = "local" }) {
         if (!user || !checkPassword(password, user.salt, user.hash)) {
           return json(res, 401, { error: "Credenziali non valide" });
         }
-        return json(res, 200, { token: makeToken(user.id), username: user.username });
+        return json(res, 200, {
+          token: makeToken(user.id),
+          username: user.username,
+          admin: isAdmin(user),
+        });
       }
 
       if (req.method === "GET" && path === "/api/auth/me") {
         const user = parseToken(req.headers.authorization);
         if (!user) return json(res, 401, { error: "Non autenticato" });
-        return json(res, 200, { username: user.username });
+        return json(res, 200, { username: user.username, admin: isAdmin(user) });
+      }
+
+      if (req.method === "GET" && path === "/api/admin/stats") {
+        const user = parseToken(req.headers.authorization);
+        if (!user) return json(res, 401, { error: "Non autenticato" });
+        if (!isAdmin(user)) return json(res, 403, { error: "Solo admin" });
+
+        const now = Date.now();
+        const dayMs = 86_400_000;
+        const runs24h = runs.filter((r) => now - Date.parse(r.createdAt) < dayMs).length;
+        const runs7d = runs.filter((r) => now - Date.parse(r.createdAt) < 7 * dayMs).length;
+        const avgMonths =
+          runs.length === 0
+            ? 0
+            : Math.round(
+                (runs.reduce((s, r) => s + r.monthsPlayed, 0) / runs.length) * 10,
+              ) / 10;
+        const longest = runs.reduce((m, r) => Math.max(m, r.monthsPlayed), 0);
+
+        const savesDir = join(dataDir, "saves");
+        let cloudSaves = 0;
+        let dataBytes = 0;
+        const sizeOf = (p) => {
+          try {
+            return statSync(p).size;
+          } catch {
+            return 0;
+          }
+        };
+        for (const name of ["users.json", "runs.json"]) {
+          dataBytes += sizeOf(join(dataDir, name));
+        }
+        if (existsSync(savesDir)) {
+          for (const name of readdirSync(savesDir)) {
+            if (!name.endsWith(".json")) continue;
+            cloudSaves += 1;
+            dataBytes += sizeOf(join(savesDir, name));
+          }
+        }
+
+        const recent = [...runs]
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          .slice(0, 5)
+          .map((r) => ({
+            username: r.username,
+            companyName: r.companyName,
+            city: r.city,
+            monthsPlayed: r.monthsPlayed,
+            createdAt: r.createdAt,
+          }));
+
+        return json(res, 200, {
+          users: users.length,
+          runs: runs.length,
+          runs24h,
+          runs7d,
+          cloudSaves,
+          avgMonths,
+          longestMonths: longest,
+          dataBytes,
+          storage,
+          recent,
+        });
       }
 
       if (req.method === "GET" && path === "/api/saves") {

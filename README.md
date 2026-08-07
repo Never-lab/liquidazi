@@ -32,7 +32,7 @@ npm test
 
 1. Push `main` to GitHub (`Never-lab/liquidazi`).
 2. New Railway project → Deploy from repo (Node **22** via `nixpacks.toml` / `engines`).
-3. Variables: set `LIQUIDAZI_SECRET` to a long random string (required).
+3. Variables: set `LIQUIDAZI_SECRET` to a long random string (required). Optional: `LIQUIDAZI_ADMIN_USERNAMES=tuo_nick` (comma-separated) to unlock the in-game **Controllo** dashboard for those accounts.
 4. **Volume (obbligatorio):** Service → Settings → Volumes → add volume, mount path **`/data`** (mai `/app`: nasconde il codice e rompe il build). Railway espone `RAILWAY_VOLUME_MOUNT_PATH`; l’app scrive lì. Senza volume ogni redeploy azzera utenti, classifica e salvataggi.
 5. After deploy, `GET /api/health` must return `"storage":"volume"`. If the service fails to start with a FATAL about the volume, the mount is missing.
 6. Generate domain → open URL → register → play → reload on another browser: same slots.

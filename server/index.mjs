@@ -32,9 +32,23 @@ try {
   process.exit(1);
 }
 
+const adminUsernames = (process.env.LIQUIDAZI_ADMIN_USERNAMES || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const distDir = join(__dir, "..", "dist");
-const handler = createHandler({ dataDir, secret: SECRET, distDir, storage });
+const handler = createHandler({
+  dataDir,
+  secret: SECRET,
+  distDir,
+  storage,
+  adminUsernames,
+});
 createServer(handler).listen(PORT, HOST, () => {
   console.log(`Liquidazi listening on http://${HOST}:${PORT}`);
   console.log(`dataDir=${dataDir} storage=${storage}`);
+  if (adminUsernames.length) {
+    console.log(`adminUsernames=${adminUsernames.length} configured`);
+  }
 });

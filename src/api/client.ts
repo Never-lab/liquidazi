@@ -3,6 +3,26 @@ import type { DifficultyId } from "../config/difficulty";
 export type AuthSession = {
   token: string;
   username: string;
+  admin?: boolean;
+};
+
+export type AdminStats = {
+  users: number;
+  runs: number;
+  runs24h: number;
+  runs7d: number;
+  cloudSaves: number;
+  avgMonths: number;
+  longestMonths: number;
+  dataBytes: number;
+  storage: "volume" | "local";
+  recent: {
+    username: string;
+    companyName: string;
+    city: string;
+    monthsPlayed: number;
+    createdAt: string;
+  }[];
 };
 
 export type CloudSaveSlot = {
@@ -88,7 +108,10 @@ export const login = (username: string, password: string) =>
   });
 
 export const fetchMe = (token: string) =>
-  api<{ username: string }>("/api/auth/me", { token });
+  api<{ username: string; admin: boolean }>("/api/auth/me", { token });
+
+export const fetchAdminStats = (token: string) =>
+  api<AdminStats>("/api/admin/stats", { token });
 
 export const fetchSaves = (token: string) =>
   api<CloudSaves>("/api/saves", { token });
