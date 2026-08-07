@@ -14,6 +14,7 @@ import {
   statSync,
 } from "node:fs";
 import { join, extname, sep } from "node:path";
+import { computeBalance } from "./balance.mjs";
 
 const MAX_SAVE_BYTES = 1_000_000;
 const MAX_BODY_BYTES = 64_000;
@@ -338,6 +339,7 @@ export function createHandler({
           recent,
           feedbackCount: feedback.length,
           recentFeedback,
+          balance: computeBalance(runs),
         });
       }
 
@@ -446,6 +448,11 @@ export function createHandler({
         ) {
           return json(res, 400, { error: "Stats non valide" });
         }
+        const DIFFS = new Set(["easy", "normal", "hard"]);
+        const difficultyRaw = String(body.difficulty || "").trim().toLowerCase();
+        const difficulty = DIFFS.has(difficultyRaw) ? difficultyRaw : null;
+        const outcomeRaw = String(body.outcome || "lost").trim().toLowerCase();
+        const outcome = outcomeRaw === "won" ? "won" : "lost";
         /** @type {Run} */
         const run = {
           id: randomBytes(8).toString("hex"),
@@ -459,6 +466,8 @@ export function createHandler({
           peakDebt: Math.round(peakDebt * 100) / 100,
           lifetimeRevenue: Math.round(lifetimeRevenue * 100) / 100,
           finalCash: Math.round(finalCash * 100) / 100,
+          difficulty,
+          outcome,
           createdAt: new Date().toISOString(),
         };
         runs.push(run);

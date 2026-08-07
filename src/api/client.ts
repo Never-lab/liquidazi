@@ -25,6 +25,24 @@ export type AdminStats = {
   }[];
   feedbackCount: number;
   recentFeedback: FeedbackEntry[];
+  balance: BalanceStats;
+};
+
+export type BalanceStats = {
+  n: number;
+  avgMonths: number;
+  medianMonths: number;
+  pctGe12: number;
+  pctGe24: number;
+  wins: number;
+  losses: number;
+  unknownOutcome: number;
+  buckets: Record<"1-3" | "4-6" | "7-12" | "13-23" | "24+", number>;
+  avgPeakCash: number;
+  avgPeakDebt: number;
+  avgFinalCash: number;
+  byDifficulty: Record<string, { n: number; avgMonths: number; pctGe12: number }>;
+  bySector: Record<string, { n: number; avgMonths: number }>;
 };
 
 export type FeedbackKind = "bug" | "idea";
@@ -81,6 +99,8 @@ export type RunPayload = {
   peakDebt: number;
   lifetimeRevenue: number;
   finalCash: number;
+  difficulty?: DifficultyId;
+  outcome?: "lost" | "won";
 };
 
 export class ApiError extends Error {

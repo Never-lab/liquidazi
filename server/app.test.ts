@@ -240,6 +240,10 @@ describe("admin stats", () => {
     });
     expect((stats.data as { recent: unknown[] }).recent).toHaveLength(1);
     expect((stats.data as { recentFeedback: unknown[] }).recentFeedback).toEqual([]);
+    expect((stats.data as { balance: { n: number; buckets: Record<string, number> } }).balance).toMatchObject({
+      n: 1,
+      buckets: { "1-3": 0, "4-6": 0, "7-12": 1, "13-23": 0, "24+": 0 },
+    });
   });
 });
 
