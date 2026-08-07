@@ -55,6 +55,7 @@ export const processActiveProjectForMonth = (
 
 export const acceptProject = (state: GameState, id: ProjectId): GameState => {
   if (state.activeProject) return state;
+  if (!state.projectOffer?.options.includes(id)) return state;
   const def = getProjectDef(id);
   const totalCost = def.cost + def.frozenCash;
   if (state.company.cash < totalCost) return state;

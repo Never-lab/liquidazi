@@ -66,6 +66,7 @@ describe("annual project offer on Dec→Jan", () => {
 
   it("after duration months project clears and returns frozen cash", () => {
     let s = decState();
+    s.projectOffer = { year: 2025, options: ["magazzino"] };
     s = acceptProject(s, "magazzino");
     const def = PROJECTS.magazzino;
     const cashAfterAccept = s.company.cash;
@@ -98,6 +99,14 @@ describe("active project effects", () => {
     expect(monthlyCapacity(s)).toBe(Math.max(0, base - 1));
   });
 
+  it("soft floor does not erase espansione slot penalty at minimal capacity", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.company.reputation = 0;
+    s.activeProject = { id: "espansione_commerciale", monthsLeft: 9, frozenCash: 0 };
+    expect(monthlyCapacity(s)).toBe(0);
+  });
+
   it("espansione_commerciale multiplies maxDealNet", () => {
     let s = createInitialGameState();
     s.quietMode = true;
@@ -106,12 +115,46 @@ describe("active project effects", () => {
     expect(maxDealNet(s)).toBeCloseTo(base * 1.06, 0);
   });
 
+  it("espansione ticketMult applies after ceiling", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.monthsPlayed = 120;
+    for (let i = 0; i < 12; i++) {
+      s.employees.push({
+        id: i + 1,
+        role: "Commerciale",
+        gross: 2000,
+        senioritySteps: 0,
+      });
+    }
+    s.upgradeLevels = { commerciale: 3, processi: 3 };
+    const atCeiling = maxDealNet(s);
+    s.activeProject = { id: "espansione_commerciale", monthsLeft: 9, frozenCash: 0 };
+    expect(maxDealNet(s)).toBeCloseTo(atCeiling * 1.06, 0);
+    expect(maxDealNet(s)).toBeGreaterThan(atCeiling);
+  });
+
   it("magazzino lowers effective rent without mutating monthlyRent", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.company.monthlyRent = 1000;
     s.activeProject = { id: "magazzino", monthsLeft: 6, frozenCash: 0 };
     expect(effectiveMonthlyRent(s)).toBe(950);
     expect(s.company.monthlyRent).toBe(1000);
+  });
+
+  it("history costs use effective rent debited (magazzino discount)", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.quietMode = true;
+    s.company.cash = 50000;
+    s.company.monthlyRent = 1000;
+    s.activeProject = { id: "magazzino", monthsLeft: 12, frozenCash: 2000 };
+    const before = s.company.cash;
+    s = advanceMonth(s);
+    const rentCharged = before - s.company.cash;
+    expect(rentCharged).toBe(950);
+    const last = s.history[s.history.length - 1]!;
+    expect(last.costs).toBeGreaterThanOrEqual(950);
+    expect(last.costs).toBeLessThan(1000);
   });
 
   it("processActiveProjectForMonth applies compliance each month", () => {

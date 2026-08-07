@@ -43,6 +43,27 @@ describe("acceptProject", () => {
     let s = createInitialGameState();
     const def = PROJECTS.magazzino;
     s.company.cash = def.cost + def.frozenCash - 1;
+    s.projectOffer = { year: 2025, options: ["magazzino"] };
+    const cashBefore = s.company.cash;
+    s = acceptProject(s, "magazzino");
+    expect(s.activeProject).toBeNull();
+    expect(s.company.cash).toBe(cashBefore);
+  });
+
+  it("rejects when no pending projectOffer", () => {
+    let s = createInitialGameState();
+    s.company.cash = 20000;
+    s.projectOffer = null;
+    const cashBefore = s.company.cash;
+    s = acceptProject(s, "magazzino");
+    expect(s.activeProject).toBeNull();
+    expect(s.company.cash).toBe(cashBefore);
+  });
+
+  it("rejects when id is not in projectOffer.options", () => {
+    let s = createInitialGameState();
+    s.company.cash = 20000;
+    s.projectOffer = { year: 2025, options: ["formazione", "digitalizzazione"] };
     const cashBefore = s.company.cash;
     s = acceptProject(s, "magazzino");
     expect(s.activeProject).toBeNull();
@@ -52,6 +73,7 @@ describe("acceptProject", () => {
   it("accepts project with zero frozen cash", () => {
     let s = createInitialGameState();
     s.company.cash = 10000;
+    s.projectOffer = { year: 2025, options: ["formazione"] };
     s = acceptProject(s, "formazione");
     expect(s.activeProject).toEqual({
       id: "formazione",

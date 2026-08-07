@@ -171,6 +171,7 @@ export const advanceMonth = (state: GameState): GameState => {
     next.fido.lastInterest ??= 0;
   }
   const cashBefore = next.company.cash;
+  let monthRentCharged = 0;
   const lines: { label: string; amount: number }[] = [];
   const note = (label: string, before: number) => {
     const d = round2(next.company.cash - before);
@@ -265,9 +266,9 @@ export const advanceMonth = (state: GameState): GameState => {
   // 1b. monthly zone rent / locale
   if (next.company.monthlyRent > 0) {
     const b = next.company.cash;
-    const rent = round2(effectiveMonthlyRent(next) * rentFactorFromPressure(next));
-    next.company.cash = round2(next.company.cash - rent);
-    next.ytd.otherCosts = round2(next.ytd.otherCosts + rent);
+    monthRentCharged = round2(effectiveMonthlyRent(next) * rentFactorFromPressure(next));
+    next.company.cash = round2(next.company.cash - monthRentCharged);
+    next.ytd.otherCosts = round2(next.ytd.otherCosts + monthRentCharged);
     note("Affitto", b);
   }
 
@@ -483,7 +484,7 @@ export const advanceMonth = (state: GameState): GameState => {
   const monthCosts = round2(
     monthPurchases +
       (next.lastPayroll?.totalNet ?? 0) +
-      next.company.monthlyRent +
+      monthRentCharged +
       (next.loan?.lastInstallment
         ? next.loan.lastInstallment.interest + next.loan.lastInstallment.principal
         : 0),

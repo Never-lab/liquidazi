@@ -79,9 +79,10 @@ export const monthlyCapacity = (state: GameState): number => {
   const afterContracts = base - contractSlotsUsed(state);
   const penalized = afterContracts - capacityPressurePenalty(state) - projSlot;
   // Soft floor: don't soft-lock a board with 0 free slots when you have no contracts
-  // (pa_wave + scorte 0 still hurts via ticket ×0.72).
+  // (pa_wave + scorte 0 still hurts via ticket ×0.72). slotPenalty still applies.
   if (penalized <= 0 && contractSlotsUsed(state) === 0) {
-    return Math.max(0, Math.min(1, afterContracts));
+    const floored = Math.max(0, Math.min(1, afterContracts - capacityPressurePenalty(state)));
+    return Math.max(0, floored - projSlot);
   }
   return Math.max(0, penalized);
 };
@@ -126,10 +127,7 @@ export const maxDealNet = (state: GameState): number => {
   const commercialeMult = [1, 1.08, 1.12, 1.16][upgradeLevel(upgradeLevels, "commerciale")]!;
   const supplyMult = (state.supplyMonths ?? 0) > 0 ? 1 : 0.72;
   const pressureTicket = ticketFactorFromPressure(state);
-  const projectTicketMult = state.activeProject
-    ? getProjectDef(state.activeProject.id).ticketMult
-    : 1;
-  return round2(
+  const capped = round2(
     Math.min(
       ticketCeiling(state),
       Math.max(
@@ -142,11 +140,14 @@ export const maxDealNet = (state: GameState): number => {
           ticketMult *
           commercialeMult *
           supplyMult *
-          pressureTicket *
-          projectTicketMult,
+          pressureTicket,
       ),
     ),
   );
+  const projectTicketMult = state.activeProject
+    ? getProjectDef(state.activeProject.id).ticketMult
+    : 1;
+  return round2(capped * projectTicketMult);
 };
 
 const pushSale = (
