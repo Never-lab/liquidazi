@@ -123,7 +123,9 @@ describe("active project effects", () => {
       s.employees.push({
         id: i + 1,
         role: "Commerciale",
-        gross: 2000,
+        grossMonthly: 2000,
+        hireMonthIdx: 0,
+        tfrAccrued: 0,
         senioritySteps: 0,
       });
     }
