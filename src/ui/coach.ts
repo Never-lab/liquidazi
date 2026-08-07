@@ -1,4 +1,5 @@
 import { UPGRADE_LIST, upgradeLevel } from "../config/upgrades";
+import { DEFAULT_STAFF_MORALE } from "../sim/morale";
 import { migrateUpgradeState } from "../sim/migrateUpgrades";
 import type { GameState } from "../sim/types";
 
@@ -51,6 +52,17 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
       id: "commesse-legend",
       title: "Cosa significano i numeri sopra le commesse",
       body: "Capacità = vendite accettate / slot del mese; Tetto max = limite per una singola vendita; Scorte = mesi di magazzino. Su desktop, passa sui chip per il dettaglio.",
+    };
+  }
+  if (
+    game.employees.length > 0 &&
+    (game.staffMorale ?? DEFAULT_STAFF_MORALE) < 40 &&
+    game.monthsPlayed >= 2
+  ) {
+    return {
+      id: "staff-clima",
+      title: "Clima del personale",
+      body: "Clima basso in Personale: rischio dimissioni e meno capacità. Migliora con utili, F24 in regola, Responsabile HR e progetto Formazione.",
     };
   }
   if (game.monthsPlayed >= 2 && game.employees.length === 0 && game.monthsPlayed < 6) {
