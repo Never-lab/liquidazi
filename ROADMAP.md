@@ -15,12 +15,13 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | UI icons + feedback | [docs/superpowers/plans/2026-08-06-ui-icons-feedback.md](docs/superpowers/plans/2026-08-06-ui-icons-feedback.md) | [spec](docs/superpowers/specs/2026-08-06-ui-icons-feedback-design.md) |
 | Admin controllo | [PR #9](https://github.com/Never-lab/liquidazi/pull/9) · env `LIQUIDAZI_ADMIN_USERNAMES` in [README](README.md) | — |
 | Feedback in-app | `POST /api/feedback` + Controllo (no GitHub required) | — |
+| HUD icons (slice 2) | chrome sticky / F24 / toolbar / ops tabs | [spec follow-up](docs/superpowers/specs/2026-08-06-ui-icons-feedback-design.md) |
 
 ## Next (coda attiva)
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **HUD / panel icons (slice 2)** — estendere `src/ui/icons.tsx` oltre menu/auth (fuori scope dello slice 1).
+1. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
 2. **Admin write actions** — ban soft / wipe save da Controllo (oggi sola lettura).
 3. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
 4. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
