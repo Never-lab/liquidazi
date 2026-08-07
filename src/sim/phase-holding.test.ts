@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { HOLDING_SLOT_BASE } from "../config/holding";
+import { advanceMonth } from "./advanceMonth";
+import { issueCustomerInvoice, payF24 } from "./actions";
 import {
   acceptSaleOffer,
   advanceHoldingSales,
@@ -12,7 +15,14 @@ import {
   refreshAcquisitionBoard,
   rejectSaleOffer,
 } from "./acquisitions";
-import { calendarFromIndex, createInitialGameState, toMonthIndex } from "./types";
+import { skipProjectOffer } from "./projects";
+import {
+  calendarFromIndex,
+  createInitialGameState,
+  round2,
+  toMonthIndex,
+  type GameState,
+} from "./types";
 
 describe("holding buy + value", () => {
   it("estimate scales with EBITDA and risk", () => {
@@ -205,5 +215,45 @@ describe("holding list + flip", () => {
     expect(s.company.cash).toBe(cash0 + 12000);
     expect(s.ytd.capitalGains).toBe(4000);
     expect(s.saleOffers).toHaveLength(0);
+  });
+});
+
+const playToNovember = (s: GameState): GameState => {
+  for (let i = 0; i < 11; i++) {
+    s = issueCustomerInvoice(s, 10000);
+    if (s.projectOffer) s = skipProjectOffer(s);
+    s = advanceMonth(s);
+    s = payF24(s);
+  }
+  return s;
+};
+
+describe("holding FY plusvalenza", () => {
+  it("positive capitalGains increases December IRES", () => {
+    let baseline = createInitialGameState();
+    baseline.quietMode = true;
+    baseline = playToNovember(baseline);
+    baseline = issueCustomerInvoice(baseline, 10000);
+    if (baseline.projectOffer) baseline = skipProjectOffer(baseline);
+    baseline = advanceMonth(baseline);
+    const iresBaseline = baseline.lastYearReport!.ires;
+
+    let withGains = createInitialGameState();
+    withGains.quietMode = true;
+    withGains = playToNovember(withGains);
+    withGains.ytd.capitalGains = 10000;
+    withGains = issueCustomerInvoice(withGains, 10000);
+    if (withGains.projectOffer) withGains = skipProjectOffer(withGains);
+    withGains = advanceMonth(withGains);
+
+    expect(withGains.lastYearReport?.capitalGains).toBe(10000);
+    expect(withGains.lastYearReport?.profit).toBeCloseTo(
+      baseline.lastYearReport!.profit + 10000,
+    );
+    expect(withGains.lastYearReport?.ires).toBeCloseTo(
+      iresBaseline + round2(10000 * snap.ires_rate),
+    );
+    expect(withGains.lastYearReport?.irap).toBeCloseTo(baseline.lastYearReport!.irap);
+    expect(withGains.ytd.capitalGains).toBe(0);
   });
 });

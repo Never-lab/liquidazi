@@ -458,8 +458,9 @@ export const advanceMonth = (state: GameState): GameState => {
   }
 
   if (month === 12) {
-    const { revenue, purchases, payrollCost, interest, otherCosts, capitalGains } = next.ytd;
-    const profit = round2(revenue - purchases - payrollCost - interest - otherCosts);
+    const { revenue, purchases, payrollCost, interest, otherCosts, capitalGains = 0 } = next.ytd;
+    const gainsForIres = Math.max(0, capitalGains);
+    const profit = round2(revenue - purchases - payrollCost - interest - otherCosts + gainsForIres);
     const irapBase = round2(revenue - purchases);
     const ires = round2(Math.max(0, profit) * snap.ires_rate);
     const irap = round2(Math.max(0, irapBase) * snap.irap_rate);
