@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { formatCash } from "../components/formatCash";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { DIFFICULTIES } from "../config/difficulty";
 import { cityById } from "../config/market";
 import { useGameStore } from "../store/gameStore";
@@ -11,6 +13,10 @@ export const SavesScreen = () => {
   const renameSlot = useGameStore((s) => s.renameSlot);
   const clearSlot = useGameStore((s) => s.clearSlot);
   const setScreen = useGameStore((s) => s.setScreen);
+  const [pendingClear, setPendingClear] = useState<number | null>(null);
+
+  const pending = pendingClear != null ? slots[pendingClear] : null;
+  const pendingGame = pending?.game ?? null;
 
   return (
     <div className={styles.menuWide}>
@@ -83,9 +89,7 @@ export const SavesScreen = () => {
                   <button
                     className={styles.secondary}
                     type="button"
-                    onClick={() => {
-                      if (confirm(`Cancellare «${slot.label}»?`)) clearSlot(i);
-                    }}
+                    onClick={() => setPendingClear(i)}
                   >
                     Cancella
                   </button>
@@ -101,6 +105,39 @@ export const SavesScreen = () => {
           Menu
         </button>
       </div>
+
+      <ConfirmDialog
+        open={pendingClear != null && Boolean(pending)}
+        title="Cancellare questo salvataggio?"
+        confirmLabel="Cancella slot"
+        cancelLabel="Tieni"
+        danger
+        onCancel={() => setPendingClear(null)}
+        onConfirm={() => {
+          if (pendingClear != null) clearSlot(pendingClear);
+          setPendingClear(null);
+        }}
+      >
+        {pending && pendingGame && pendingGame.monthsPlayed > 0 ? (
+          <>
+            <p>
+              Stai per eliminare <strong>«{pending.label}»</strong> —{" "}
+              {pendingGame.company.name}.
+            </p>
+            <p>
+              Mese {pendingGame.monthsPlayed + 1} · cassa{" "}
+              {formatCash(pendingGame.company.cash)}. L&apos;azione non si può
+              annullare
+              {pendingClear === activeSlot ? " e svuota anche lo slot attivo" : ""}.
+            </p>
+          </>
+        ) : (
+          <p>
+            Stai per eliminare <strong>«{pending?.label ?? "lo slot"}»</strong>. Non
+            si può annullare.
+          </p>
+        )}
+      </ConfirmDialog>
     </div>
   );
 };
