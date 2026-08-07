@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { HOLDING_SLOT_BASE } from "../config/holding";
 import {
+  acceptSaleOffer,
   applySubsidiaryMonth,
   buyAcquisition,
   estimateSubsidiaryValue,
   generateAcquisitionBoard,
   investSubsidiaryCapex,
+  listSubsidiaryForSale,
   refreshAcquisitionBoard,
 } from "./acquisitions";
-import { createInitialGameState } from "./types";
+import { createInitialGameState, toMonthIndex } from "./types";
 
 describe("holding buy + value", () => {
   it("estimate scales with EBITDA and risk", () => {
@@ -103,5 +105,66 @@ describe("holding CAPEX + drift", () => {
     expect(s.subsidiaries[0]!.monthlyEbitda).toBe(1010);
     expect(s.subsidiaries[0]!.capexCooldownMonths).toBe(1);
     expect(s.company.cash).toBe(initialCash + 1010);
+  });
+
+  it("CAPEX blocked while listed", () => {
+    let s = createInitialGameState();
+    s.company.cash = 100000;
+    s.subsidiaries = [
+      {
+        id: 1,
+        name: "Co",
+        sector: "servizi",
+        monthlyEbitda: 1000,
+        capacityBonus: 0,
+        monthsOwned: 1,
+        risk: "med",
+        purchasePrice: 10000,
+        listedUntilMonthIdx: toMonthIndex(s.calendar) + 2,
+        capexCooldownMonths: 0,
+      },
+    ];
+    const blocked = investSubsidiaryCapex(s, 1);
+    expect(blocked.company.cash).toBe(s.company.cash);
+  });
+});
+
+describe("holding list + flip", () => {
+  it("list → offer → accept: cash and capitalGains", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.company.cash = 0;
+    s.ytd.capitalGains = 0;
+    s.subsidiaries = [
+      {
+        id: 7,
+        name: "Flip Co",
+        sector: "servizi",
+        monthlyEbitda: 1000,
+        capacityBonus: 0,
+        monthsOwned: 0,
+        risk: "med",
+        purchasePrice: 8000,
+        listedUntilMonthIdx: null,
+        capexCooldownMonths: 0,
+      },
+    ];
+    s = listSubsidiaryForSale(s, 7);
+    expect(s.subsidiaries[0]!.listedUntilMonthIdx).not.toBeNull();
+    s.saleOffers = [
+      {
+        id: 99,
+        subsidiaryId: 7,
+        price: 12000,
+        expiresMonthIdx: toMonthIndex(s.calendar) + 1,
+      },
+    ];
+    s.nextId = 100;
+    const cash0 = s.company.cash;
+    s = acceptSaleOffer(s, 99);
+    expect(s.subsidiaries).toHaveLength(0);
+    expect(s.company.cash).toBe(cash0 + 12000);
+    expect(s.ytd.capitalGains).toBe(4000);
+    expect(s.saleOffers).toHaveLength(0);
   });
 });

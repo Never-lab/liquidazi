@@ -11,7 +11,7 @@ import {
   frenchPayment,
   treasuryAnnualRate,
 } from "./actions";
-import { applySubsidiaryMonth, refreshAcquisitionBoard } from "./acquisitions";
+import { applySubsidiaryMonth, advanceHoldingSales, refreshAcquisitionBoard } from "./acquisitions";
 import { tickContracts } from "./contracts";
 import { runWorldEvents } from "./eventCatalog";
 import { refreshMarketBoard, rng, monthlyCapacity } from "./events";
@@ -299,6 +299,7 @@ export const advanceMonth = (state: GameState): GameState => {
   {
     const b = next.company.cash;
     applySubsidiaryMonth(next, rand);
+    advanceHoldingSales(next, rand);
     note("Partecipate", b);
   }
 

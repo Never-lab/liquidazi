@@ -3,6 +3,9 @@ import {
   CAPEX_COOLDOWN_MONTHS,
   CAPEX_EBITDA_MULT,
   HOLDING_SLOT_BASE,
+  LISTING_WINDOW_MONTHS,
+  OFFER_PRICE_MAX,
+  OFFER_PRICE_MIN,
   VALUE_MULTIPLE_MAX,
   VALUE_MULTIPLE_MIN,
 } from "../config/holding";
@@ -14,6 +17,7 @@ import {
   type AcquisitionTarget,
   type GameState,
   type Subsidiary,
+  type SaleOffer,
 } from "./types";
 
 const TARGET_NAMES = [
@@ -123,6 +127,91 @@ export const buyAcquisition = (state: GameState, targetId: number): GameState =>
   });
   next.log = next.log.slice(0, 12);
   return next;
+};
+
+export const listSubsidiaryForSale = (state: GameState, subsidiaryId: number): GameState => {
+  const subs = state.subsidiaries ?? [];
+  const sub = subs.find((s) => s.id === subsidiaryId);
+  if (!sub || sub.listedUntilMonthIdx != null) return state;
+
+  const next = structuredClone(state);
+  const target = next.subsidiaries!.find((s) => s.id === subsidiaryId)!;
+  target.listedUntilMonthIdx = toMonthIndex(next.calendar) + LISTING_WINDOW_MONTHS;
+  next.saleOffers = (next.saleOffers ?? []).filter((o) => o.subsidiaryId !== subsidiaryId);
+  return next;
+};
+
+export const acceptSaleOffer = (state: GameState, offerId: number): GameState => {
+  const offer = (state.saleOffers ?? []).find((o) => o.id === offerId);
+  if (!offer) return state;
+  const sub = (state.subsidiaries ?? []).find((s) => s.id === offer.subsidiaryId);
+  if (!sub) return state;
+
+  const next = structuredClone(state);
+  const gain = round2(offer.price - sub.purchasePrice);
+  next.company.cash = round2(next.company.cash + offer.price);
+  next.ytd.capitalGains = round2(next.ytd.capitalGains + gain);
+  next.subsidiaries = (next.subsidiaries ?? []).filter((s) => s.id !== offer.subsidiaryId);
+  next.saleOffers = (next.saleOffers ?? []).filter((o) => o.subsidiaryId !== offer.subsidiaryId);
+  if (gain > 0) {
+    next.log.unshift({
+      id: next.nextId++,
+      monthIdx: toMonthIndex(next.calendar),
+      tone: "good",
+      text: `Venduta ${sub.name}: +${offer.price.toLocaleString("it-IT")} € (plusvalenza ${gain.toLocaleString("it-IT")} €).`,
+    });
+    next.log = next.log.slice(0, 12);
+  }
+  return next;
+};
+
+export const rejectSaleOffer = (state: GameState, offerId: number): GameState => {
+  const offer = (state.saleOffers ?? []).find((o) => o.id === offerId);
+  if (!offer) return state;
+  const next = structuredClone(state);
+  next.saleOffers = (next.saleOffers ?? []).filter((o) => o.id !== offerId);
+  return next;
+};
+
+const hasPendingOffer = (offers: SaleOffer[], subsidiaryId: number, currentIdx: number): boolean =>
+  offers.some((o) => o.subsidiaryId === subsidiaryId && o.expiresMonthIdx >= currentIdx);
+
+/** Monthly offer spawn/expire for listed subsidiaries. Mutates state in advanceMonth. */
+export const advanceHoldingSales = (state: GameState, rand: () => number): void => {
+  state.saleOffers ??= [];
+  const currentIdx = toMonthIndex(state.calendar);
+
+  state.saleOffers = state.saleOffers.filter((o) => o.expiresMonthIdx >= currentIdx);
+
+  for (const sub of state.subsidiaries ?? []) {
+    if (sub.listedUntilMonthIdx == null) continue;
+
+    if (currentIdx > sub.listedUntilMonthIdx) {
+      sub.listedUntilMonthIdx = null;
+      state.saleOffers = state.saleOffers.filter((o) => o.subsidiaryId !== sub.id);
+      continue;
+    }
+
+    if (hasPendingOffer(state.saleOffers, sub.id, currentIdx)) continue;
+
+    const listingStartIdx = sub.listedUntilMonthIdx - LISTING_WINDOW_MONTHS;
+    const shouldSpawn =
+      currentIdx === listingStartIdx
+        ? true
+        : currentIdx === listingStartIdx + 1
+          ? rand() < 0.5
+          : rand() < 0.55;
+    if (!shouldSpawn) continue;
+
+    const estimate = estimateSubsidiaryValue(sub);
+    const price = round2(estimate * (OFFER_PRICE_MIN + rand() * (OFFER_PRICE_MAX - OFFER_PRICE_MIN)));
+    state.saleOffers.push({
+      id: state.nextId++,
+      subsidiaryId: sub.id,
+      price,
+      expiresMonthIdx: currentIdx + 1,
+    });
+  }
 };
 
 export const investSubsidiaryCapex = (state: GameState, subsidiaryId: number): GameState => {
