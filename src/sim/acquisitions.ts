@@ -1,5 +1,7 @@
 import { SECTORS, type SectorId } from "../config/market";
 import {
+  CAPEX_COOLDOWN_MONTHS,
+  CAPEX_EBITDA_MULT,
   HOLDING_SLOT_BASE,
   VALUE_MULTIPLE_MAX,
   VALUE_MULTIPLE_MIN,
@@ -36,6 +38,10 @@ const RISK_CHANCE: Record<AcquisitionRisk, number> = {
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
 
 const RISK_MULT = { low: 1.05, med: 1, high: 0.9 } as const;
+
+const CAPEX_BOOST = 0.16; // midpoint of CAPEX_BOOST_MIN..MAX for v1 determinism
+
+const DRIFT = { low: 0.01, med: 0.005, high: -0.005 } as const;
 
 export const estimateSubsidiaryValue = (sub: {
   monthlyEbitda: number;
@@ -119,6 +125,32 @@ export const buyAcquisition = (state: GameState, targetId: number): GameState =>
   return next;
 };
 
+export const investSubsidiaryCapex = (state: GameState, subsidiaryId: number): GameState => {
+  const subs = state.subsidiaries ?? [];
+  const sub = subs.find((s) => s.id === subsidiaryId);
+  if (!sub) return state;
+  if (sub.listedUntilMonthIdx != null) return state;
+  if (sub.capexCooldownMonths > 0) return state;
+
+  const cost = round2(sub.monthlyEbitda * CAPEX_EBITDA_MULT);
+  if (state.company.cash < cost) return state;
+
+  const next = structuredClone(state);
+  const target = next.subsidiaries!.find((s) => s.id === subsidiaryId)!;
+  target.monthlyEbitda = round2(target.monthlyEbitda * (1 + CAPEX_BOOST));
+  next.company.cash = round2(next.company.cash - cost);
+  next.ytd.otherCosts = round2(next.ytd.otherCosts + cost);
+  target.capexCooldownMonths = CAPEX_COOLDOWN_MONTHS;
+  next.log.unshift({
+    id: next.nextId++,
+    monthIdx: toMonthIndex(next.calendar),
+    tone: "good",
+    text: `Investimento CAPEX ${target.name}: −${cost.toLocaleString("it-IT")} €; EBITDA +16%.`,
+  });
+  next.log = next.log.slice(0, 12);
+  return next;
+};
+
 /** Monthly drip + integration risk. Mutates clone passed in advanceMonth. */
 export const applySubsidiaryMonth = (state: GameState, rand: () => number): void => {
   const subs = state.subsidiaries ?? [];
@@ -127,6 +159,10 @@ export const applySubsidiaryMonth = (state: GameState, rand: () => number): void
   let drip = 0;
   for (const sub of subs) {
     sub.monthsOwned += 1;
+    if (sub.capexCooldownMonths > 0) {
+      sub.capexCooldownMonths -= 1;
+    }
+    sub.monthlyEbitda = round2(Math.max(100, sub.monthlyEbitda * (1 + DRIFT[sub.risk])));
     drip = round2(drip + sub.monthlyEbitda);
   }
   if (drip > 0) {
