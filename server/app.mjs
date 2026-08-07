@@ -173,7 +173,7 @@ export function createHandler({
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     });
     res.end(JSON.stringify(data));
   };
@@ -329,12 +329,15 @@ export function createHandler({
 
         const recent = [...runs]
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-          .slice(0, 5)
+          .slice(0, 40)
           .map((r) => ({
+            id: r.id,
             username: r.username,
             companyName: r.companyName,
             city: r.city,
             monthsPlayed: r.monthsPlayed,
+            outcome: r.outcome ?? null,
+            difficulty: r.difficulty ?? null,
             createdAt: r.createdAt,
           }));
 
@@ -357,6 +360,23 @@ export function createHandler({
           recentFeedback,
           balance: computeBalance(runs),
         });
+      }
+
+      if (req.method === "DELETE" && path.startsWith("/api/admin/runs/")) {
+        const user = parseToken(req.headers.authorization);
+        if (!user) return json(res, 401, { error: "Non autenticato" });
+        if (!isAdmin(user)) return json(res, 403, { error: "Solo admin" });
+        const runId = decodeURIComponent(path.slice("/api/admin/runs/".length)).trim();
+        if (!runId || runId.includes("/")) {
+          return json(res, 400, { error: "id run non valido" });
+        }
+        const before = runs.length;
+        runs = runs.filter((r) => r.id !== runId);
+        if (runs.length === before) {
+          return json(res, 404, { error: "Run non trovata" });
+        }
+        save("runs.json", runs);
+        return json(res, 200, { ok: true, id: runId, runs: runs.length });
       }
 
       if (req.method === "POST" && path === "/api/feedback") {
