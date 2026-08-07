@@ -6,9 +6,9 @@ import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHandler } from "./app.mjs";
+import { resolveDataDir } from "./paths.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
-const DATA = join(__dir, "data");
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "0.0.0.0";
 const DEV_SECRET = "liquidazi-dev-secret-change-me";
@@ -23,8 +23,18 @@ if (isProd && (!process.env.LIQUIDAZI_SECRET || SECRET === DEV_SECRET)) {
   process.exit(1);
 }
 
+let dataDir;
+let storage;
+try {
+  ({ dataDir, storage } = resolveDataDir());
+} catch (err) {
+  console.error(err instanceof Error ? err.message : err);
+  process.exit(1);
+}
+
 const distDir = join(__dir, "..", "dist");
-const handler = createHandler({ dataDir: DATA, secret: SECRET, distDir });
+const handler = createHandler({ dataDir, secret: SECRET, distDir, storage });
 createServer(handler).listen(PORT, HOST, () => {
   console.log(`Liquidazi listening on http://${HOST}:${PORT}`);
+  console.log(`dataDir=${dataDir} storage=${storage}`);
 });

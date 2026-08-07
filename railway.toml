@@ -1,3 +1,7 @@
+# Persistence: attach a Railway Volume with mount path /data (dashboard).
+# The app reads RAILWAY_VOLUME_MOUNT_PATH / DATA_DIR and refuses to boot on
+# Railway without one — otherwise each rebuild wipes users/saves.
+
 [build]
 builder = "NIXPACKS"
 # Prefer install over ci: Railway volume/cache can EBUSY rmdir on node_modules/.cache.

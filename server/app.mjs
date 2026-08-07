@@ -56,10 +56,10 @@ const emptySaves = () => ({
 });
 
 /**
- * @param {{ dataDir: string, secret: string, distDir: string | null }} opts
+ * @param {{ dataDir: string, secret: string, distDir: string | null, storage?: "volume" | "local" }} opts
  * @returns {(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse) => void}
  */
-export function createHandler({ dataDir, secret, distDir }) {
+export function createHandler({ dataDir, secret, distDir, storage = "local" }) {
   mkdirSync(dataDir, { recursive: true });
 
   const load = (name, fallback) => {
@@ -184,7 +184,7 @@ export function createHandler({ dataDir, secret, distDir }) {
 
     try {
       if (req.method === "GET" && path === "/api/health") {
-        return json(res, 200, { ok: true });
+        return json(res, 200, { ok: true, storage });
       }
 
       if (req.method === "POST" && path === "/api/auth/register") {
