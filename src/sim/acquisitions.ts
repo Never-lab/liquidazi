@@ -188,7 +188,6 @@ export const advanceHoldingSales = (state: GameState, rand: () => number): void 
 
     if (currentIdx > sub.listedUntilMonthIdx) {
       sub.listedUntilMonthIdx = null;
-      state.saleOffers = state.saleOffers.filter((o) => o.subsidiaryId !== sub.id);
       continue;
     }
 

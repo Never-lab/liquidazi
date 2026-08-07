@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { HOLDING_SLOT_BASE } from "../config/holding";
 import {
   acceptSaleOffer,
+  advanceHoldingSales,
   applySubsidiaryMonth,
   buyAcquisition,
   estimateSubsidiaryValue,
@@ -9,8 +10,9 @@ import {
   investSubsidiaryCapex,
   listSubsidiaryForSale,
   refreshAcquisitionBoard,
+  rejectSaleOffer,
 } from "./acquisitions";
-import { createInitialGameState, toMonthIndex } from "./types";
+import { calendarFromIndex, createInitialGameState, toMonthIndex } from "./types";
 
 describe("holding buy + value", () => {
   it("estimate scales with EBITDA and risk", () => {
@@ -129,26 +131,63 @@ describe("holding CAPEX + drift", () => {
   });
 });
 
+const flipSub = () => ({
+  id: 7,
+  name: "Flip Co",
+  sector: "servizi" as const,
+  monthlyEbitda: 1000,
+  capacityBonus: 0,
+  monthsOwned: 0,
+  risk: "med" as const,
+  purchasePrice: 8000,
+  listedUntilMonthIdx: null,
+  capexCooldownMonths: 0,
+});
+
 describe("holding list + flip", () => {
+  it("list then first listing month spawns offer", () => {
+    let s = createInitialGameState();
+    s.subsidiaries = [flipSub()];
+    s = listSubsidiaryForSale(s, 7);
+    advanceHoldingSales(s, () => 0);
+    expect(s.saleOffers).toHaveLength(1);
+    expect(s.saleOffers[0]!.subsidiaryId).toBe(7);
+  });
+
+  it("offer survives listing expiry until expiresMonthIdx", () => {
+    let s = createInitialGameState();
+    s.subsidiaries = [flipSub()];
+    s = listSubsidiaryForSale(s, 7);
+    const listedUntil = s.subsidiaries[0]!.listedUntilMonthIdx!;
+
+    s.calendar = calendarFromIndex(listedUntil);
+    advanceHoldingSales(s, () => 0);
+    expect(s.saleOffers).toHaveLength(1);
+    expect(s.saleOffers[0]!.expiresMonthIdx).toBe(listedUntil + 1);
+
+    s.calendar = calendarFromIndex(listedUntil + 1);
+    advanceHoldingSales(s, () => 0);
+    expect(s.subsidiaries[0]!.listedUntilMonthIdx).toBeNull();
+    expect(s.saleOffers).toHaveLength(1);
+
+    s.calendar = calendarFromIndex(listedUntil + 2);
+    advanceHoldingSales(s, () => 0);
+    expect(s.saleOffers).toHaveLength(0);
+  });
+
+  it("rejectSaleOffer removes one offer", () => {
+    let s = createInitialGameState();
+    s.saleOffers = [{ id: 1, subsidiaryId: 7, price: 1000, expiresMonthIdx: 999 }];
+    s = rejectSaleOffer(s, 1);
+    expect(s.saleOffers).toHaveLength(0);
+  });
+
   it("list → offer → accept: cash and capitalGains", () => {
     let s = createInitialGameState();
     s.quietMode = true;
     s.company.cash = 0;
     s.ytd.capitalGains = 0;
-    s.subsidiaries = [
-      {
-        id: 7,
-        name: "Flip Co",
-        sector: "servizi",
-        monthlyEbitda: 1000,
-        capacityBonus: 0,
-        monthsOwned: 0,
-        risk: "med",
-        purchasePrice: 8000,
-        listedUntilMonthIdx: null,
-        capexCooldownMonths: 0,
-      },
-    ];
+    s.subsidiaries = [flipSub()];
     s = listSubsidiaryForSale(s, 7);
     expect(s.subsidiaries[0]!.listedUntilMonthIdx).not.toBeNull();
     s.saleOffers = [
