@@ -57,6 +57,20 @@ describe("cloudSaveQueue", () => {
     expect(put).toHaveBeenCalledTimes(1);
   });
 
+  it("force flush pushes even when not pending (logout path)", async () => {
+    const put = vi.fn(async () => ({}));
+    const q = createCloudSaveQueue({
+      put,
+      getToken: () => "tok",
+      getPayload: () => ({ slots: [], activeSlot: 0 }),
+      onStatus: () => {},
+      onError: () => {},
+    });
+
+    await q.flush({ force: true });
+    expect(put).toHaveBeenCalledTimes(1);
+  });
+
   it("clear cancels pending timer", async () => {
     const put = vi.fn(async () => ({}));
     const q = createCloudSaveQueue({

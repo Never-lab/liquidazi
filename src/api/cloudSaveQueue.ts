@@ -24,6 +24,12 @@ export const createCloudSaveQueue = (deps: Deps) => {
     deps.onStatus(next);
   };
 
+  const waitInFlight = async () => {
+    while (inFlight) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+  };
+
   const runPut = async () => {
     const token = deps.getToken();
     if (!token || inFlight) return;
@@ -60,14 +66,24 @@ export const createCloudSaveQueue = (deps: Deps) => {
         void runPut();
       }, CLOUD_SAVE_MS);
     },
-    flush: async () => {
+    /**
+     * Push now. `force` always PUTs (logout) even if status looks idle,
+     * so a pending debounce is never dropped when the user signs out.
+     */
+    flush: async (opts?: { force?: boolean }) => {
       if (!deps.getToken()) return;
       const wasPending = timer !== null;
       if (timer) {
         clearTimeout(timer);
         timer = null;
       }
-      if (wasPending || status === "pending" || status === "syncing") {
+      await waitInFlight();
+      if (
+        opts?.force ||
+        wasPending ||
+        status === "pending" ||
+        status === "syncing"
+      ) {
         await runPut();
       }
     },

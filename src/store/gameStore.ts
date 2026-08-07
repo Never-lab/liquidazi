@@ -154,14 +154,25 @@ export const useGameStore = create<GameStore>()(
         const session = await apiLogin(username, password);
         const saves = await fetchSaves(session.token);
         const slots = saves.slots as SaveSlot[];
-        const active = slots[saves.activeSlot] ?? slots[0];
+        let activeSlot = saves.activeSlot ?? 0;
+        let active = slots[activeSlot] ?? slots[0];
+        const resumable = slots.findIndex(
+          (s) => s.game && s.game.monthsPlayed > 0 && s.game.status === "running",
+        );
+        if (
+          resumable >= 0 &&
+          !(active?.game && active.game.monthsPlayed > 0 && active.game.status === "running")
+        ) {
+          activeSlot = resumable;
+          active = slots[resumable];
+        }
         const game = active?.game
           ? structuredClone(active.game)
           : createInitialGameState();
         set({
           auth: session,
           slots,
-          activeSlot: saves.activeSlot ?? 0,
+          activeSlot,
           preferredDifficulty: saves.preferredDifficulty ?? get().preferredDifficulty,
           coachOn: saves.coachOn ?? get().coachOn,
           game,
@@ -199,14 +210,21 @@ export const useGameStore = create<GameStore>()(
         set({ screen: "setup" });
       },
       logout: () => {
-        cloudQueue.clear();
-        set({
-          auth: null,
-          screen: "auth",
-          slots: emptySlots(),
-          activeSlot: 0,
-          game: createInitialGameState(),
-        });
+        void (async () => {
+          try {
+            await cloudQueue.flush({ force: true });
+          } catch {
+            /* still sign out */
+          }
+          cloudQueue.clear();
+          set({
+            auth: null,
+            screen: "auth",
+            slots: emptySlots(),
+            activeSlot: 0,
+            game: createInitialGameState(),
+          });
+        })();
       },
       dismissCoach: () => set({ coachOn: false }),
       enableCoach: () => set({ coachOn: true }),
@@ -424,7 +442,6 @@ export const useGameStore = create<GameStore>()(
         set({
           activeSlot: index,
           game,
-          screen: "menu",
         });
         get().flashToast(`Slot attivo: ${slot.label}`, "neutral");
       },

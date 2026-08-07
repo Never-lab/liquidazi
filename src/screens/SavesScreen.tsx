@@ -16,8 +16,8 @@ export const SavesScreen = () => {
     <div className={styles.menuWide}>
       <h2 className={styles.title}>Salvataggi</h2>
       <p className={styles.subtitle}>
-        Tre slot locali (browser). Cambia slot per partite parallele. Nessun sync cloud: la
-        classifica resta sull&apos;API locale quando sei loggato.
+        Tre slot. Con account loggato vengono sincronizzati sul cloud: dopo Esci /
+        Accedi puoi riprendere la partita in corso.
       </p>
 
       <ul className={styles.slotList}>
