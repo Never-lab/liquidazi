@@ -123,6 +123,83 @@ describe("cloud saves", () => {
     expect((bobSaves.data as { slots: { game: null }[] }).slots[0].game).toBeNull();
   });
 
+  it("PUT long running save upserts leaderboard past soft-win 24m", async () => {
+    const reg = await api("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "long_runner", password: "secret1" }),
+    });
+    const token = (reg.data as { token: string }).token;
+
+    const softWin = await api("/api/runs", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        companyName: "Long Co",
+        city: "MI",
+        sector: "servizi",
+        monthsPlayed: 24,
+        peakCash: 1000,
+        peakDebt: 0,
+        lifetimeRevenue: 5000,
+        finalCash: 800,
+        difficulty: "normal",
+        outcome: "won",
+        slotIndex: 0,
+      }),
+    });
+    expect(softWin.status).toBe(201);
+
+    const put = await api("/api/saves", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        slots: [
+          {
+            label: "Infinite",
+            game: {
+              monthsPlayed: 72,
+              status: "running",
+              difficulty: "normal",
+              company: {
+                name: "Long Co",
+                city: "MI",
+                sector: "servizi",
+                cash: 2500,
+              },
+              career: {
+                year2Reached: true,
+                peakCash: 8000,
+                peakDebt: 0,
+                lifetimeRevenue: 40000,
+                submitted: true,
+                submittedMonths: 24,
+              },
+            },
+            updatedAt: new Date().toISOString(),
+          },
+          { label: "Slot 2", game: null, updatedAt: null },
+          { label: "Slot 3", game: null, updatedAt: null },
+        ],
+        activeSlot: 0,
+      }),
+    });
+    expect(put.status).toBe(200);
+
+    const board = await api("/api/leaderboard?board=longest&limit=10");
+    expect(board.status).toBe(200);
+    const entries = (board.data as { entries: { username: string; monthsPlayed: number }[] })
+      .entries;
+    const mine = entries.find((e) => e.username === "long_runner");
+    expect(mine?.monthsPlayed).toBe(72);
+  });
+
   it("rejects saves body over 1MB", async () => {
     const reg = await api("/api/auth/register", {
       method: "POST",
@@ -369,5 +446,75 @@ describe("static spa", () => {
     expect(res.status).toBe(404);
     expect(res.headers.get("content-type")).toContain("application/json");
     await expect(res.json()).resolves.toEqual({ error: "Not found" });
+  });
+});
+
+describe("runs realign from existing cloud saves on boot", () => {
+  it("startup sync picks up long save missing from runs.json", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "liquidazi-realign-"));
+    const savesDir = join(dir, "saves");
+    mkdirSync(savesDir, { recursive: true });
+    const userId = "userboot1";
+    writeFileSync(
+      join(dir, "users.json"),
+      JSON.stringify([
+        {
+          id: userId,
+          username: "boot_long",
+          hash: "x",
+          salt: "y",
+        },
+      ]),
+    );
+    writeFileSync(join(dir, "runs.json"), JSON.stringify([]));
+    writeFileSync(
+      join(savesDir, `${userId}.json`),
+      JSON.stringify({
+        slots: [
+          {
+            label: "S",
+            game: {
+              monthsPlayed: 90,
+              status: "running",
+              difficulty: "easy",
+              company: { name: "Boot SRL", city: "TO", sector: "servizi", cash: 1 },
+              career: {
+                year2Reached: true,
+                peakCash: 10,
+                peakDebt: 0,
+                lifetimeRevenue: 100,
+              },
+            },
+            updatedAt: "2026-08-01T00:00:00.000Z",
+          },
+          { label: "2", game: null, updatedAt: null },
+          { label: "3", game: null, updatedAt: null },
+        ],
+        activeSlot: 0,
+      }),
+    );
+
+    const handler = createHandler({
+      dataDir: dir,
+      secret: SECRET,
+      distDir: null,
+      storage: "local",
+      adminUsernames: ["boss"],
+    });
+    const srv = createServer(handler);
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    if (!addr || typeof addr === "string") throw new Error("no port");
+    const b = `http://127.0.0.1:${addr.port}`;
+    const board = await fetch(`${b}/api/leaderboard?board=longest`);
+    const data = (await board.json()) as {
+      entries: { username: string; monthsPlayed: number }[];
+    };
+    expect(board.status).toBe(200);
+    expect(data.entries.some((e) => e.username === "boot_long" && e.monthsPlayed === 90)).toBe(
+      true,
+    );
+    srv.close();
+    rmSync(dir, { recursive: true, force: true });
   });
 });
