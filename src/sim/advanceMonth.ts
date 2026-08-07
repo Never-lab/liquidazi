@@ -1,7 +1,8 @@
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
-import { hasUpgrade } from "../config/upgrades";
+import { hasUpgrade, upgradeLevel } from "../config/upgrades";
+import { migrateUpgradeState } from "./migrateUpgrades";
 import {
   buildRescueOffer,
   euriborAt,
@@ -71,7 +72,7 @@ const runPayroll = (next: GameState, idx: number): void => {
 
   const thirteenth = next.calendar.month === 12;
   const payMonths = thirteenth ? 2 : 1;
-  const processiDiscount = hasUpgrade(next.upgrades, "processi") ? 0.95 : 1;
+  const processiDiscount = [1, 0.95, 0.93, 0.9][upgradeLevel(next.upgradeLevels, "processi")]!;
 
   let totalGross = 0;
   let totalNet = 0;
@@ -131,6 +132,7 @@ export const advanceMonth = (state: GameState): GameState => {
   if (state.pendingEvent) return state;
 
   const next = structuredClone(state);
+  next.upgradeLevels = migrateUpgradeState(next);
   next.upgrades ??= [];
   next.yearReports ??= next.lastYearReport ? [next.lastYearReport] : [];
   next.tempCapacityMonths ??= 0;
@@ -186,7 +188,7 @@ export const advanceMonth = (state: GameState): GameState => {
   }
 
   // 0. gestionale: versa F24 dovuti se cassa basta (prima delle sanzioni)
-  if (hasUpgrade(next.upgrades, "gestionale_f24")) {
+  if (hasUpgrade(next.upgradeLevels, "gestionale_f24")) {
     let due = 0;
     for (const l of next.liabilities) {
       if (!l.paid && l.dueIdx <= idx) due = round2(due + l.amount);
@@ -196,6 +198,9 @@ export const advanceMonth = (state: GameState): GameState => {
         if (!l.paid && l.dueIdx <= idx) l.paid = true;
       }
       next.company.cash = round2(next.company.cash - due);
+      if (upgradeLevel(next.upgradeLevels, "gestionale_f24") >= 3) {
+        next.compliance = Math.min(100, next.compliance + 2);
+      }
       next.log.unshift({
         id: next.nextId++,
         monthIdx: idx,

@@ -70,7 +70,7 @@ describe("Staff board + upgrades lite", () => {
     s.quietMode = true;
     s.company.cash = 20000;
     s = buyUpgrade(s, "gestionale_f24");
-    expect(s.upgrades).toContain("gestionale_f24");
+    expect(s.upgradeLevels?.gestionale_f24).toBe(1);
     const idx = 2024 * 12; // gen 2024
     s.liabilities.push({
       id: 99,
@@ -97,5 +97,30 @@ describe("Staff board + upgrades lite", () => {
     expect(s.company.monthlyRent).toBeCloseTo(rent0 * 0.85);
     s = buyUpgrade(s, "processi");
     expect(monthlyCapacity(s)).toBe(cap0 + 1);
+  });
+
+  it("processi levels stack capacity 1 then 2 then 3", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.company.cash = 100000;
+    const cap0 = monthlyCapacity(s);
+    s = buyUpgrade(s, "processi");
+    expect(monthlyCapacity(s)).toBe(cap0 + 1);
+    s = buyUpgrade(s, "processi");
+    expect(monthlyCapacity(s)).toBe(cap0 + 2);
+    s = buyUpgrade(s, "processi");
+    expect(monthlyCapacity(s)).toBe(cap0 + 3);
+    const frozen = buyUpgrade(s, "processi");
+    expect(frozen.upgradeLevels?.processi).toBe(3);
+    expect(frozen.company.cash).toBe(s.company.cash);
+  });
+
+  it("sede levels apply factor vs rent base not compound", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.company.cash = 100000;
+    const base = s.company.monthlyRent;
+    s = buyUpgrade(s, "sede");
+    expect(s.company.monthlyRent).toBeCloseTo(base * 0.85);
+    s = buyUpgrade(s, "sede");
+    expect(s.company.monthlyRent).toBeCloseTo(base * 0.78);
   });
 });

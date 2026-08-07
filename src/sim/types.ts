@@ -29,6 +29,8 @@ export interface Company {
   densityIndex: number;
   /** monthly locale rent = €/mq × 80 mq sede tipo */
   monthlyRent: number;
+  /** canone base prima degli sconti sede (fissato al primo acquisto) */
+  monthlyRentBase?: number;
   /** 0–100 commercial reputation (clients / defaults) */
   reputation: number;
 }

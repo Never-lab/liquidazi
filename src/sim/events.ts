@@ -1,7 +1,8 @@
 import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
 import { capacityPointsFor } from "../config/staffPay";
-import { hasUpgrade } from "../config/upgrades";
+import { upgradeLevel } from "../config/upgrades";
+import { migrateUpgradeState } from "./migrateUpgrades";
 import { rng } from "./rng";
 import {
   round2,
@@ -55,12 +56,14 @@ export const countRole = (state: GameState, role: string): number =>
  * Processi upgrade adds +1 without headcount.
  */
 export const monthlyCapacity = (state: GameState): number => {
+  const upgradeLevels = migrateUpgradeState(state);
   const points = staffCapacityPoints(state);
   const core = Math.min(points, STAFF_FULL_VALUE);
   const extra = Math.max(0, points - STAFF_FULL_VALUE);
   const staffSlots = Math.floor(core + Math.floor(extra / 3));
   const repBonus = Math.floor(state.company.reputation / 40);
-  const processi = hasUpgrade(state.upgrades, "processi") ? 1 : 0;
+  const procLv = upgradeLevel(upgradeLevels, "processi");
+  const processi = procLv;
   const temp = (state.tempCapacityMonths ?? 0) > 0 ? 1 : 0;
   const growth = state.growthCapacityBonus ?? 0;
   const subCap = (state.subsidiaries ?? []).reduce((s, sub) => s + sub.capacityBonus, 0);
@@ -83,12 +86,14 @@ export const salesAcceptedThisMonth = (state: GameState): number => {
 
 /** Ticket ceiling grows a bit with staff; Impiegati raise it further; commerciale bumps further. Soft anti-exploit. */
 const ticketCeiling = (state: GameState): number => {
+  const upgradeLevels = migrateUpgradeState(state);
   const staff = state.employees.length;
   const impiegati = countRole(state, "Impiegato");
   const growthBump = Math.min(6000, (state.growthCapacityBonus ?? 0) * 2000);
   const base =
     18000 + Math.min(12000, staff * 800) + Math.min(6000, impiegati * 1200) + growthBump;
-  return hasUpgrade(state.upgrades, "commerciale") ? base + 4000 : base;
+  const commercialeBump = [0, 4000, 6000, 8000][upgradeLevel(upgradeLevels, "commerciale")]!;
+  return base + commercialeBump;
 };
 
 /**
@@ -96,6 +101,7 @@ const ticketCeiling = (state: GameState): number => {
  * Hard cap keeps spam-500k impossible.
  */
 export const maxDealNet = (state: GameState): number => {
+  const upgradeLevels = migrateUpgradeState(state);
   const profile = SECTOR_PROFILES[state.company.sector];
   const month = state.calendar.month;
   const season = profile.seasonality[month - 1] ?? 1;
@@ -110,7 +116,7 @@ export const maxDealNet = (state: GameState): number => {
     Math.max(0, staff - STAFF_FULL_VALUE) * 0.05;
   const competition = dens > 1 ? Math.max(0.7, 1 - (dens - 1) * 0.12) : 1 + (1 - dens) * 0.08;
   const ticketMult = DIFFICULTIES[state.difficulty ?? "normal"].ticketMult;
-  const commerciale = hasUpgrade(state.upgrades, "commerciale") ? 1.08 : 1;
+  const commercialeMult = [1, 1.08, 1.12, 1.16][upgradeLevel(upgradeLevels, "commerciale")]!;
   const supplyMult = (state.supplyMonths ?? 0) > 0 ? 1 : 0.72;
   const pressureTicket = ticketFactorFromPressure(state);
   return round2(
@@ -124,7 +130,7 @@ export const maxDealNet = (state: GameState): number => {
           rep *
           competition *
           ticketMult *
-          commerciale *
+          commercialeMult *
           supplyMult *
           pressureTicket,
       ),
@@ -185,9 +191,10 @@ export const generateOpportunities = (
 ): { ops: Opportunity[]; nextId: number } => {
   const profile = SECTOR_PROFILES[state.company.sector];
   const rand = rng(toMonthIndex(state.calendar) * 997 + state.nextId * 13 + state.monthsPlayed);
+  const upgradeLevels = migrateUpgradeState(state);
   const cap = maxDealNet(state);
   const capacity = monthlyCapacity(state);
-  const commercialeBonus = hasUpgrade(state.upgrades, "commerciale") ? 1 : 0;
+  const commercialeBonus = upgradeLevel(upgradeLevels, "commerciale");
   const impiegati = countRole(state, "Impiegato");
   const jitter = Math.floor(rand() * 3) - 1; // -1, 0, +1
   let saleTarget = Math.max(1, capacity + jitter + commercialeBonus + impiegati);
