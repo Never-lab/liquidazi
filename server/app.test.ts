@@ -321,6 +321,29 @@ describe("admin stats", () => {
       n: 1,
       buckets: { "1-3": 0, "4-6": 0, "7-12": 1, "13-23": 0, "24+": 0 },
     });
+
+    const recent = (stats.data as { recent: { id: string; username: string }[] }).recent;
+    expect(recent[0]?.id).toBeTruthy();
+    expect(recent[0]?.username).toBe("boss");
+
+    const deniedDel = await adminApi(`/api/admin/runs/${recent[0]!.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${peonToken}` },
+    });
+    expect(deniedDel.status).toBe(403);
+
+    const del = await adminApi(`/api/admin/runs/${recent[0]!.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${bossToken}` },
+    });
+    expect(del.status).toBe(200);
+    expect(del.data).toMatchObject({ ok: true, runs: 0 });
+
+    const stats2 = await adminApi("/api/admin/stats", {
+      headers: { Authorization: `Bearer ${bossToken}` },
+    });
+    expect((stats2.data as { runs: number }).runs).toBe(0);
+    expect((stats2.data as { recent: unknown[] }).recent).toHaveLength(0);
   });
 });
 
