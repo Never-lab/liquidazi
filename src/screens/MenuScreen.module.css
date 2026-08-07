@@ -262,6 +262,44 @@
   font-size: 15px;
 }
 
+.field textarea {
+  padding: 12px;
+  min-height: 120px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 15px;
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.feedbackForm {
+  margin: 8px 0 16px;
+  text-align: left;
+}
+
+.feedbackForm .primary {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.feedbackForm .primary:disabled {
+  opacity: 0.65;
+}
+
+.feedbackAlt {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.feedbackAlt a {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
 .passwordRow {
   display: flex;
   align-items: stretch;
@@ -439,8 +477,13 @@
 }
 
 .leaderMeta {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.feedbackItem {
+  align-items: flex-start;
 }
 
 .leaderValue {

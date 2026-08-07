@@ -23,6 +23,19 @@ export type AdminStats = {
     monthsPlayed: number;
     createdAt: string;
   }[];
+  feedbackCount: number;
+  recentFeedback: FeedbackEntry[];
+};
+
+export type FeedbackKind = "bug" | "idea";
+
+export type FeedbackEntry = {
+  id: string;
+  kind: FeedbackKind;
+  message: string;
+  contact: string | null;
+  username: string | null;
+  createdAt: string;
 };
 
 export type CloudSaveSlot = {
@@ -112,6 +125,16 @@ export const fetchMe = (token: string) =>
 
 export const fetchAdminStats = (token: string) =>
   api<AdminStats>("/api/admin/stats", { token });
+
+export const submitFeedback = (
+  payload: { kind: FeedbackKind; message: string; contact?: string },
+  token?: string,
+) =>
+  api<{ id: string }>("/api/feedback", {
+    method: "POST",
+    token,
+    body: JSON.stringify(payload),
+  });
 
 export const fetchSaves = (token: string) =>
   api<CloudSaves>("/api/saves", { token });

@@ -59,6 +59,10 @@ export const AdminScreen = () => {
               <strong>{stats.cloudSaves}</strong>
             </li>
             <li>
+              <span>Segnalazioni</span>
+              <strong>{stats.feedbackCount}</strong>
+            </li>
+            <li>
               <span>Media mesi / record</span>
               <strong>
                 {stats.avgMonths} / {stats.longestMonths}
@@ -71,6 +75,28 @@ export const AdminScreen = () => {
               </strong>
             </li>
           </ul>
+
+          <p className={styles.boardLabel}>Ultime segnalazioni</p>
+          {stats.recentFeedback.length === 0 ? (
+            <p className={styles.subtitle}>Nessuna segnalazione ancora.</p>
+          ) : (
+            <ol className={styles.leaderList}>
+              {stats.recentFeedback.map((f) => (
+                <li key={f.id} className={styles.feedbackItem}>
+                  <span className={styles.leaderMain}>
+                    <strong>
+                      {f.kind === "bug" ? "Bug" : "Idea"}
+                      {f.username ? ` · ${f.username}` : " · ospite"}
+                    </strong>
+                    <span className={styles.leaderMeta}>{f.message}</span>
+                    {f.contact ? (
+                      <span className={styles.leaderMeta}>Contatto: {f.contact}</span>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
 
           <p className={styles.boardLabel}>Ultime 5 run</p>
           {stats.recent.length === 0 ? (

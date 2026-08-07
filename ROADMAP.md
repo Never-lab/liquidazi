@@ -14,6 +14,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Save mobile UX | [docs/superpowers/plans/2026-08-06-save-mobile-ux.md](docs/superpowers/plans/2026-08-06-save-mobile-ux.md) | [spec](docs/superpowers/specs/2026-08-06-save-mobile-ux-design.md) |
 | UI icons + feedback | [docs/superpowers/plans/2026-08-06-ui-icons-feedback.md](docs/superpowers/plans/2026-08-06-ui-icons-feedback.md) | [spec](docs/superpowers/specs/2026-08-06-ui-icons-feedback-design.md) |
 | Admin controllo | [PR #9](https://github.com/Never-lab/liquidazi/pull/9) · env `LIQUIDAZI_ADMIN_USERNAMES` in [README](README.md) | — |
+| Feedback in-app | `POST /api/feedback` + Controllo (no GitHub required) | — |
 
 ## Next (coda attiva)
 

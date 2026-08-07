@@ -17,6 +17,9 @@ import { join, extname, sep } from "node:path";
 
 const MAX_SAVE_BYTES = 1_000_000;
 const MAX_BODY_BYTES = 64_000;
+const MAX_FEEDBACK = 200;
+const MAX_FEEDBACK_MSG = 2_000;
+const FEEDBACK_KINDS = new Set(["bug", "idea"]);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -99,6 +102,8 @@ export function createHandler({
   let users = load("users.json", []);
   /** @type {Run[]} */
   let runs = load("runs.json", []);
+  /** @type {{ id: string, kind: string, message: string, contact: string | null, username: string | null, createdAt: string }[]} */
+  let feedback = load("feedback.json", []);
 
   const savePath = (userId) => join(dataDir, "saves", `${userId}.json`);
 
@@ -294,7 +299,7 @@ export function createHandler({
             return 0;
           }
         };
-        for (const name of ["users.json", "runs.json"]) {
+        for (const name of ["users.json", "runs.json", "feedback.json"]) {
           dataBytes += sizeOf(join(dataDir, name));
         }
         if (existsSync(savesDir)) {
@@ -316,6 +321,10 @@ export function createHandler({
             createdAt: r.createdAt,
           }));
 
+        const recentFeedback = [...feedback]
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          .slice(0, 10);
+
         return json(res, 200, {
           users: users.length,
           runs: runs.length,
@@ -327,7 +336,49 @@ export function createHandler({
           dataBytes,
           storage,
           recent,
+          feedbackCount: feedback.length,
+          recentFeedback,
         });
+      }
+
+      if (req.method === "POST" && path === "/api/feedback") {
+        const user = parseToken(req.headers.authorization);
+        let body;
+        try {
+          body = await readBodyLimited(req, MAX_BODY_BYTES);
+        } catch (e) {
+          return json(
+            res,
+            e && e.code === "ENTITY_TOO_LARGE" ? 413 : 400,
+            { error: e && e.code === "ENTITY_TOO_LARGE" ? "Richiesta troppo grande" : "JSON non valido" },
+          );
+        }
+        const kind = String(body.kind || "").trim();
+        const message = String(body.message || "").trim();
+        const contact = String(body.contact || "").trim().slice(0, 80);
+        if (!FEEDBACK_KINDS.has(kind)) {
+          return json(res, 400, { error: "Tipo non valido (bug o idea)" });
+        }
+        if (message.length < 10) {
+          return json(res, 400, { error: "Messaggio troppo corto (min 10 caratteri)" });
+        }
+        if (message.length > MAX_FEEDBACK_MSG) {
+          return json(res, 400, { error: `Messaggio troppo lungo (max ${MAX_FEEDBACK_MSG})` });
+        }
+        const entry = {
+          id: randomBytes(8).toString("hex"),
+          kind,
+          message,
+          contact: contact || null,
+          username: user?.username ?? null,
+          createdAt: new Date().toISOString(),
+        };
+        feedback.push(entry);
+        if (feedback.length > MAX_FEEDBACK) {
+          feedback = feedback.slice(-MAX_FEEDBACK);
+        }
+        save("feedback.json", feedback);
+        return json(res, 201, { id: entry.id });
       }
 
       if (req.method === "GET" && path === "/api/saves") {

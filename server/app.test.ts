@@ -236,8 +236,72 @@ describe("admin stats", () => {
       cloudSaves: 0,
       storage: "volume",
       longestMonths: 12,
+      feedbackCount: 0,
     });
     expect((stats.data as { recent: unknown[] }).recent).toHaveLength(1);
+    expect((stats.data as { recentFeedback: unknown[] }).recentFeedback).toEqual([]);
+  });
+});
+
+describe("in-app feedback", () => {
+  it("accepts guest feedback and shows it to admin", async () => {
+    const adminDataDir = mkdtempSync(join(tmpdir(), "liquidazi-fb-"));
+    const handler = createHandler({
+      dataDir: adminDataDir,
+      secret: SECRET,
+      distDir: null,
+      storage: "local",
+      adminUsernames: ["boss"],
+    });
+    const server = createServer(handler);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const addr = server.address();
+    if (!addr || typeof addr === "string") throw new Error("no port");
+    const base = `http://127.0.0.1:${addr.port}`;
+    const call = async (path: string, opts: RequestInit = {}) => {
+      const res = await fetch(`${base}${path}`, opts);
+      const data = await res.json().catch(() => ({}));
+      return { status: res.status, data };
+    };
+
+    const short = await call("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "bug", message: "too short" }),
+    });
+    expect(short.status).toBe(400);
+
+    const ok = await call("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "idea",
+        message: "Vorrei un tutorial più corto sul F24",
+        contact: "player@example.com",
+      }),
+    });
+    expect(ok.status).toBe(201);
+
+    const boss = await call("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "boss", password: "secret1" }),
+    });
+    const token = (boss.data as { token: string }).token;
+    const stats = await call("/api/admin/stats", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(stats.status).toBe(200);
+    expect(stats.data).toMatchObject({ feedbackCount: 1 });
+    expect((stats.data as { recentFeedback: { kind: string; message: string }[] }).recentFeedback[0]).toMatchObject({
+      kind: "idea",
+      message: "Vorrei un tutorial più corto sul F24",
+      contact: "player@example.com",
+      username: null,
+    });
+
+    server.close();
+    rmSync(adminDataDir, { recursive: true, force: true });
   });
 });
 

@@ -1,54 +1,116 @@
+import { useState, type FormEvent } from "react";
+import { ApiError, submitFeedback, type FeedbackKind } from "../api/client";
 import { bugReportUrl, enhancementUrl } from "../config/repo";
 import { useGameStore } from "../store/gameStore";
 import { Icon } from "../ui/icons";
 import styles from "./MenuScreen.module.css";
 
-const openIssue = (url: string) => {
-  window.open(url, "_blank", "noopener,noreferrer");
-};
-
 export const FeedbackScreen = () => {
   const setScreen = useGameStore((s) => s.setScreen);
+  const auth = useGameStore((s) => s.auth);
+  const [kind, setKind] = useState<FeedbackKind>("bug");
+  const [message, setMessage] = useState("");
+  const [contact, setContact] = useState("");
+  const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      await submitFeedback(
+        { kind, message: message.trim(), contact: contact.trim() || undefined },
+        auth?.token,
+      );
+      setDone(true);
+      setMessage("");
+      setContact("");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Invio non riuscito",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className={styles.menu}>
       <h2 className={styles.title}>Segnala o migliora</h2>
       <p className={styles.subtitle}>
-        Apri una issue su GitHub. Serve un account GitHub (gratis). Descrivi cosa è
-        successo o cosa vorresti cambiare.
+        Scrivi qui: non serve un account GitHub. Se sei loggato, alleghiamo il
+        tuo username. Contatto opzionale se vuoi una risposta.
       </p>
 
-      <div className={styles.feedbackCards}>
-        <button
-          type="button"
-          className={styles.feedbackCard}
-          onClick={() => openIssue(bugReportUrl())}
-        >
-          <span className={styles.feedbackIcon} aria-hidden>
-            <Icon name="bug" size={24} />
-          </span>
-          <span className={styles.feedbackBody}>
-            <strong>Segnala un bug</strong>
-            <span>Crash, dati persi, schermata rotta…</span>
-          </span>
-          <Icon name="chevron" size={18} className={styles.feedbackChevron} />
-        </button>
+      {done ? (
+        <p className={styles.subtitle} role="status">
+          Grazie — messaggio ricevuto. Puoi inviarnene un altro o tornare al menu.
+        </p>
+      ) : null}
 
-        <button
-          type="button"
-          className={styles.feedbackCard}
-          onClick={() => openIssue(enhancementUrl())}
-        >
-          <span className={styles.feedbackIcon} aria-hidden>
-            <Icon name="spark" size={24} />
-          </span>
-          <span className={styles.feedbackBody}>
-            <strong>Chiedi una miglioria</strong>
-            <span>UX, bilanciamento, nuove funzioni…</span>
-          </span>
-          <Icon name="chevron" size={18} className={styles.feedbackChevron} />
+      <form className={styles.feedbackForm} onSubmit={(e) => void onSubmit(e)}>
+        <label className={styles.field}>
+          Tipo
+          <select
+            name="kind"
+            value={kind}
+            onChange={(e) => setKind(e.target.value as FeedbackKind)}
+          >
+            <option value="bug">Bug / problema</option>
+            <option value="idea">Idea / miglioria</option>
+          </select>
+        </label>
+
+        <label className={styles.field}>
+          Messaggio
+          <textarea
+            name="message"
+            rows={5}
+            maxLength={2000}
+            required
+            minLength={10}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Cosa è successo o cosa vorresti cambiare…"
+          />
+        </label>
+
+        <label className={styles.field}>
+          Contatto (opzionale)
+          <input
+            name="contact"
+            type="text"
+            maxLength={80}
+            value={contact}
+            onChange={(e) => setContact(e.target.value)}
+            placeholder="email o telegram, se vuoi"
+            autoComplete="email"
+          />
+        </label>
+
+        {error && <p className={styles.error}>{error}</p>}
+
+        <button type="submit" className={styles.primary} disabled={busy}>
+          {busy ? "Invio…" : "Invia"}
         </button>
-      </div>
+      </form>
+
+      <p className={styles.feedbackAlt}>
+        Preferisci GitHub?{" "}
+        <a href={bugReportUrl()} target="_blank" rel="noopener noreferrer">
+          bug
+        </a>
+        {" · "}
+        <a href={enhancementUrl()} target="_blank" rel="noopener noreferrer">
+          idea
+        </a>
+      </p>
 
       <div className={styles.actions}>
         <button type="button" className={styles.secondary} onClick={() => setScreen("menu")}>
