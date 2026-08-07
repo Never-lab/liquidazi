@@ -62,7 +62,7 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
     return {
       id: "staff-clima",
       title: "Clima del personale",
-      body: "Clima basso in Personale: rischio dimissioni e meno capacità. Migliora con utili, F24 in regola, Responsabile HR e progetto Formazione.",
+      body: "Clima basso in Personale: rischio dimissioni e meno capacità. Migliora con utili, F24 in regola, Responsabile e progetto Formazione.",
     };
   }
   if (game.monthsPlayed >= 2 && game.employees.length === 0 && game.monthsPlayed < 6) {
