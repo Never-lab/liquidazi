@@ -5,7 +5,6 @@ import { monthlyCapacity, staffCapacityPoints } from "./events";
 import {
   applyMoraleDrift,
   clampMorale,
-  effectiveStaffPoints,
   rollStaffResignation,
 } from "./morale";
 import { createInitialGameState, toMonthIndex } from "./types";
@@ -22,15 +21,13 @@ describe("staffMorale", () => {
     expect(clampMorale(70)).toBe(70);
   });
 
-  it("effectiveStaffPoints scales with morale", () => {
+  it("first Operaio at morale 70 keeps 1 effective slot (slots after soft-cap, not points)", () => {
     let s = createInitialGameState();
-    for (let i = 0; i < 6; i++) s = hireEmployee(s, "Operaio");
-    expect(staffCapacityPoints(s)).toBe(6);
-    expect(effectiveStaffPoints(s)).toBeCloseTo(6 * 0.925, 5);
-    s.staffMorale = 100;
-    expect(effectiveStaffPoints(s)).toBe(6);
-    s.staffMorale = 0;
-    expect(effectiveStaffPoints(s)).toBeCloseTo(6 * 0.75, 5);
+    const base = monthlyCapacity(s);
+    s = hireEmployee(s, "Operaio");
+    expect(staffCapacityPoints(s)).toBe(1);
+    expect(s.staffMorale).toBe(70);
+    expect(monthlyCapacity(s)).toBe(base + 1);
   });
 
   it("drift: cash negative −4; profitable close +2", () => {
@@ -75,6 +72,33 @@ describe("staffMorale", () => {
     expect(s.employees.length).toBe(1);
   });
 
+  it("advanceMonth applies F24 penalty morale −3 once even with multiple liabilities", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.staffMorale = 70;
+    const dueIdx = toMonthIndex(s.calendar);
+    s.liabilities.push(
+      {
+        id: 99,
+        kind: "IVA",
+        amount: 500,
+        dueIdx,
+        paid: false,
+        penalized: false,
+      },
+      {
+        id: 100,
+        kind: "INPS",
+        amount: 300,
+        dueIdx,
+        paid: false,
+        penalized: false,
+      },
+    );
+    s = advanceMonth(s);
+    expect(s.staffMorale).toBe(69);
+  });
+
   it("advanceMonth applies F24 penalty morale −3 (net with flat-month drift +2)", () => {
     let s = createInitialGameState();
     s.quietMode = true;
@@ -91,10 +115,23 @@ describe("staffMorale", () => {
     expect(s.staffMorale).toBe(69);
   });
 
-  it("6 operai at default morale: 5 staff slots (softer cap documented)", () => {
+  it("formazione final month: +3 morale even after project completes", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.staffMorale = 50;
+    s.company.cash = 5000;
+    s.activeProject = { id: "formazione", monthsLeft: 1, frozenCash: 0 };
+    s = advanceMonth(s);
+    expect(s.activeProject).toBeNull();
+    expect(s.staffMorale).toBe(55);
+  });
+
+  it("6 operai: morale scales slots after soft-cap (not raw points)", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     const base = monthlyCapacity(s);
     for (let i = 0; i < 6; i++) s = hireEmployee(s, "Operaio");
+    expect(monthlyCapacity(s)).toBe(base + 6);
+    s.staffMorale = 0;
     expect(monthlyCapacity(s)).toBe(base + 5);
     s.staffMorale = 100;
     expect(monthlyCapacity(s)).toBe(base + 6);

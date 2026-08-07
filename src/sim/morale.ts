@@ -1,4 +1,4 @@
-import { countRole, monthlyCapacity, staffCapacityPoints } from "./events";
+import { countRole, monthlyCapacity } from "./events";
 import { round2, toMonthIndex, type GameState } from "./types";
 
 export const DEFAULT_STAFF_MORALE = 70;
@@ -6,14 +6,10 @@ export const DEFAULT_STAFF_MORALE = 70;
 export const clampMorale = (n: number): number =>
   Math.max(0, Math.min(100, Math.round(n)));
 
-/** Morale-adjusted capacity points before soft-cap math. */
-export const effectiveStaffPoints = (state: GameState): number => {
-  const morale = state.staffMorale ?? DEFAULT_STAFF_MORALE;
-  const mult = 0.75 + 0.25 * (morale / 100);
-  return staffCapacityPoints(state) * mult;
-};
-
-export const applyMoraleDrift = (state: GameState): GameState => {
+export const applyMoraleDrift = (
+  state: GameState,
+  opts?: { hadFormazione?: boolean },
+): GameState => {
   const next = structuredClone(state);
   next.staffMorale ??= DEFAULT_STAFF_MORALE;
 
@@ -24,7 +20,7 @@ export const applyMoraleDrift = (state: GameState): GameState => {
     delta += 2;
   }
   if (countRole(next, "Responsabile") >= 1) delta += 1;
-  if (next.activeProject?.id === "formazione") delta += 3;
+  if (opts?.hadFormazione || next.activeProject?.id === "formazione") delta += 3;
   if (next.employees.length > monthlyCapacity(next) + 3) delta -= 2;
 
   next.staffMorale = clampMorale(next.staffMorale + delta);

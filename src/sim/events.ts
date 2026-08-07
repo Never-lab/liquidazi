@@ -21,7 +21,7 @@ import {
   shouldRollPressure,
   ticketFactorFromPressure,
 } from "./pressures";
-import { effectiveStaffPoints } from "./morale";
+import { DEFAULT_STAFF_MORALE } from "./morale";
 import { applyRivalSteal, seedRival } from "./rival";
 
 export { rng };
@@ -54,15 +54,20 @@ export const countRole = (state: GameState, role: string): number =>
   state.employees.filter((e) => e.role === role).length;
 
 /**
- * Sale slots / month. First 8 effective capacity points count 1:1; extras count 1/2.
- * Morale scales raw points before soft-cap. Processi upgrade adds +1 without headcount.
+ * Sale slots / month. First 8 capacity points count 1:1; extras count 1/2.
+ * Morale scales slot count after soft-cap (not raw points). Processi adds +1 without headcount.
  */
 export const monthlyCapacity = (state: GameState): number => {
   const upgradeLevels = migrateUpgradeState(state);
-  const points = effectiveStaffPoints(state);
+  const points = staffCapacityPoints(state);
   const core = Math.min(points, STAFF_FULL_VALUE);
   const extra = Math.max(0, points - STAFF_FULL_VALUE);
   const staffSlots = Math.floor(core + Math.floor(extra / 2));
+  const morale = state.staffMorale ?? DEFAULT_STAFF_MORALE;
+  const effectiveSlots = Math.max(
+    0,
+    Math.round(staffSlots * (0.75 + 0.25 * (morale / 100))),
+  );
   const repBonus = Math.floor(state.company.reputation / 40);
   const procLv = upgradeLevel(upgradeLevels, "processi");
   const processi = procLv;
@@ -76,7 +81,7 @@ export const monthlyCapacity = (state: GameState): number => {
     ? getProjectDef(state.activeProject.id).slotPenalty
     : 0;
   const base =
-    1 + staffSlots + repBonus + processi + temp + growth + subCap + projCap;
+    1 + effectiveSlots + repBonus + processi + temp + growth + subCap + projCap;
   const afterContracts = base - contractSlotsUsed(state);
   const penalized = afterContracts - capacityPressurePenalty(state) - projSlot;
   // Soft floor: don't soft-lock a board with 0 free slots when you have no contracts

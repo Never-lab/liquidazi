@@ -303,6 +303,7 @@ export const advanceMonth = (state: GameState): GameState => {
   }
 
   // 2. skipped F24s
+  let f24MoraleHit = false;
   for (const l of next.liabilities) {
     if (!l.paid && !l.penalized && l.dueIdx <= idx) {
       l.penalized = true;
@@ -311,8 +312,11 @@ export const advanceMonth = (state: GameState): GameState => {
         0,
         next.compliance - snap.compliance_malus_late * inspectionMalusMult(next),
       );
-      next.staffMorale = clampMorale((next.staffMorale ?? 70) - 3);
+      f24MoraleHit = true;
     }
+  }
+  if (f24MoraleHit) {
+    next.staffMorale = clampMorale((next.staffMorale ?? 70) - 3);
   }
 
   // 2b. scatti anzianità (ogni SENIORITY_MONTHS mesi di servizio, cap MAX_SENIORITY_STEPS)
@@ -343,6 +347,7 @@ export const advanceMonth = (state: GameState): GameState => {
   }
 
   // 2d. active annual project: compliance + duration tick
+  const hadFormazione = next.activeProject?.id === "formazione";
   {
     const ticked = processActiveProjectForMonth(next, idx);
     next.compliance = ticked.compliance;
@@ -624,7 +629,7 @@ export const advanceMonth = (state: GameState): GameState => {
     lines,
   };
 
-  next = applyMoraleDrift(next);
+  next = applyMoraleDrift(next, { hadFormazione });
   next = rollStaffResignation(next, rand);
 
   const mil = unlockMilestones(next);
