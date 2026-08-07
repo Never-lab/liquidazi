@@ -2,6 +2,10 @@
 
 export type UpgradeId = "gestionale_f24" | "commerciale" | "sede" | "processi";
 
+export type UpgradeLevel = 0 | 1 | 2 | 3;
+
+export type UpgradeLevels = Partial<Record<UpgradeId, UpgradeLevel>>;
+
 export interface UpgradeDef {
   id: UpgradeId;
   label: string;
@@ -26,7 +30,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   sede: {
     id: "sede",
     label: "Sede / arredi",
-    blurb: "Affitto mensile −15%. Costo ≈ 6 mesi di affitto (min 3 000 €).",
+    blurb: "Affitto mensile −15%. Costo ≈ 6 mesi di affitto (min 3 000 €).",
     cost: 3000,
   },
   processi: {
@@ -37,9 +41,70 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   },
 };
 
+/** Per-level cost multiplier and UI blurb. Index 0 = Lv1, 1 = Lv2, 2 = Lv3. */
+export const UPGRADE_LEVELS: Record<
+  UpgradeId,
+  { costMult: number; blurb: string }[]
+> = {
+  gestionale_f24: [
+    { costMult: 1.0, blurb: UPGRADES.gestionale_f24.blurb },
+    { costMult: 1.7, blurb: "F24 automatico più robusto: stesso servizio, team più grande." },
+    {
+      costMult: 2.6,
+      blurb: "F24 automatico + bonus compliance (+2) quando paga in automatico.",
+    },
+  ],
+  commerciale: [
+    { costMult: 1.0, blurb: UPGRADES.commerciale.blurb },
+    {
+      costMult: 1.8,
+      blurb: "+2 commesse sul tabellone, ticket ×1.12, tetto +6 000 €.",
+    },
+    {
+      costMult: 2.8,
+      blurb: "+3 commesse sul tabellone, ticket ×1.16, tetto +8 000 €.",
+    },
+  ],
+  sede: [
+    { costMult: 1.0, blurb: UPGRADES.sede.blurb },
+    { costMult: 1.8, blurb: "Affitto mensile −22% sul canone base." },
+    { costMult: 2.6, blurb: "Affitto mensile −28% sul canone base." },
+  ],
+  processi: [
+    { costMult: 1.0, blurb: UPGRADES.processi.blurb },
+    {
+      costMult: 1.8,
+      blurb: "+2 slot capacità; cedolino −7% sul costo lordo didattico.",
+    },
+    {
+      costMult: 2.6,
+      blurb: "+3 slot capacità; cedolino −10% sul costo lordo didattico.",
+    },
+  ],
+};
+
 export const UPGRADE_LIST = Object.values(UPGRADES);
 
-export const hasUpgrade = (
-  upgrades: UpgradeId[] | undefined,
+export const upgradeLevel = (
+  levels: UpgradeLevels | undefined,
   id: UpgradeId,
-): boolean => (upgrades ?? []).includes(id);
+): UpgradeLevel => levels?.[id] ?? 0;
+
+export const hasUpgrade = (
+  levelsOrLegacy: UpgradeLevels | UpgradeId[] | undefined,
+  id: UpgradeId,
+): boolean => {
+  if (Array.isArray(levelsOrLegacy)) {
+    return levelsOrLegacy.includes(id);
+  }
+  return upgradeLevel(levelsOrLegacy, id) >= 1;
+};
+
+export const nextUpgradeLevel = (
+  levels: UpgradeLevels | undefined,
+  id: UpgradeId,
+): UpgradeLevel | null => {
+  const current = upgradeLevel(levels, id);
+  if (current >= 3) return null;
+  return (current + 1) as UpgradeLevel;
+};
