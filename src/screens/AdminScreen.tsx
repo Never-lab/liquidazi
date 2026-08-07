@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
-import { fetchAdminStats, type AdminStats } from "../api/client";
+import { useCallback, useEffect, useState } from "react";
+import {
+  deleteAdminRun,
+  fetchAdminStats,
+  type AdminStats,
+} from "../api/client";
 import { formatCash } from "../components/formatCash";
 import { useGameStore } from "../store/gameStore";
 import styles from "./MenuScreen.module.css";
@@ -17,35 +21,65 @@ const DIFF_LABEL: Record<string, string> = {
   unknown: "Sconosciuta (run vecchie)",
 };
 
+const OUTCOME_LABEL: Record<string, string> = {
+  won: "vittoria",
+  lost: "KO",
+};
+
 export const AdminScreen = () => {
   const setScreen = useGameStore((s) => s.setScreen);
   const auth = useGameStore((s) => s.auth);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     if (!auth?.token || !auth.admin) {
       setError("Solo admin");
       setLoading(false);
       return;
     }
     setLoading(true);
+    setError("");
     void fetchAdminStats(auth.token)
       .then(setStats)
       .catch((e) => setError(e instanceof Error ? e.message : "Errore stats"))
       .finally(() => setLoading(false));
   }, [auth?.token, auth?.admin]);
 
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  const onDeleteRun = async (id: string, label: string) => {
+    if (!auth?.token) return;
+    if (!window.confirm(`Eliminare la run di ${label} dalla classifica/dashboard?`)) {
+      return;
+    }
+    setDeletingId(id);
+    setError("");
+    try {
+      await deleteAdminRun(auth.token, id);
+      reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Eliminazione fallita");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const bal = stats?.balance;
 
   return (
     <div className={styles.menuWide}>
       <h2 className={styles.title}>Controllo</h2>
-      <p className={styles.subtitle}>Contatori server · sola lettura · solo il tuo utente admin.</p>
+      <p className={styles.subtitle}>
+        Contatori server · puoi eliminare run di test dalla lista sotto · solo admin.
+      </p>
 
       {error && <p className={styles.error}>{error}</p>}
-      {loading ? (
+      {loading && !stats ? (
         <p className={styles.subtitle}>Caricamento…</p>
       ) : stats ? (
         <>
@@ -192,23 +226,49 @@ export const AdminScreen = () => {
             </ol>
           )}
 
-          <p className={styles.boardLabel}>Ultime 5 run</p>
+          <p className={styles.boardLabel}>Run in classifica (ultime 40)</p>
+          <p className={styles.subtitle}>
+            Elimina le run di test: escono da classifica e dal bilancio aggregato.
+          </p>
           {stats.recent.length === 0 ? (
             <p className={styles.subtitle}>Nessuna run ancora.</p>
           ) : (
             <ol className={styles.leaderList}>
-              {stats.recent.map((r) => (
-                <li key={`${r.username}-${r.createdAt}`}>
-                  <span className={styles.leaderMain}>
-                    <strong>{r.username}</strong>
-                    <span className={styles.leaderMeta}>
-                      {r.companyName}
-                      {r.city ? ` · ${r.city}` : ""}
+              {stats.recent.map((r) => {
+                const outcome =
+                  r.outcome && OUTCOME_LABEL[r.outcome]
+                    ? OUTCOME_LABEL[r.outcome]
+                    : r.outcome || "—";
+                const diff = r.difficulty
+                  ? DIFF_LABEL[r.difficulty] ?? r.difficulty
+                  : null;
+                return (
+                  <li key={r.id}>
+                    <span className={styles.leaderMain}>
+                      <strong>{r.username}</strong>
+                      <span className={styles.leaderMeta}>
+                        {r.companyName}
+                        {r.city ? ` · ${r.city}` : ""}
+                        {` · ${outcome}`}
+                        {diff ? ` · ${diff}` : ""}
+                      </span>
                     </span>
-                  </span>
-                  <span className={styles.leaderValue}>{r.monthsPlayed} mesi</span>
-                </li>
-              ))}
+                    <span className={styles.leaderValue}>
+                      {r.monthsPlayed} mesi{" "}
+                      <button
+                        type="button"
+                        className={styles.navLink}
+                        disabled={deletingId === r.id || loading}
+                        onClick={() =>
+                          void onDeleteRun(r.id, `${r.username} (${r.monthsPlayed} mesi)`)
+                        }
+                      >
+                        {deletingId === r.id ? "…" : "Elimina"}
+                      </button>
+                    </span>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </>

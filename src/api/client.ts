@@ -17,10 +17,13 @@ export type AdminStats = {
   dataBytes: number;
   storage: "volume" | "local";
   recent: {
+    id: string;
     username: string;
     companyName: string;
     city: string;
     monthsPlayed: number;
+    outcome?: string | null;
+    difficulty?: string | null;
     createdAt: string;
   }[];
   feedbackCount: number;
@@ -147,6 +150,12 @@ export const fetchMe = (token: string) =>
 
 export const fetchAdminStats = (token: string) =>
   api<AdminStats>("/api/admin/stats", { token });
+
+export const deleteAdminRun = (token: string, runId: string) =>
+  api<{ ok: boolean; id: string; runs: number }>(
+    `/api/admin/runs/${encodeURIComponent(runId)}`,
+    { method: "DELETE", token },
+  );
 
 export const submitFeedback = (
   payload: { kind: FeedbackKind; message: string; contact?: string },
