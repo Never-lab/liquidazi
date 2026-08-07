@@ -20,7 +20,7 @@ const MAX_SAVE_BYTES = 1_000_000;
 const MAX_BODY_BYTES = 64_000;
 const MAX_FEEDBACK = 200;
 const MAX_FEEDBACK_MSG = 2_000;
-const FEEDBACK_KINDS = new Set(["bug", "idea"]);
+const FEEDBACK_KINDS = new Set(["bug", "idea", "postmortem"]);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -359,7 +359,7 @@ export function createHandler({
         const message = String(body.message || "").trim();
         const contact = String(body.contact || "").trim().slice(0, 80);
         if (!FEEDBACK_KINDS.has(kind)) {
-          return json(res, 400, { error: "Tipo non valido (bug o idea)" });
+          return json(res, 400, { error: "Tipo non valido (bug, idea o postmortem)" });
         }
         if (message.length < 10) {
           return json(res, 400, { error: "Messaggio troppo corto (min 10 caratteri)" });

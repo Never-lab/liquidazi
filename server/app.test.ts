@@ -286,6 +286,17 @@ describe("in-app feedback", () => {
     });
     expect(ok.status).toBe(201);
 
+    const pm = await call("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "postmortem",
+        message:
+          "Post-mortem Liquidazi\nMese KO: 8\nDifficoltà: Normale\nSeconda run: Forse",
+      }),
+    });
+    expect(pm.status).toBe(201);
+
     const boss = await call("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -296,8 +307,11 @@ describe("in-app feedback", () => {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(stats.status).toBe(200);
-    expect(stats.data).toMatchObject({ feedbackCount: 1 });
-    expect((stats.data as { recentFeedback: { kind: string; message: string }[] }).recentFeedback[0]).toMatchObject({
+    expect(stats.data).toMatchObject({ feedbackCount: 2 });
+    const recent = (stats.data as { recentFeedback: { kind: string; message: string }[] })
+      .recentFeedback;
+    expect(recent.some((f) => f.kind === "postmortem")).toBe(true);
+    expect(recent.find((f) => f.kind === "idea")).toMatchObject({
       kind: "idea",
       message: "Vorrei un tutorial più corto sul F24",
       contact: "player@example.com",

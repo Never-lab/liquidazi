@@ -1,9 +1,18 @@
-import { useEffect, useState } from "react";
-import { submitRun } from "../api/client";
+import { useEffect, useState, type FormEvent } from "react";
+import { ApiError, submitFeedback, submitRun } from "../api/client";
 import { formatCash } from "../components/formatCash";
+import { DIFFICULTIES } from "../config/difficulty";
 import { CAMPAIGN_WIN_MONTHS, LOSE_MONTHS_BELOW_ZERO } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
 import styles from "./MenuScreen.module.css";
+
+type SecondRun = "yes" | "maybe" | "no";
+
+const SECOND_RUN_LABEL: Record<SecondRun, string> = {
+  yes: "Sì",
+  maybe: "Forse",
+  no: "No",
+};
 
 export const EndScreen = () => {
   const game = useGameStore((s) => s.game);
@@ -14,6 +23,13 @@ export const EndScreen = () => {
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "err">("idle");
   const [msg, setMsg] = useState("");
   const won = game.status === "won";
+
+  const [unclear, setUnclear] = useState("");
+  const [secondRun, setSecondRun] = useState<SecondRun | "">("");
+  const [pmBusy, setPmBusy] = useState(false);
+  const [pmError, setPmError] = useState("");
+  const [pmDone, setPmDone] = useState(false);
+  const [pmSkipped, setPmSkipped] = useState(false);
 
   useEffect(() => {
     if (!auth || game.career.submitted || game.monthsPlayed < 1) return;
@@ -52,6 +68,44 @@ export const EndScreen = () => {
     };
   }, [auth, game, markRunSubmitted]);
 
+  const sendPostmortem = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!secondRun) {
+      setPmError("Scegli se faresti una seconda run.");
+      return;
+    }
+    setPmError("");
+    setPmBusy(true);
+    const diff = DIFFICULTIES[game.difficulty ?? "normal"];
+    const message = [
+      "Post-mortem Liquidazi",
+      `Mese KO: ${game.monthsPlayed}`,
+      `Difficoltà: ${diff.label}`,
+      `Settore: ${game.company.sector}`,
+      `Cassa finale: ${Math.round(game.company.cash)}`,
+      "",
+      `Cosa non chiaro (primi 3 min): ${unclear.trim() || "(nessuna risposta)"}`,
+      `Seconda run: ${SECOND_RUN_LABEL[secondRun]}`,
+    ].join("\n");
+    try {
+      await submitFeedback(
+        { kind: "postmortem", message },
+        auth?.token,
+      );
+      setPmDone(true);
+    } catch (err) {
+      setPmError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Invio non riuscito",
+      );
+    } finally {
+      setPmBusy(false);
+    }
+  };
+
   if (won) {
     return (
       <div className={styles.shell}>
@@ -84,6 +138,9 @@ export const EndScreen = () => {
     );
   }
 
+  const diffLabel = DIFFICULTIES[game.difficulty ?? "normal"].label;
+  const showPostmortem = !pmDone && !pmSkipped;
+
   return (
     <div className={`${styles.shell} ${styles.ko}`}>
       <p className={styles.brandMark}>Liquidazi</p>
@@ -96,19 +153,85 @@ export const EndScreen = () => {
       {status === "ok" && <p className={styles.ok}>{msg}</p>}
       {status === "err" && <p className={styles.error}>{msg}</p>}
       {status === "sending" && <p className={styles.lede}>Pubblicazione in corso…</p>}
-      <div className={styles.ctaRow}>
-        <button type="button" className={styles.primary} onClick={() => setScreen("setup")}>
-          Nuova partita
-        </button>
-        <button type="button" className={styles.secondary} onClick={() => setScreen("menu")}>
-          Menu
-        </button>
-      </div>
-      <nav className={styles.secondaryNav} aria-label="Altro">
-        <button type="button" className={styles.navLink} onClick={() => setScreen("leaderboard")}>
-          Classifiche
-        </button>
-      </nav>
+
+      {showPostmortem ? (
+        <form className={styles.postmortem} onSubmit={(e) => void sendPostmortem(e)}>
+          <h3 className={styles.postmortemTitle}>30 secondi di post-mortem</h3>
+          <p className={styles.subtitle}>
+            Non “ti è piaciuto?” — ci serve capire dove si rompe il gioco. Anche da ospite.
+          </p>
+          <p className={styles.postmortemFacts}>
+            Morto al mese <strong>{game.monthsPlayed}</strong> · difficoltà{" "}
+            <strong>{diffLabel}</strong> · {game.company.sector}
+          </p>
+
+          <label className={styles.field}>
+            Cosa non hai capito nei primi 3 minuti?
+            <textarea
+              rows={3}
+              maxLength={800}
+              value={unclear}
+              onChange={(e) => setUnclear(e.target.value)}
+              placeholder="Obiettivo, F24, come fatturare, cosa faceva male la cassa…"
+            />
+          </label>
+
+          <fieldset className={styles.postmortemChoice}>
+            <legend>Torneresti a fare una seconda run?</legend>
+            {(
+              [
+                ["yes", "Sì"],
+                ["maybe", "Forse"],
+                ["no", "No"],
+              ] as const
+            ).map(([id, label]) => (
+              <label key={id} className={styles.postmortemRadio}>
+                <input
+                  type="radio"
+                  name="secondRun"
+                  value={id}
+                  checked={secondRun === id}
+                  onChange={() => setSecondRun(id)}
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
+
+          {pmError && <p className={styles.error}>{pmError}</p>}
+
+          <div className={styles.ctaRow}>
+            <button type="submit" className={styles.primary} disabled={pmBusy}>
+              {pmBusy ? "Invio…" : "Invia feedback"}
+            </button>
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={() => setPmSkipped(true)}
+              disabled={pmBusy}
+            >
+              Non ora
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          {pmDone && <p className={styles.ok}>Grazie — post-mortem ricevuto.</p>}
+          <div className={styles.ctaRow}>
+            <button type="button" className={styles.primary} onClick={() => setScreen("setup")}>
+              Nuova partita
+            </button>
+            <button type="button" className={styles.secondary} onClick={() => setScreen("menu")}>
+              Menu
+            </button>
+          </div>
+          <nav className={styles.secondaryNav} aria-label="Altro">
+            <button type="button" className={styles.navLink} onClick={() => setScreen("leaderboard")}>
+              Classifiche
+            </button>
+          </nav>
+        </>
+      )}
     </div>
   );
 };
