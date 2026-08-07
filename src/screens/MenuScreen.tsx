@@ -27,9 +27,26 @@ export const MenuScreen = () => {
   const game = useGameStore((s) => s.game);
   const slots = useGameStore((s) => s.slots);
   const activeSlot = useGameStore((s) => s.activeSlot);
+  const selectSlot = useGameStore((s) => s.selectSlot);
 
-  const canResume = game.monthsPlayed > 0 && game.status === "running";
+  const resumableIndex = slots.findIndex(
+    (s) => s.game && s.game.monthsPlayed > 0 && s.game.status === "running",
+  );
+  const canResume =
+    resumableIndex >= 0 ||
+    (game.monthsPlayed > 0 && game.status === "running");
   const slotLabel = slots[activeSlot]?.label ?? `Slot ${activeSlot + 1}`;
+
+  const resume = () => {
+    if (game.monthsPlayed > 0 && game.status === "running") {
+      setScreen("game");
+      return;
+    }
+    if (resumableIndex >= 0) {
+      selectSlot(resumableIndex);
+      setScreen("game");
+    }
+  };
 
   return (
     <div className={styles.shell}>
@@ -46,7 +63,7 @@ export const MenuScreen = () => {
             Nuova partita
           </Button>
           {canResume && (
-            <Button variant="secondary" onClick={() => setScreen("game")}>
+            <Button variant="secondary" onClick={resume}>
               <Icon name="resume" size={18} />
               Riprendi
             </Button>
