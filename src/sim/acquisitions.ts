@@ -1,5 +1,9 @@
 import { SECTORS, type SectorId } from "../config/market";
-import { MAX_SUBSIDIARIES } from "./actions";
+import {
+  HOLDING_SLOT_BASE,
+  VALUE_MULTIPLE_MAX,
+  VALUE_MULTIPLE_MIN,
+} from "../config/holding";
 import { maxDealNet, rng } from "./events";
 import {
   round2,
@@ -30,6 +34,18 @@ const RISK_CHANCE: Record<AcquisitionRisk, number> = {
 };
 
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
+
+const RISK_MULT = { low: 1.05, med: 1, high: 0.9 } as const;
+
+export const estimateSubsidiaryValue = (sub: {
+  monthlyEbitda: number;
+  risk: AcquisitionRisk;
+  monthsOwned: number;
+}): number => {
+  const ageBoost = Math.min(0.15, sub.monthsOwned * 0.01);
+  const multiple = (VALUE_MULTIPLE_MIN + VALUE_MULTIPLE_MAX) / 2; // 11
+  return round2(sub.monthlyEbitda * multiple * RISK_MULT[sub.risk] * (1 + ageBoost));
+};
 
 export const generateAcquisitionBoard = (
   state: GameState,
@@ -72,7 +88,8 @@ export const refreshAcquisitionBoard = (state: GameState): GameState => {
 
 export const buyAcquisition = (state: GameState, targetId: number): GameState => {
   const subs = state.subsidiaries ?? [];
-  if (subs.length >= MAX_SUBSIDIARIES) return state;
+  const cap = state.holdingSlotCap ?? HOLDING_SLOT_BASE;
+  if (subs.length >= cap) return state;
   const target = (state.acquisitionBoard ?? []).find((t) => t.id === targetId);
   if (!target || state.company.cash < target.price) return state;
 

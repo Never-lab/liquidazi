@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { HOLDING_SLOT_BASE } from "../config/holding";
 import {
   depositTreasury,
   GROWTH_PER_SLOT,
   investGrowth,
-  MAX_SUBSIDIARIES,
   withdrawTreasury,
 } from "./actions";
 import {
@@ -40,7 +40,7 @@ describe("Investimenti + acquisizioni lite", () => {
     expect(monthlyCapacity(s)).toBe(cap0 + 1);
   });
 
-  it("buy acquisition: paga, max 3, drip in mese", () => {
+  it("buy acquisition: paga, max slots, drip in mese", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.quietMode = true;
     s.company.cash = 200000;
@@ -50,6 +50,7 @@ describe("Investimenti + acquisizioni lite", () => {
     const cashBefore = s.company.cash;
     s = buyAcquisition(s, target.id);
     expect(s.subsidiaries).toHaveLength(1);
+    expect(s.subsidiaries[0]!.purchasePrice).toBe(target.price);
     expect(s.company.cash).toBe(cashBefore - target.price);
 
     const ebitda = s.subsidiaries[0]!.monthlyEbitda;
@@ -58,7 +59,7 @@ describe("Investimenti + acquisizioni lite", () => {
     expect(s.company.cash).toBe(cash2 + ebitda);
 
     // fill to max
-    while (s.subsidiaries.length < MAX_SUBSIDIARIES) {
+    while (s.subsidiaries.length < HOLDING_SLOT_BASE) {
       s.company.cash = 500000;
       const { board, nextId } = generateAcquisitionBoard(s);
       s.acquisitionBoard = board;
@@ -66,13 +67,13 @@ describe("Investimenti + acquisizioni lite", () => {
       const t = s.acquisitionBoard[0]!;
       s = buyAcquisition(s, t.id);
     }
-    expect(s.subsidiaries).toHaveLength(MAX_SUBSIDIARIES);
+    expect(s.subsidiaries).toHaveLength(HOLDING_SLOT_BASE);
     s.company.cash = 500000;
     const { board, nextId } = generateAcquisitionBoard(s);
     s.acquisitionBoard = board;
     s.nextId = nextId;
     const blocked = buyAcquisition(s, s.acquisitionBoard[0]!.id);
-    expect(blocked.subsidiaries).toHaveLength(MAX_SUBSIDIARIES);
+    expect(blocked.subsidiaries).toHaveLength(HOLDING_SLOT_BASE);
   });
 
   it("quietMode: drip sì, niente hit integrazione", () => {
