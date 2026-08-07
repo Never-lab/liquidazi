@@ -14,6 +14,7 @@ import {
   type SectorId,
 } from "../config/market";
 import { DIFFICULTIES, type DifficultyId } from "../config/difficulty";
+import { HOLDING_SLOT_BASE } from "../config/holding";
 import type { ProjectId } from "../config/projects";
 import type { UpgradeId } from "../config/upgrades";
 
@@ -203,6 +204,7 @@ export interface YearToDate {
   payrollCost: number;
   interest: number;
   otherCosts: number;
+  capitalGains: number;
 }
 
 export interface YearReport extends YearToDate {
@@ -248,6 +250,13 @@ export interface AcquisitionTarget {
   risk: AcquisitionRisk;
 }
 
+export interface SaleOffer {
+  id: number;
+  subsidiaryId: number;
+  price: number;
+  expiresMonthIdx: number;
+}
+
 export interface Subsidiary {
   id: number;
   name: string;
@@ -256,6 +265,9 @@ export interface Subsidiary {
   capacityBonus: number;
   monthsOwned: number;
   risk: AcquisitionRisk;
+  purchasePrice: number;
+  listedUntilMonthIdx: number | null;
+  capexCooldownMonths: number;
 }
 
 export type ActiveProject = {
@@ -326,8 +338,12 @@ export interface GameState {
   growthInvested: number;
   /** Permanent capacity from growth invest (cap 3) */
   growthCapacityBonus: number;
-  /** Owned portfolio companies (max 3) */
+  /** Owned portfolio companies (cap from holdingSlotCap) */
   subsidiaries: Subsidiary[];
+  /** Max subsidiaries in portfolio (4–8) */
+  holdingSlotCap: number;
+  /** Active sale offers from listed subsidiaries */
+  saleOffers: SaleOffer[];
   /** Acquisition targets on the board */
   acquisitionBoard: AcquisitionTarget[];
   /** Remaining months of supply coverage (0 = ticket/default penalty) */
@@ -432,7 +448,7 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     tfrFund: 0,
     lastPayroll: null,
     compliance: 100,
-    ytd: { revenue: 0, purchases: 0, payrollCost: 0, interest: 0, otherCosts: 0 },
+    ytd: { revenue: 0, purchases: 0, payrollCost: 0, interest: 0, otherCosts: 0, capitalGains: 0 },
     priorYearTax: null,
     accontiCharged: { ires: 0, irap: 0 },
     lastYearReport: null,
@@ -479,6 +495,8 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     growthInvested: 0,
     growthCapacityBonus: 0,
     subsidiaries: [],
+    holdingSlotCap: HOLDING_SLOT_BASE,
+    saleOffers: [],
     acquisitionBoard: [],
     supplyMonths: 1,
     lastCloseSummary: null,

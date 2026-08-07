@@ -88,6 +88,9 @@ describe("Investimenti + acquisizioni lite", () => {
         capacityBonus: 0,
         monthsOwned: 0,
         risk: "high",
+        purchasePrice: 5000,
+        listedUntilMonthIdx: null,
+        capexCooldownMonths: 0,
       },
     ];
     const before = s.company.cash;

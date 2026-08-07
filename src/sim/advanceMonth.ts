@@ -457,7 +457,7 @@ export const advanceMonth = (state: GameState): GameState => {
   }
 
   if (month === 12) {
-    const { revenue, purchases, payrollCost, interest, otherCosts } = next.ytd;
+    const { revenue, purchases, payrollCost, interest, otherCosts, capitalGains } = next.ytd;
     const profit = round2(revenue - purchases - payrollCost - interest - otherCosts);
     const irapBase = round2(revenue - purchases);
     const ires = round2(Math.max(0, profit) * snap.ires_rate);
@@ -473,6 +473,7 @@ export const advanceMonth = (state: GameState): GameState => {
       payrollCost,
       interest,
       otherCosts,
+      capitalGains,
       profit,
       irapBase,
       ires,
@@ -482,7 +483,7 @@ export const advanceMonth = (state: GameState): GameState => {
       -YEAR_REPORTS_MAX,
     );
     next.priorYearTax = { ires, irap };
-    next.ytd = { revenue: 0, purchases: 0, payrollCost: 0, interest: 0, otherCosts: 0 };
+    next.ytd = { revenue: 0, purchases: 0, payrollCost: 0, interest: 0, otherCosts: 0, capitalGains: 0 };
     next.accontiCharged = { ires: 0, irap: 0 };
   }
 

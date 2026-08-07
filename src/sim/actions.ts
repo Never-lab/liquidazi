@@ -493,7 +493,7 @@ export const buyUpgrade = (state: GameState, id: UpgradeId): GameState => {
 export const TREASURY_MIN = 500;
 export const GROWTH_PER_SLOT = 4000;
 export const GROWTH_CAPACITY_CAP = 3;
-export const MAX_SUBSIDIARIES = 3;
+export { HOLDING_SLOT_BASE as MAX_SUBSIDIARIES } from "../config/holding";
 
 export const depositTreasury = (state: GameState, amount: number): GameState => {
   const amt = round2(amount);

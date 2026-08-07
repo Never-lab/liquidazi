@@ -44,6 +44,9 @@ describe("Supplies + milestones", () => {
         capacityBonus: 0,
         monthsOwned: 1,
         risk: "low",
+        purchasePrice: 1000,
+        listedUntilMonthIdx: null,
+        capexCooldownMonths: 0,
       },
     ];
     r = unlockMilestones(s);

@@ -87,6 +87,9 @@ export const buyAcquisition = (state: GameState, targetId: number): GameState =>
     capacityBonus: target.capacityBonus,
     monthsOwned: 0,
     risk: target.risk,
+    purchasePrice: target.price,
+    listedUntilMonthIdx: null,
+    capexCooldownMonths: 0,
   };
   next.subsidiaries = [...(next.subsidiaries ?? []), sub];
   next.log.unshift({
