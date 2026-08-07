@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { submitRun } from "../api/client";
+import { pulseGuestGame } from "../api/guestPulse";
 import { formatCash } from "../components/formatCash";
 import { CAMPAIGN_WIN_MONTHS, LOSE_MONTHS_BELOW_ZERO } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
@@ -51,6 +52,13 @@ export const EndScreen = () => {
       cancelled = true;
     };
   }, [auth, game, markRunSubmitted]);
+
+  useEffect(() => {
+    if (auth) return;
+    if (game.monthsPlayed < 1) return;
+    if (game.status !== "lost" && game.status !== "won") return;
+    pulseGuestGame(game, false);
+  }, [auth, game]);
 
   if (won) {
     return (

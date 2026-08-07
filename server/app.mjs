@@ -14,13 +14,16 @@ import {
   statSync,
 } from "node:fs";
 import { join, extname, sep } from "node:path";
-import { computeBalance } from "./balance.mjs";
+import { computeBalance, samplesFromSaves } from "./balance.mjs";
 
 const MAX_SAVE_BYTES = 1_000_000;
 const MAX_BODY_BYTES = 64_000;
 const MAX_FEEDBACK = 200;
 const MAX_FEEDBACK_MSG = 2_000;
+const MAX_PULSES = 500;
 const FEEDBACK_KINDS = new Set(["bug", "idea"]);
+const SESSION_RE = /^[a-zA-Z0-9_-]{8,64}$/;
+const DIFFS = new Set(["easy", "normal", "hard"]);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -105,6 +108,8 @@ export function createHandler({
   let runs = load("runs.json", []);
   /** @type {{ id: string, kind: string, message: string, contact: string | null, username: string | null, createdAt: string }[]} */
   let feedback = load("feedback.json", []);
+  /** @type {{ sessionId: string, monthsPlayed: number, difficulty: string | null, sector: string | null, peakCash: number, peakDebt: number, finalCash: number, outcome: string, updatedAt: string }[]} */
+  let pulses = load("pulses.json", []);
 
   const savePath = (userId) => join(dataDir, "saves", `${userId}.json`);
 
@@ -300,7 +305,7 @@ export function createHandler({
             return 0;
           }
         };
-        for (const name of ["users.json", "runs.json", "feedback.json"]) {
+        for (const name of ["users.json", "runs.json", "feedback.json", "pulses.json"]) {
           dataBytes += sizeOf(join(dataDir, name));
         }
         if (existsSync(savesDir)) {
@@ -326,6 +331,22 @@ export function createHandler({
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
           .slice(0, 10);
 
+        const liveSamples = samplesFromSaves(savesDir, {
+          readdirSync,
+          readFileSync,
+          existsSync,
+          join,
+        });
+        const guestSamples = pulses.map((p) => ({
+          monthsPlayed: p.monthsPlayed,
+          difficulty: p.difficulty,
+          sector: p.sector,
+          peakCash: p.peakCash,
+          peakDebt: p.peakDebt,
+          finalCash: p.finalCash,
+          outcome: p.outcome,
+        }));
+
         return json(res, 200, {
           users: users.length,
           runs: runs.length,
@@ -340,7 +361,58 @@ export function createHandler({
           feedbackCount: feedback.length,
           recentFeedback,
           balance: computeBalance(runs),
+          balanceLive: computeBalance(liveSamples),
+          balanceGuests: computeBalance(guestSamples),
         });
+      }
+
+      if (req.method === "POST" && path === "/api/pulse") {
+        let body;
+        try {
+          body = await readBodyLimited(req, MAX_BODY_BYTES);
+        } catch (e) {
+          return json(
+            res,
+            e && e.code === "ENTITY_TOO_LARGE" ? 413 : 400,
+            { error: e && e.code === "ENTITY_TOO_LARGE" ? "Richiesta troppo grande" : "JSON non valido" },
+          );
+        }
+        const sessionId = String(body.sessionId || "").trim();
+        if (!SESSION_RE.test(sessionId)) {
+          return json(res, 400, { error: "sessionId non valido" });
+        }
+        const monthsPlayed = Number(body.monthsPlayed);
+        if (!Number.isFinite(monthsPlayed) || monthsPlayed < 1 || monthsPlayed > 2400) {
+          return json(res, 400, { error: "monthsPlayed non valido" });
+        }
+        const difficultyRaw = String(body.difficulty || "").trim().toLowerCase();
+        const difficulty = DIFFS.has(difficultyRaw) ? difficultyRaw : null;
+        const status = String(body.status || "running");
+        let outcome = "live";
+        if (status === "won") outcome = "won";
+        else if (status === "lost") outcome = "lost";
+        const entry = {
+          sessionId,
+          monthsPlayed: Math.round(monthsPlayed),
+          difficulty,
+          sector: String(body.sector || "").slice(0, 20) || null,
+          peakCash: Number.isFinite(Number(body.peakCash)) ? Math.round(Number(body.peakCash) * 100) / 100 : 0,
+          peakDebt: Number.isFinite(Number(body.peakDebt)) ? Math.round(Number(body.peakDebt) * 100) / 100 : 0,
+          finalCash: Number.isFinite(Number(body.cash)) ? Math.round(Number(body.cash) * 100) / 100 : 0,
+          outcome,
+          updatedAt: new Date().toISOString(),
+        };
+        const idx = pulses.findIndex((p) => p.sessionId === sessionId);
+        if (idx >= 0) pulses[idx] = entry;
+        else pulses.push(entry);
+        if (pulses.length > MAX_PULSES) {
+          pulses = pulses
+            .slice()
+            .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))
+            .slice(-MAX_PULSES);
+        }
+        save("pulses.json", pulses);
+        return json(res, 200, { ok: true });
       }
 
       if (req.method === "POST" && path === "/api/feedback") {
@@ -448,7 +520,6 @@ export function createHandler({
         ) {
           return json(res, 400, { error: "Stats non valide" });
         }
-        const DIFFS = new Set(["easy", "normal", "hard"]);
         const difficultyRaw = String(body.difficulty || "").trim().toLowerCase();
         const difficulty = DIFFS.has(difficultyRaw) ? difficultyRaw : null;
         const outcomeRaw = String(body.outcome || "lost").trim().toLowerCase();

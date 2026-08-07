@@ -9,6 +9,7 @@ import {
   register as apiRegister,
   type AuthSession,
 } from "../api/client";
+import { pulseGuestGame } from "../api/guestPulse";
 import {
   createCloudSaveQueue,
   type CloudSaveStatus,
@@ -244,6 +245,7 @@ export const useGameStore = create<GameStore>()(
         if (game.status === "lost" || game.status === "won") screen = "gameover";
         const slots = syncSlot(get().slots, get().activeSlot, game);
         set({ game, screen, slots });
+        pulseGuestGame(game, Boolean(get().auth));
         if (game.status === "lost") {
           get().flashToast("Fallimento: 12 mesi in rosso", "bad");
           sfxBad();

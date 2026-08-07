@@ -244,6 +244,8 @@ describe("admin stats", () => {
       n: 1,
       buckets: { "1-3": 0, "4-6": 0, "7-12": 1, "13-23": 0, "24+": 0 },
     });
+    expect((stats.data as { balanceLive: { n: number } }).balanceLive.n).toBe(0);
+    expect((stats.data as { balanceGuests: { n: number } }).balanceGuests.n).toBe(0);
   });
 });
 
@@ -306,6 +308,84 @@ describe("in-app feedback", () => {
 
     server.close();
     rmSync(adminDataDir, { recursive: true, force: true });
+  });
+});
+
+describe("guest pulse", () => {
+  it("upserts anonymous progress for balanceGuests", async () => {
+    const dataDir = mkdtempSync(join(tmpdir(), "liquidazi-pulse-"));
+    const handler = createHandler({
+      dataDir,
+      secret: SECRET,
+      distDir: null,
+      storage: "local",
+      adminUsernames: ["boss"],
+    });
+    const server = createServer(handler);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const addr = server.address();
+    if (!addr || typeof addr === "string") throw new Error("no port");
+    const base = `http://127.0.0.1:${addr.port}`;
+    const call = async (path: string, opts: RequestInit = {}) => {
+      const res = await fetch(`${base}${path}`, opts);
+      const data = await res.json().catch(() => ({}));
+      return { status: res.status, data };
+    };
+
+    const bad = await call("/api/pulse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: "x", monthsPlayed: 3 }),
+    });
+    expect(bad.status).toBe(400);
+
+    const ok = await call("/api/pulse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: "guestsession001",
+        monthsPlayed: 9,
+        difficulty: "normal",
+        sector: "servizi",
+        status: "running",
+        cash: 1500,
+        peakCash: 4000,
+        peakDebt: 200,
+      }),
+    });
+    expect(ok.status).toBe(200);
+
+    await call("/api/pulse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: "guestsession001",
+        monthsPlayed: 11,
+        difficulty: "normal",
+        sector: "servizi",
+        status: "running",
+        cash: 900,
+      }),
+    });
+
+    const boss = await call("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "boss", password: "secret1" }),
+    });
+    const token = (boss.data as { token: string }).token;
+    const stats = await call("/api/admin/stats", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(stats.status).toBe(200);
+    expect((stats.data as { balanceGuests: { n: number; medianMonths: number } }).balanceGuests).toMatchObject({
+      n: 1,
+      medianMonths: 11,
+      live: 1,
+    });
+
+    server.close();
+    rmSync(dataDir, { recursive: true, force: true });
   });
 });
 

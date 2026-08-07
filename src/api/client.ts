@@ -26,6 +26,8 @@ export type AdminStats = {
   feedbackCount: number;
   recentFeedback: FeedbackEntry[];
   balance: BalanceStats;
+  balanceLive: BalanceStats;
+  balanceGuests: BalanceStats;
 };
 
 export type BalanceStats = {
@@ -36,6 +38,7 @@ export type BalanceStats = {
   pctGe24: number;
   wins: number;
   losses: number;
+  live: number;
   unknownOutcome: number;
   buckets: Record<"1-3" | "4-6" | "7-12" | "13-23" | "24+", number>;
   avgPeakCash: number;
@@ -153,6 +156,23 @@ export const submitFeedback = (
   api<{ id: string }>("/api/feedback", {
     method: "POST",
     token,
+    body: JSON.stringify(payload),
+  });
+
+export type PulsePayload = {
+  sessionId: string;
+  monthsPlayed: number;
+  difficulty?: DifficultyId;
+  sector?: string;
+  status: "running" | "lost" | "won";
+  cash?: number;
+  peakCash?: number;
+  peakDebt?: number;
+};
+
+export const sendPulse = (payload: PulsePayload) =>
+  api<{ ok: boolean }>("/api/pulse", {
+    method: "POST",
     body: JSON.stringify(payload),
   });
 

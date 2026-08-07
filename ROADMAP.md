@@ -16,7 +16,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Admin controllo | [PR #9](https://github.com/Never-lab/liquidazi/pull/9) · env `LIQUIDAZI_ADMIN_USERNAMES` in [README](README.md) | — |
 | Feedback in-app | `POST /api/feedback` + Controllo (no GitHub required) | — |
 | HUD icons (slice 2) | chrome sticky / F24 / toolbar / ops tabs | [spec follow-up](docs/superpowers/specs/2026-08-06-ui-icons-feedback-design.md) |
-| Run balance monitor | Controllo → Bilancio run (bucket, difficoltà, settore) | — |
+| Run balance monitor | Controllo: run pubblicate + save aperti + pulse ospiti | — |
 
 ## Next (coda attiva)
 
