@@ -37,6 +37,13 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
       body: "Usa il banner giallo «Paga F24» (o Fisco nelle operazioni). Saltare costa sanzione + compliance peggiore sul credito.",
     };
   }
+  if (game.monthsPlayed >= 1 && game.monthsPlayed < 3) {
+    return {
+      id: "commesse-legend",
+      title: "Cosa significano i numeri sopra le commesse",
+      body: "Capacità = vendite ancora accettabili questo mese; Tetto max = limite per una singola vendita; Scorte = mesi di magazzino. Passa sui chip (o tieni premuto) per il resto.",
+    };
+  }
   if (game.monthsPlayed >= 2 && game.employees.length === 0 && game.monthsPlayed < 6) {
     return {
       id: "hire",
