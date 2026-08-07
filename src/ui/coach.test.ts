@@ -55,7 +55,16 @@ describe("coachTipFor commesse-legend", () => {
     const s = createInitialGameState();
     s.monthsPlayed = 4;
     s.liabilities = [];
-    s.employees = [{ id: "e1", role: "Operaio", grossMonthly: 1800, senioritySteps: 0, tfrAccrued: 0 }];
+    s.employees = [
+      {
+        id: 1,
+        role: "Operaio",
+        grossMonthly: 1800,
+        hireMonthIdx: 2024 * 12,
+        senioritySteps: 0,
+        tfrAccrued: 0,
+      },
+    ];
     s.staffMorale = 35;
     expect(coachTipFor(s)?.id).toBe("staff-clima");
   });
