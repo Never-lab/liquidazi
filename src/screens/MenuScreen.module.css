@@ -230,6 +230,63 @@
   border-color: #d4a8a3;
 }
 
+.postmortem {
+  margin: 8px 0 20px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.postmortemTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.postmortemFacts {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-text);
+}
+
+.postmortemChoice {
+  margin: 0 0 14px;
+  padding: 0;
+  border: none;
+}
+
+.postmortemChoice legend {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.postmortemRadio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 14px 8px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  min-height: var(--touch);
+}
+
+.postmortemRadio input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent);
+}
+
 @keyframes koIn {
   from {
     opacity: 0;

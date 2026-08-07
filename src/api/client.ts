@@ -45,7 +45,7 @@ export type BalanceStats = {
   bySector: Record<string, { n: number; avgMonths: number }>;
 };
 
-export type FeedbackKind = "bug" | "idea";
+export type FeedbackKind = "bug" | "idea" | "postmortem";
 
 export type FeedbackEntry = {
   id: string;

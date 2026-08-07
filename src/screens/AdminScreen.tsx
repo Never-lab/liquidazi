@@ -175,7 +175,11 @@ export const AdminScreen = () => {
                 <li key={f.id} className={styles.feedbackItem}>
                   <span className={styles.leaderMain}>
                     <strong>
-                      {f.kind === "bug" ? "Bug" : "Idea"}
+                      {f.kind === "bug"
+                        ? "Bug"
+                        : f.kind === "postmortem"
+                          ? "Post-mortem"
+                          : "Idea"}
                       {f.username ? ` · ${f.username}` : " · ospite"}
                     </strong>
                     <span className={styles.leaderMeta}>{f.message}</span>
