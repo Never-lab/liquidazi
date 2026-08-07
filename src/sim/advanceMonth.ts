@@ -637,6 +637,7 @@ export const advanceMonth = (state: GameState): GameState => {
 
   const mil = unlockMilestones(next);
   next.milestones = mil.state.milestones;
+  next.holdingSlotCap = mil.state.holdingSlotCap;
   for (const id of mil.unlocked) {
     const label =
       id === "survive_12"

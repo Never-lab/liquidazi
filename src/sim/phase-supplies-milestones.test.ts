@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { HOLDING_SLOT_BASE, HOLDING_SLOT_MAX } from "../config/holding";
+import { advanceMonth } from "./advanceMonth";
 import { acceptOpportunity } from "./events";
 import { maxDealNet } from "./events";
 import { unlockMilestones } from "./milestones";
@@ -113,5 +114,20 @@ describe("Supplies + milestones", () => {
     s.milestones = ["first_acquisition", "survive_12", "year1_profit", "compliance_80"];
     const r = unlockMilestones(s);
     expect(r.state.holdingSlotCap).toBe(HOLDING_SLOT_MAX);
+  });
+
+  it("advanceMonth copies holdingSlotCap when survive_12 unlocks", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.monthsPlayed = 11;
+    s.compliance = 79; // below 80 — avoid compliance_80 firing same close (default is 100)
+    s.holdingSlotCap = HOLDING_SLOT_BASE;
+    s.milestones = [];
+
+    s = advanceMonth(s);
+
+    expect(s.monthsPlayed).toBe(12);
+    expect(s.milestones).toContain("survive_12");
+    expect(s.holdingSlotCap).toBeGreaterThanOrEqual(6);
   });
 });
