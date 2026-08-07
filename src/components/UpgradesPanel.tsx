@@ -26,27 +26,28 @@ export const UpgradesPanel = () => {
           const lv = upgradeLevel(levels, u.id);
           const blurbIdx = Math.max(0, lv - 1);
           const blurb = UPGRADE_LEVELS[u.id][blurbIdx]!.blurb;
+          const blurbText = lv === 0 ? `Prossimo: ${blurb}` : blurb;
           const cost = upgradeCost(game, u.id);
           const atMax = lv >= 3;
           const canBuy = !atMax && game.company.cash >= cost;
+          const action = lv === 0 ? "Acquista" : "Potenzia";
           return (
             <li key={u.id} style={{ flexDirection: "column", alignItems: "stretch", gap: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                 <strong>{u.label}</strong>
                 <span>Lv {lv} / 3</span>
               </div>
-              <span className={styles.muted}>{blurb}</span>
+              <span className={styles.muted}>{blurbText}</span>
               {atMax ? (
                 <span className={styles.muted}>Max Lv3</span>
               ) : (
                 <button
                   className={styles.buttonSecondary}
                   disabled={!canBuy}
+                  title={!canBuy ? "Cassa insufficiente" : undefined}
                   onClick={() => buy(u.id as UpgradeId)}
                 >
-                  {canBuy
-                    ? `${lv === 0 ? "Acquista" : "Potenzia"} · ${formatCash(cost)}`
-                    : "Cassa insufficiente"}
+                  {`${action} · ${formatCash(cost)}`}
                 </button>
               )}
             </li>
