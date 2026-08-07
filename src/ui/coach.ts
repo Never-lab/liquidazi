@@ -1,3 +1,5 @@
+import { UPGRADE_LIST, upgradeLevel } from "../config/upgrades";
+import { migrateUpgradeState } from "../sim/migrateUpgrades";
 import type { GameState } from "../sim/types";
 
 export type CoachTip = {
@@ -51,7 +53,11 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
       body: "Assumi se il tabellone ha slot vuoti. I primi 6 dipendenti contano pieno; oltre rendono meno. Oppure compra «Processi».",
     };
   }
-  if (game.monthsPlayed >= 3 && (game.upgrades?.length ?? 0) === 0 && game.company.cash > 4000) {
+  const migratedLevels = migrateUpgradeState(game);
+  const noUpgradeLevels = UPGRADE_LIST.every(
+    (u) => upgradeLevel(migratedLevels, u.id) < 1,
+  );
+  if (game.monthsPlayed >= 3 && noUpgradeLevels && game.company.cash > 4000) {
     return {
       id: "upgrade",
       title: "Migliora l'azienda",
