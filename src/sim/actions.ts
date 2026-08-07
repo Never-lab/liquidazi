@@ -6,8 +6,12 @@ import {
 } from "../config/staffPay";
 import {
   UPGRADES,
+  UPGRADE_LEVELS,
+  upgradeLevel,
   type UpgradeId,
+  type UpgradeLevel,
 } from "../config/upgrades";
+import { migrateUpgradeState } from "./migrateUpgrades";
 import { marketModifiersFromIndex } from "./market";
 import { hasPressure } from "./pressures";
 import {
@@ -432,33 +436,55 @@ export const payF24 = (state: GameState): GameState => {
   return next;
 };
 
-export const upgradeCost = (state: GameState, id: UpgradeId): number => {
-  const def = UPGRADES[id];
-  if (id === "sede") {
-    return Math.max(def.cost, Math.round(state.company.monthlyRent * 6));
+/** Pre-Lv1 sede already applied 0.85 to monthlyRent; reconstruct base for legacy saves. */
+const sedeRentBase = (
+  company: GameState["company"],
+  sedeLevel: UpgradeLevel,
+): number => {
+  if (company.monthlyRentBase != null) return company.monthlyRentBase;
+  if (sedeLevel >= 1) {
+    return round2(company.monthlyRent / 0.85);
   }
-  return def.cost;
+  return company.monthlyRent;
 };
 
-/** One-shot company upgrade. */
-export const buyUpgrade = (state: GameState, id: UpgradeId): GameState => {
-  if (!UPGRADES[id]) return state;
-  const owned = state.upgrades ?? [];
-  if (owned.includes(id)) return state;
-  const cost = upgradeCost(state, id);
-  if (state.company.cash < cost) return state;
+export const upgradeCost = (state: GameState, id: UpgradeId): number => {
+  const def = UPGRADES[id];
+  const levels = migrateUpgradeState(state);
+  const current = upgradeLevel(levels, id);
+  const levelIdx = current >= 3 ? 2 : current;
+  const costMult = UPGRADE_LEVELS[id][levelIdx]!.costMult;
+  if (id === "sede") {
+    const rentBase = sedeRentBase(state.company, current);
+    return Math.round(Math.max(def.cost, Math.round(rentBase * 6)) * costMult);
+  }
+  return Math.round(def.cost * costMult);
+};
 
+/** Level-up company upgrade (Lv1→Lv3). */
+export const buyUpgrade = (state: GameState, id: UpgradeId): GameState => {
   const next = structuredClone(state);
-  next.upgrades = [...(next.upgrades ?? []), id];
+  next.upgradeLevels = migrateUpgradeState(next);
+
+  if (!UPGRADES[id]) return next;
+  const current = upgradeLevel(next.upgradeLevels, id);
+  if (current >= 3) return next;
+  const cost = upgradeCost(next, id);
+  if (next.company.cash < cost) return next;
+
+  const newLevel = (current + 1) as UpgradeLevel;
+  next.upgradeLevels[id] = newLevel;
   next.company.cash = round2(next.company.cash - cost);
   if (id === "sede") {
-    next.company.monthlyRent = round2(next.company.monthlyRent * 0.85);
+    next.company.monthlyRentBase = sedeRentBase(next.company, current);
+    const factor = [1, 0.85, 0.78, 0.72][newLevel]!;
+    next.company.monthlyRent = round2(next.company.monthlyRentBase * factor);
   }
   next.log.unshift({
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),
     tone: "good",
-    text: `Upgrade: ${UPGRADES[id].label} (−${cost.toLocaleString("it-IT")} €).`,
+    text: `Upgrade: ${UPGRADES[id].label} Lv${newLevel} (−${cost.toLocaleString("it-IT")} €).`,
   });
   next.log = next.log.slice(0, 12);
   return next;

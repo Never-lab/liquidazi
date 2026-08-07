@@ -29,6 +29,8 @@ export interface Company {
   densityIndex: number;
   /** monthly locale rent = €/mq × 80 mq sede tipo */
   monthlyRent: number;
+  /** canone base prima degli sconti sede (fissato al primo acquisto) */
+  monthlyRentBase?: number;
   /** 0–100 commercial reputation (clients / defaults) */
   reputation: number;
 }
@@ -275,8 +277,10 @@ export interface GameState {
   lastYearReport: YearReport | null;
   /** Storico bilanci (ultimi N anni) per confronto YoY */
   yearReports: YearReport[];
-  /** Upgrade aziendali acquistati */
-  upgrades: UpgradeId[];
+  /** Upgrade aziendali per livello (0 = non acquistato) */
+  upgradeLevels?: Partial<Record<UpgradeId, 0 | 1 | 2 | 3>>;
+  /** @deprecated legacy saves — migrated to upgradeLevels */
+  upgrades?: UpgradeId[];
   loan: Loan | null;
   /** Offerta di salvataggio quando sei in rosso (null se non attiva). */
   loanOffer: LoanOffer | null;
@@ -413,7 +417,7 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     accontiCharged: { ires: 0, irap: 0 },
     lastYearReport: null,
     yearReports: [],
-    upgrades: [],
+    upgradeLevels: {},
     loan: null,
     loanOffer: null,
     fido: null,

@@ -40,6 +40,8 @@ import {
   type NewGameOptions,
 } from "../sim/types";
 import type { UpgradeId } from "../config/upgrades";
+import { upgradeLevel } from "../config/upgrades";
+import { migrateUpgradeState } from "../sim/migrateUpgrades";
 import { sfxBad, sfxGood, sfxMonthClose, sfxPay } from "../ui/sfx";
 import { formatCash } from "../components/formatCash";
 import { markIntroSeen, screenAfterAuth } from "../ui/introGate";
@@ -369,9 +371,10 @@ export const useGameStore = create<GameStore>()(
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
       },
       buyUpgrade: (id) => {
+        const before = upgradeLevel(migrateUpgradeState(get().game), id);
         const game = buyUpgrade(get().game, id);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-        if ((game.upgrades ?? []).includes(id)) {
+        if (upgradeLevel(migrateUpgradeState(game), id) > before) {
           get().flashToast("Upgrade acquistato", "good");
           sfxGood();
         } else {
