@@ -15,6 +15,7 @@ import {
 } from "node:fs";
 import { join, extname, sep } from "node:path";
 import { computeBalance } from "./balance.mjs";
+import { extractRunFromGame, syncRunsFromSaves, upsertRun } from "./runSync.mjs";
 
 const MAX_SAVE_BYTES = 1_000_000;
 const MAX_BODY_BYTES = 64_000;
@@ -107,6 +108,7 @@ export function createHandler({
   let feedback = load("feedback.json", []);
 
   const savePath = (userId) => join(dataDir, "saves", `${userId}.json`);
+  const newRunId = () => randomBytes(8).toString("hex");
 
   const loadUserSaves = (userId) => {
     const p = savePath(userId);
@@ -117,6 +119,20 @@ export function createHandler({
       return emptySaves();
     }
   };
+
+  /** Backfill / realign leaderboard from cloud saves (long runs past soft-win 24m). */
+  const realignRunsFromSaves = () => {
+    const result = syncRunsFromSaves(users, runs, loadUserSaves, newRunId);
+    if (result.synced > 0) {
+      runs = result.runs;
+      save("runs.json", runs);
+      console.info(
+        `[liquidazi] runs realigned from saves: ${result.synced} upsert(s), ${result.touchedUsers} user(s)`,
+      );
+    }
+    return result;
+  };
+  realignRunsFromSaves();
 
   const hashPassword = (password, salt = randomBytes(16).toString("hex")) => {
     const hash = scryptSync(password, salt, 32).toString("hex");
@@ -416,7 +432,30 @@ export function createHandler({
         };
         mkdirSync(join(dataDir, "saves"), { recursive: true });
         writeJson(savePath(user.id), payload);
+        // Keep leaderboard/dashboard in sync for continued / long runs.
+        const slots = Array.isArray(payload.slots) ? payload.slots : [];
+        let changed = false;
+        for (let i = 0; i < slots.length; i++) {
+          const extracted = extractRunFromGame(slots[i]?.game, user, i);
+          if (!extracted) continue;
+          const result = upsertRun(runs, extracted, newRunId);
+          runs = result.runs;
+          if (result.upserted) changed = true;
+        }
+        if (changed) save("runs.json", runs);
         return json(res, 200, payload);
+      }
+
+      if (req.method === "POST" && path === "/api/admin/resync-runs") {
+        const user = parseToken(req.headers.authorization);
+        if (!user) return json(res, 401, { error: "Non autenticato" });
+        if (!isAdmin(user)) return json(res, 403, { error: "Solo admin" });
+        const result = realignRunsFromSaves();
+        return json(res, 200, {
+          synced: result.synced,
+          touchedUsers: result.touchedUsers,
+          runs: runs.length,
+        });
       }
 
       if (req.method === "POST" && path === "/api/runs") {
@@ -453,9 +492,10 @@ export function createHandler({
         const difficulty = DIFFS.has(difficultyRaw) ? difficultyRaw : null;
         const outcomeRaw = String(body.outcome || "lost").trim().toLowerCase();
         const outcome = outcomeRaw === "won" ? "won" : "lost";
-        /** @type {Run} */
-        const run = {
-          id: randomBytes(8).toString("hex"),
+        const slotRaw = Number(body.slotIndex);
+        const slotIndex =
+          Number.isInteger(slotRaw) && slotRaw >= 0 && slotRaw <= 2 ? slotRaw : null;
+        const candidate = {
           userId: user.id,
           username: user.username,
           companyName: String(body.companyName || "SRL").slice(0, 40),
@@ -468,11 +508,13 @@ export function createHandler({
           finalCash: Math.round(finalCash * 100) / 100,
           difficulty,
           outcome,
-          createdAt: new Date().toISOString(),
+          slotIndex,
+          source: "end",
         };
-        runs.push(run);
+        const result = upsertRun(runs, candidate, newRunId);
+        runs = result.runs;
         save("runs.json", runs);
-        return json(res, 201, { id: run.id });
+        return json(res, result.upserted ? 201 : 200, { id: result.id, upserted: result.upserted });
       }
 
       if (req.method === "GET" && path === "/api/leaderboard") {

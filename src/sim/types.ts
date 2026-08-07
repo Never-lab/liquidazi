@@ -221,6 +221,8 @@ export interface CareerStats {
   lifetimeRevenue: number;
   /** run già inviata alla leaderboard */
   submitted: boolean;
+  /** ultimi mesiPlayeds registrati in classifica (ri-invio se crescono oltre soft-win) */
+  submittedMonths?: number;
   /** soft win: 24 mesi raggiunti (una volta) */
   year2Reached: boolean;
 }

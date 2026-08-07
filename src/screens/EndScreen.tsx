@@ -32,8 +32,10 @@ export const EndScreen = () => {
   const [pmSkipped, setPmSkipped] = useState(false);
 
   useEffect(() => {
-    if (!auth || game.career.submitted || game.monthsPlayed < 1) return;
+    if (!auth || game.monthsPlayed < 1) return;
     if (game.status !== "lost" && game.status !== "won") return;
+    const submittedMonths = game.career.submittedMonths ?? (game.career.submitted ? game.monthsPlayed : 0);
+    if (game.career.submitted && submittedMonths >= game.monthsPlayed) return;
     let cancelled = false;
     setStatus("sending");
     void submitRun(auth.token, {
@@ -47,6 +49,7 @@ export const EndScreen = () => {
       finalCash: game.company.cash,
       difficulty: game.difficulty ?? "normal",
       outcome: game.status === "won" ? "won" : "lost",
+      slotIndex: useGameStore.getState().activeSlot,
     })
       .then(() => {
         if (cancelled) return;

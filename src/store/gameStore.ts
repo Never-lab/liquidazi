@@ -7,6 +7,7 @@ import {
   login as apiLogin,
   putSaves,
   register as apiRegister,
+  submitRun,
   type AuthSession,
 } from "../api/client";
 import {
@@ -131,6 +132,7 @@ interface GameStore {
   acceptProject: (id: ProjectId) => void;
   skipProjectOffer: () => void;
   markRunSubmitted: () => void;
+  submitRunProgressIfNeeded: () => Promise<void>;
   selectSlot: (index: number) => void;
   renameSlot: (index: number, label: string) => void;
   clearSlot: (index: number) => void;
@@ -309,6 +311,8 @@ export const useGameStore = create<GameStore>()(
           get().flashToast("Mese chiuso", "neutral");
           sfxMonthClose();
         }
+        // Long runs past soft-win: keep leaderboard/dashboard updated.
+        void get().submitRunProgressIfNeeded();
       },
       continueAfterWin: () => {
         const game = structuredClone(get().game);
@@ -317,6 +321,34 @@ export const useGameStore = create<GameStore>()(
         const slots = syncSlot(get().slots, get().activeSlot, game);
         set({ game, slots, screen: "game" });
         get().flashToast("Continui oltre i 24 mesi", "neutral");
+      },
+      submitRunProgressIfNeeded: async () => {
+        const { auth, game, activeSlot } = get();
+        if (!auth?.token || game.monthsPlayed < 1) return;
+        const year2 = game.career.year2Reached === true;
+        const ended = game.status === "lost" || game.status === "won";
+        if (!ended && !(game.status === "running" && year2)) return;
+        const submittedMonths =
+          game.career.submittedMonths ?? (game.career.submitted ? 24 : 0);
+        if (game.monthsPlayed <= submittedMonths) return;
+        try {
+          await submitRun(auth.token, {
+            companyName: game.company.name,
+            city: game.company.city,
+            sector: game.company.sector,
+            monthsPlayed: game.monthsPlayed,
+            peakCash: game.career.peakCash,
+            peakDebt: game.career.peakDebt,
+            lifetimeRevenue: game.career.lifetimeRevenue,
+            finalCash: game.company.cash,
+            difficulty: game.difficulty ?? "normal",
+            outcome: game.status === "lost" ? "lost" : "won",
+            slotIndex: activeSlot,
+          });
+          get().markRunSubmitted();
+        } catch {
+          /* silent — cloud save PUT also upserts server-side */
+        }
       },
       acceptOpportunity: (id) => {
         const before = get().game;
@@ -528,6 +560,7 @@ export const useGameStore = create<GameStore>()(
       markRunSubmitted: () => {
         const game = structuredClone(get().game);
         game.career.submitted = true;
+        game.career.submittedMonths = game.monthsPlayed;
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
       },
       selectSlot: (index) => {

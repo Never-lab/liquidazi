@@ -101,6 +101,8 @@ export type RunPayload = {
   finalCash: number;
   difficulty?: DifficultyId;
   outcome?: "lost" | "won";
+  /** Slot cloud 0–2 for upsert identity (long runs after soft-win). */
+  slotIndex?: number;
 };
 
 export class ApiError extends Error {
