@@ -70,7 +70,7 @@ i tre slot e le preferenze vengono sincronizzati con il cloud.
 - **Cedolino**: ritenuta IRPEF flat e contributi INPS a percentuale unica; in dicembre anche la 13ª (doppio cedolino didattico); TFR liquidato al licenziamento.
 - **F24**: un solo batch mensile senza codici tributo; la sanzione per omesso versamento è una tantum (niente ravvedimento operoso).
 - **IRES/IRAP**: utile fiscale = ricavi − costi; base IRAP = ricavi − acquisti (personale e interessi indeducibili). Acconti conteggiati quando addebitati.
-- **Mercato:** geografia completa da elenco comuni ISTAT; stock imprese InfoCamere Dic 2025 a livello provinciale (105 province); densità = imprese provincia / pop. **provincia** (somma comuni). Affitto = medie €/mq × 80 mq (non OMI zona-per-zona). Pack: `istatGeo.json` + `provinceFirms.json`.
+- **Mercato:** geografia completa da elenco comuni ISTAT; stock imprese InfoCamere Dic 2025 a livello provinciale (105 province); densità = imprese provincia / pop. **provincia** (somma comuni). Affitto = medie €/mq × 80 mq (non OMI zona-per-zona). Pack runtime: [`src/config/istatGeo.json`](src/config/istatGeo.json) + [`src/config/provinceFirms.json`](src/config/provinceFirms.json).
 - **Incassi/pagamenti**: termini per settore; PA con split payment (incassi il netto); privati possono andare in insoluto.
 - **Prestito**: mutuo a piano rate + fido di cassa revolving; Euribor da path di scenario.
 - **Diritto camerale**: importo flat pagato a giugno.
@@ -82,26 +82,33 @@ Tutte le aliquote vivono in [`src/config/fiscalYearSnapshot.ts`](src/config/fisc
 - Vite + React + TypeScript
 - Zustand + persist (stato di gioco e salvataggio)
 - Motore di simulazione puro in `src/sim/` (testato con vitest, zero React)
+- API Node zero-dep in `server/` (auth, saves, leaderboard, admin stats)
 
 ## Struttura
 
 ```
 src/
   main.tsx                      # entry point React
-  App.tsx                       # switch schermate: menu/tutorial/gioco/fine
-  screens/                      # Menu, Setup (zona/settore), Tutorial, GameHUD, End
-  components/                   # pannelli HUD (fatture, personale, fisco, credito, bilancio)
-  store/gameStore.ts            # stato Zustand + persist (localStorage)
-  sim/                          # tipi, azioni, mercato, advanceMonth + test
-  config/fiscalYearSnapshot.ts  # rates educational per l'anno di campagna
-  config/market.ts              # zone, settori, rivalità, affitti
-docs/fiscal-snapshot/           # snapshot JSON di riferimento (non "legge live")
-plans/                          # piano di sviluppo a fasi
+  App.tsx                       # switch schermate
+  screens/                      # menu, setup, tutorial, HUD, end, admin, …
+  components/                   # pannelli HUD + UI condivisa
+  store/gameStore.ts            # Zustand + persist (localStorage)
+  sim/                          # motore puro + test
+  config/                       # fiscal snapshot, market, JSON runtime (geo/imprese)
+  api/                          # client HTTP verso /api
+server/                         # API + volume data (prod)
+docs/                           # vedi docs/README.md (non runtime)
+  fiscal-snapshot/              # specchio educational aliquote
+  superpowers/plans|specs/      # slice post-MVP
+plans/                          # piano MVP storico a fasi
+ROADMAP.md                      # indice Done / Next / repo map
 ```
+
+Deploy: volume Railway `/data` + `LIQUIDAZI_SECRET`; opzionale `LIQUIDAZI_ADMIN_USERNAMES` (dettagli sopra). Coda prodotto: [ROADMAP.md](ROADMAP.md).
 
 ## Status
 
-Phases 1–6 completate (MVP core giocabile) — see [`plans/01-mvp.md`](plans/01-mvp.md).
+Stato shipped e coda attiva → [`ROADMAP.md`](ROADMAP.md).
 
 ## License
 
