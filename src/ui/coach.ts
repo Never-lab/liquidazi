@@ -17,6 +17,13 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
       body: "Scegli un'opzione nel banner blu prima di chiudere un altro mese.",
     };
   }
+  if (game.projectOffer) {
+    return {
+      id: "project-offer",
+      title: "Piano investimenti",
+      body: "A gennaio puoi scegliere un progetto annuale — nel banner o Salta, poi chiudi il mese.",
+    };
+  }
   if (game.monthsPlayed === 0 && game.invoices.filter((i) => i.kind === "AR").length === 0) {
     return {
       id: "first-deal",
