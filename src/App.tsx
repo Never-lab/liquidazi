@@ -1,3 +1,4 @@
+import { AdminScreen } from "./screens/AdminScreen";
 import { CloudSavePill } from "./components/CloudSavePill";
 import { DisclaimerFooter } from "./components/DisclaimerFooter";
 import { ToastHost } from "./components/Toast";
@@ -41,6 +42,7 @@ function App() {
         {screen === "leaderboard" && <LeaderboardScreen />}
         {screen === "saves" && <SavesScreen />}
         {screen === "feedback" && <FeedbackScreen />}
+        {screen === "admin" && <AdminScreen />}
       </main>
 
       <ToastHost />

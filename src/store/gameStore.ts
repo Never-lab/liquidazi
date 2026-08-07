@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
   ApiError,
+  fetchMe,
   fetchSaves,
   login as apiLogin,
   putSaves,
@@ -53,7 +54,8 @@ export type Screen =
   | "gameover"
   | "leaderboard"
   | "saves"
-  | "feedback";
+  | "feedback"
+  | "admin";
 
 export type ToastTone = "good" | "bad" | "neutral";
 
@@ -471,6 +473,25 @@ export const useGameStore = create<GameStore>()(
       onRehydrateStorage: () => (state) => {
         if (!state?.auth) return;
         const { token } = state.auth;
+        void fetchMe(token)
+          .then((me) => {
+            const current = useGameStore.getState();
+            if (current.auth?.token !== token) return;
+            useGameStore.setState({
+              auth: {
+                ...current.auth,
+                username: me.username,
+                admin: me.admin,
+              },
+            });
+          })
+          .catch((error: unknown) => {
+            const current = useGameStore.getState();
+            if (current.auth?.token !== token) return;
+            if (error instanceof ApiError && error.status === 401) {
+              current.logout();
+            }
+          });
         void fetchSaves(token)
           .then((saves) => {
             const current = useGameStore.getState();
