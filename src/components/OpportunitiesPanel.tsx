@@ -23,13 +23,41 @@ export const OpportunitiesPanel = () => {
     <section className={styles.panelWide}>
       <div className={styles.panelHead}>
         <h2 className={styles.panelTitle}>Commesse del mese</h2>
-        <span className={styles.badge}>
-          tetto {formatCash(cap)} · {taken}/{capacity} slot · scorte{" "}
-          {game.supplyMonths ?? 0}m · rep {Math.round(game.company.reputation)}
-          {(game.activeContracts?.length ?? 0) > 0
-            ? ` · contratti ${game.activeContracts!.length}`
-            : ""}
-        </span>
+        <div className={styles.statChips} aria-label="Indicatori commesse">
+          <span
+            className={styles.statChip}
+            title="Massimo netto accettabile su una singola vendita questo mese"
+          >
+            Tetto max {formatCash(cap)}
+          </span>
+          <span
+            className={styles.statChip}
+            title="Vendite accettate / slot disponibili questo mese"
+          >
+            Capacità {taken}/{capacity}
+          </span>
+          <span
+            className={styles.statChip}
+            title="Mesi di magazzino; a zero ticket più bassi e più insoluti"
+          >
+            Scorte {game.supplyMonths ?? 0}{" "}
+            {(game.supplyMonths ?? 0) === 1 ? "mese" : "mesi"}
+          </span>
+          <span
+            className={styles.statChip}
+            title="Quanto ti cercano i clienti (0–100)"
+          >
+            Reputazione {Math.round(game.company.reputation)}
+          </span>
+          {(game.activeContracts?.length ?? 0) > 0 ? (
+            <span
+              className={styles.statChip}
+              title="Contratti multi-mese attivi: ognuno blocca 1 slot"
+            >
+              Contratti {game.activeContracts!.length}
+            </span>
+          ) : null}
+        </div>
       </div>
       <p className={styles.muted}>
         {emptyStock

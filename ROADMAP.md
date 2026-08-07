@@ -17,6 +17,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Feedback in-app | `POST /api/feedback` + Controllo (no GitHub required) | — |
 | HUD icons (slice 2) | chrome sticky / F24 / toolbar / ops tabs | [spec follow-up](docs/superpowers/specs/2026-08-06-ui-icons-feedback-design.md) |
 | Run balance monitor | Controllo → Bilancio run (bucket, difficoltà, settore) | — |
+| Commesse stats clarity | [docs/superpowers/plans/2026-08-07-commesse-stats-clarity.md](docs/superpowers/plans/2026-08-07-commesse-stats-clarity.md) | [spec](docs/superpowers/specs/2026-08-07-commesse-stats-clarity-design.md) |
 
 ## Next (coda attiva)
 
