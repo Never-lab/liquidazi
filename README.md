@@ -84,6 +84,10 @@ Tutte le aliquote vivono in [`src/config/fiscalYearSnapshot.ts`](src/config/fisc
 - Motore di simulazione puro in `src/sim/` (testato con vitest, zero React)
 - API Node zero-dep in `server/` (auth, saves, leaderboard, admin stats)
 
+## Contribuire
+
+PR verso `main`: devono passare CI (`lint` + `test` + `build`). Vedi [AGENTS.md](AGENTS.md).
+
 ## Struttura
 
 ```
