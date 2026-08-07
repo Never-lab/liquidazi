@@ -1,0 +1,15 @@
+---
+description: PR merge gate — lint/test/build before merge to main
+alwaysApply: true
+---
+
+# PR merge checks
+
+Before opening or asking to merge a PR to `main`:
+
+1. Run `npm run lint && npm test && npm run build`
+2. Use a feature branch + PR — never push straight to `main`
+3. Wait for status check **CI / check** to pass
+4. Do not merge while CI is red or still running
+
+Admin bypass of the GitHub ruleset is for hotfixes only.
