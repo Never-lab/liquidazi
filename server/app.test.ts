@@ -32,6 +32,12 @@ afterAll(() => {
 });
 
 describe("cloud saves", () => {
+  it("GET /api/health reports storage mode", async () => {
+    const { status, data } = await api("/api/health");
+    expect(status).toBe(200);
+    expect(data).toEqual({ ok: true, storage: "local" });
+  });
+
   it("GET /api/saves requires auth", async () => {
     const { status } = await api("/api/saves");
     expect(status).toBe(401);
