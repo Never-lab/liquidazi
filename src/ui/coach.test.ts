@@ -34,4 +34,20 @@ describe("coachTipFor commesse-legend", () => {
     s.invoices = [];
     expect(coachTipFor(s)?.id).toBe("first-deal");
   });
+
+  it("shows at monthsPlayed 2 with no liabilities", () => {
+    const s = createInitialGameState();
+    s.monthsPlayed = 2;
+    s.liabilities = [];
+    expect(coachTipFor(s)?.id).toBe("commesse-legend");
+  });
+
+  it("does not show at monthsPlayed 3 when hire tip wins", () => {
+    const s = createInitialGameState();
+    s.monthsPlayed = 3;
+    s.liabilities = [];
+    s.employees = [];
+    expect(coachTipFor(s)?.id).not.toBe("commesse-legend");
+    expect(coachTipFor(s)?.id).toBe("hire");
+  });
 });

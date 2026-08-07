@@ -32,7 +32,7 @@ export const OpportunitiesPanel = () => {
           </span>
           <span
             className={styles.statChip}
-            title="Commesse vendita ancora accettabili questo mese (slot)"
+            title="Vendite accettate / slot disponibili questo mese"
           >
             Capacità {taken}/{capacity}
           </span>
@@ -40,7 +40,8 @@ export const OpportunitiesPanel = () => {
             className={styles.statChip}
             title="Mesi di magazzino; a zero ticket più bassi e più insoluti"
           >
-            Scorte {game.supplyMonths ?? 0} mesi
+            Scorte {game.supplyMonths ?? 0}{" "}
+            {(game.supplyMonths ?? 0) === 1 ? "mese" : "mesi"}
           </span>
           <span
             className={styles.statChip}

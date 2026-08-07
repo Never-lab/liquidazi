@@ -36,7 +36,7 @@ With labeled items (same values, clearer words):
 | Label | Value | `title` (tooltip) |
 |-------|--------|-------------------|
 | Tetto max | `{formatCash(cap)}` | Massimo netto accettabile su una singola vendita questo mese |
-| Capacità | `{taken}/{capacity}` | Commesse vendita ancora accettabili questo mese (slot) |
+| Capacità | `{taken}/{capacity}` | Vendite accettate / slot disponibili questo mese |
 | Scorte | `{n} mesi` | Mesi di magazzino; a zero ticket più bassi e più insoluti |
 | Reputazione | `{N}` (rounded) | Quanto ti cercano i clienti (0–100) |
 | Contratti | `{count}` | Contratti multi-mese attivi: ognuno blocca 1 slot |
@@ -50,7 +50,7 @@ CSS: reuse/extend `panels.module.css` (e.g. wrap chips, readable on narrow scree
 Add a tip in `src/ui/coach.ts`, early game (e.g. month 0 after first board is visible, or month 1 before hire tip), id like `commesse-legend`:
 
 - **Title:** Cosa significano i numeri sopra le commesse  
-- **Body:** short pointer — Capacità = quante vendite puoi ancora prendere; Tetto = tetto per una singola vendita; Scorte = mesi di magazzino. Hover/tap lungo sui chip per il resto.
+- **Body:** short pointer — Capacità = vendite accettate / slot del mese; Tetto max = limite per una singola vendita; Scorte = mesi di magazzino. Su desktop, passa sui chip per il dettaglio.
 
 Priority: after first-deal / close-month tips so it does not block the opening loop; before hire/upgrade tips.
 

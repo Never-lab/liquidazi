@@ -41,7 +41,7 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
     return {
       id: "commesse-legend",
       title: "Cosa significano i numeri sopra le commesse",
-      body: "Capacità = vendite ancora accettabili questo mese; Tetto max = limite per una singola vendita; Scorte = mesi di magazzino. Passa sui chip (o tieni premuto) per il resto.",
+      body: "Capacità = vendite accettate / slot del mese; Tetto max = limite per una singola vendita; Scorte = mesi di magazzino. Su desktop, passa sui chip per il dettaglio.",
     };
   }
   if (game.monthsPlayed >= 2 && game.employees.length === 0 && game.monthsPlayed < 6) {

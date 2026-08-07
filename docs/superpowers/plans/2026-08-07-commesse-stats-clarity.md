@@ -101,7 +101,7 @@ Insert this block **after** the F24 tip block and **before** the hire tip:
     return {
       id: "commesse-legend",
       title: "Cosa significano i numeri sopra le commesse",
-      body: "Capacità = vendite ancora accettabili questo mese; Tetto max = limite per una singola vendita; Scorte = mesi di magazzino. Passa sui chip (o tieni premuto) per il resto.",
+      body: "Capacità = vendite accettate / slot del mese; Tetto max = limite per una singola vendita; Scorte = mesi di magazzino. Su desktop, passa sui chip per il dettaglio.",
     };
   }
 ```
@@ -146,7 +146,7 @@ Replace the `<span className={styles.badge}>…</span>` block with:
           </span>
           <span
             className={styles.statChip}
-            title="Commesse vendita ancora accettabili questo mese (slot)"
+            title="Vendite accettate / slot disponibili questo mese"
           >
             Capacità {taken}/{capacity}
           </span>
