@@ -1,5 +1,6 @@
 import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
+import { getProjectDef } from "../config/projects";
 import { capacityPointsFor } from "../config/staffPay";
 import { upgradeLevel } from "../config/upgrades";
 import { migrateUpgradeState } from "./migrateUpgrades";
@@ -67,10 +68,16 @@ export const monthlyCapacity = (state: GameState): number => {
   const temp = (state.tempCapacityMonths ?? 0) > 0 ? 1 : 0;
   const growth = state.growthCapacityBonus ?? 0;
   const subCap = (state.subsidiaries ?? []).reduce((s, sub) => s + sub.capacityBonus, 0);
+  const projCap = state.activeProject
+    ? getProjectDef(state.activeProject.id).capacityBonus
+    : 0;
+  const projSlot = state.activeProject
+    ? getProjectDef(state.activeProject.id).slotPenalty
+    : 0;
   const base =
-    1 + staffSlots + repBonus + processi + temp + growth + subCap;
+    1 + staffSlots + repBonus + processi + temp + growth + subCap + projCap;
   const afterContracts = base - contractSlotsUsed(state);
-  const penalized = afterContracts - capacityPressurePenalty(state);
+  const penalized = afterContracts - capacityPressurePenalty(state) - projSlot;
   // Soft floor: don't soft-lock a board with 0 free slots when you have no contracts
   // (pa_wave + scorte 0 still hurts via ticket ×0.72).
   if (penalized <= 0 && contractSlotsUsed(state) === 0) {
@@ -119,6 +126,9 @@ export const maxDealNet = (state: GameState): number => {
   const commercialeMult = [1, 1.08, 1.12, 1.16][upgradeLevel(upgradeLevels, "commerciale")]!;
   const supplyMult = (state.supplyMonths ?? 0) > 0 ? 1 : 0.72;
   const pressureTicket = ticketFactorFromPressure(state);
+  const projectTicketMult = state.activeProject
+    ? getProjectDef(state.activeProject.id).ticketMult
+    : 1;
   return round2(
     Math.min(
       ticketCeiling(state),
@@ -132,7 +142,8 @@ export const maxDealNet = (state: GameState): number => {
           ticketMult *
           commercialeMult *
           supplyMult *
-          pressureTicket,
+          pressureTicket *
+          projectTicketMult,
       ),
     ),
   );

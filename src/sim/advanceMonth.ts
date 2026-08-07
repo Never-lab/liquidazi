@@ -16,6 +16,11 @@ import { tickContracts } from "./contracts";
 import { runWorldEvents } from "./eventCatalog";
 import { refreshMarketBoard, rng, monthlyCapacity } from "./events";
 import { unlockMilestones } from "./milestones";
+import { drawProjectOptions } from "../config/projects";
+import {
+  effectiveMonthlyRent,
+  processActiveProjectForMonth,
+} from "./projects";
 import {
   defaultFactorFromPressure,
   inspectionMalusMult,
@@ -133,10 +138,14 @@ export const advanceMonth = (state: GameState): GameState => {
 
   if (state.status !== "running") return next;
   if (state.pendingEvent) return next;
+  if (state.projectOffer) return next;
   next.upgrades ??= [];
   next.yearReports ??= next.lastYearReport ? [next.lastYearReport] : [];
   next.tempCapacityMonths ??= 0;
   next.pendingEvent ??= null;
+  next.activeProject ??= null;
+  next.projectOffer ??= null;
+  next.projectOfferYear ??= null;
   next.supplyMonths ??= 0;
   next.milestones ??= [];
   next.activeContracts ??= [];
@@ -256,7 +265,7 @@ export const advanceMonth = (state: GameState): GameState => {
   // 1b. monthly zone rent / locale
   if (next.company.monthlyRent > 0) {
     const b = next.company.cash;
-    const rent = round2(next.company.monthlyRent * rentFactorFromPressure(next));
+    const rent = round2(effectiveMonthlyRent(next) * rentFactorFromPressure(next));
     next.company.cash = round2(next.company.cash - rent);
     next.ytd.otherCosts = round2(next.ytd.otherCosts + rent);
     note("Affitto", b);
@@ -327,6 +336,16 @@ export const advanceMonth = (state: GameState): GameState => {
   const nResp = next.employees.filter((e) => e.role === "Responsabile").length;
   if (nResp > 0) {
     next.compliance = Math.min(100, next.compliance + 2 * nResp);
+  }
+
+  // 2d. active annual project: compliance + duration tick
+  {
+    const ticked = processActiveProjectForMonth(next, idx);
+    next.compliance = ticked.compliance;
+    next.activeProject = ticked.activeProject;
+    next.company.cash = ticked.company.cash;
+    next.log = ticked.log;
+    next.nextId = ticked.nextId;
   }
 
   // 3. payroll (+ 13ª in dicembre)
@@ -477,6 +496,15 @@ export const advanceMonth = (state: GameState): GameState => {
     month: isDecember ? 1 : next.calendar.month + 1,
     year: isDecember ? next.calendar.year + 1 : next.calendar.year,
   };
+
+  if (isDecember && !next.activeProject && next.projectOfferYear !== next.calendar.year) {
+    const offerRand = rng(closedIdx * 31 + next.calendar.year * 17);
+    next.projectOffer = {
+      year: next.calendar.year,
+      options: drawProjectOptions(offerRand),
+    };
+    next.projectOfferYear = next.calendar.year;
+  }
 
   // 8. lose: 12 mesi consecutivi in rosso; in difficoltà proponi prestito
   next.monthsPlayed += 1;

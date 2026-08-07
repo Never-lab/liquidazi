@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { advanceMonth } from "./advanceMonth";
+import { skipProjectOffer } from "./projects";
 import { buyUpgrade, hireEmployee } from "./actions";
 import {
   BOARD_MAX_OPS,
@@ -50,6 +51,7 @@ describe("Staff board + upgrades lite", () => {
       otherCosts: 1000,
     };
     s = advanceMonth(s);
+    if (s.projectOffer) s = skipProjectOffer(s);
     expect(s.lastYearReport?.year).toBe(2024);
     expect(s.yearReports).toHaveLength(1);
     expect(s.yearReports[0]?.revenue).toBe(20000);
@@ -62,6 +64,7 @@ describe("Staff board + upgrades lite", () => {
       interest: 100,
       otherCosts: 1200,
     };
+    s.projectOffer = null;
     s = advanceMonth(s);
     expect(s.yearReports).toHaveLength(2);
     expect(s.yearReports[1]?.year).toBe(2025);
