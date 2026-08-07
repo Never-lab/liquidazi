@@ -21,6 +21,7 @@ import {
   shouldRollPressure,
   ticketFactorFromPressure,
 } from "./pressures";
+import { effectiveStaffPoints } from "./morale";
 import { applyRivalSteal, seedRival } from "./rival";
 
 export { rng };
@@ -39,8 +40,8 @@ const SUPPLIER_NAMES = [
 /** Soft cap on board rows so UI stays readable. */
 export const BOARD_MAX_OPS = 10;
 
-/** Full-value staff headcount before diminishing returns. */
-const STAFF_FULL_VALUE = 6;
+/** Full-value staff capacity points before diminishing returns. */
+export const STAFF_FULL_VALUE = 8;
 
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
 
@@ -53,15 +54,15 @@ export const countRole = (state: GameState, role: string): number =>
   state.employees.filter((e) => e.role === role).length;
 
 /**
- * Sale slots / month. First 6 capacity points count 1:1; extras count 1/3.
- * Processi upgrade adds +1 without headcount.
+ * Sale slots / month. First 8 effective capacity points count 1:1; extras count 1/2.
+ * Morale scales raw points before soft-cap. Processi upgrade adds +1 without headcount.
  */
 export const monthlyCapacity = (state: GameState): number => {
   const upgradeLevels = migrateUpgradeState(state);
-  const points = staffCapacityPoints(state);
+  const points = effectiveStaffPoints(state);
   const core = Math.min(points, STAFF_FULL_VALUE);
   const extra = Math.max(0, points - STAFF_FULL_VALUE);
-  const staffSlots = Math.floor(core + Math.floor(extra / 3));
+  const staffSlots = Math.floor(core + Math.floor(extra / 2));
   const repBonus = Math.floor(state.company.reputation / 40);
   const procLv = upgradeLevel(upgradeLevels, "processi");
   const processi = procLv;

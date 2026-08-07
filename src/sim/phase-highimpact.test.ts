@@ -20,6 +20,7 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
     expect(monthlyCapacity(bare)).toBe(1 + Math.floor(50 / 40));
 
     let hired = hireEmployee(bare, "Operaio");
+    hired.staffMorale = 100;
     expect(monthlyCapacity(hired)).toBe(monthlyCapacity(bare) + 1);
   });
 

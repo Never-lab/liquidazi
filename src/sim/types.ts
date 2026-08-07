@@ -350,6 +350,8 @@ export interface GameState {
   projectOffer: ProjectOffer | null;
   /** Calendar year when last offer was created (prevent double) */
   projectOfferYear: number | null;
+  /** Company climate 0–100; scales staff capacity and drives turnover */
+  staffMorale?: number;
 }
 
 export type MilestoneId =
@@ -488,5 +490,6 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     activeProject: null,
     projectOffer: null,
     projectOfferYear: null,
+    staffMorale: 70,
   };
 };

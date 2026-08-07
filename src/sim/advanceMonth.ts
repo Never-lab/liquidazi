@@ -15,6 +15,7 @@ import { applySubsidiaryMonth, refreshAcquisitionBoard } from "./acquisitions";
 import { tickContracts } from "./contracts";
 import { runWorldEvents } from "./eventCatalog";
 import { refreshMarketBoard, rng, monthlyCapacity } from "./events";
+import { applyMoraleDrift, clampMorale, rollStaffResignation } from "./morale";
 import { unlockMilestones } from "./milestones";
 import { drawProjectOptions } from "../config/projects";
 import {
@@ -133,7 +134,7 @@ const runPayroll = (next: GameState, idx: number): void => {
  * forward.
  */
 export const advanceMonth = (state: GameState): GameState => {
-  const next = structuredClone(state);
+  let next = structuredClone(state);
   next.upgradeLevels = migrateUpgradeState(next);
 
   if (state.status !== "running") return next;
@@ -146,6 +147,7 @@ export const advanceMonth = (state: GameState): GameState => {
   next.activeProject ??= null;
   next.projectOffer ??= null;
   next.projectOfferYear ??= null;
+  next.staffMorale ??= 70;
   next.supplyMonths ??= 0;
   next.milestones ??= [];
   next.activeContracts ??= [];
@@ -309,6 +311,7 @@ export const advanceMonth = (state: GameState): GameState => {
         0,
         next.compliance - snap.compliance_malus_late * inspectionMalusMult(next),
       );
+      next.staffMorale = clampMorale((next.staffMorale ?? 70) - 3);
     }
   }
 
@@ -620,6 +623,9 @@ export const advanceMonth = (state: GameState): GameState => {
     delta: round2(next.company.cash - cashBefore),
     lines,
   };
+
+  next = applyMoraleDrift(next);
+  next = rollStaffResignation(next, rand);
 
   const mil = unlockMilestones(next);
   next.milestones = mil.state.milestones;
