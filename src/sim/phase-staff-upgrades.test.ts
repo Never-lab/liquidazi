@@ -50,6 +50,7 @@ describe("Staff board + upgrades lite", () => {
       payrollCost: 2000,
       interest: 0,
       otherCosts: 1000,
+      capitalGains: 0,
     };
     s = advanceMonth(s);
     if (s.projectOffer) s = skipProjectOffer(s);
@@ -64,6 +65,7 @@ describe("Staff board + upgrades lite", () => {
       payrollCost: 4000,
       interest: 100,
       otherCosts: 1200,
+      capitalGains: 0,
     };
     s.projectOffer = null;
     s = advanceMonth(s);

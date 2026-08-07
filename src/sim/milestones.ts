@@ -1,3 +1,4 @@
+import { HOLDING_SLOT_BASE, HOLDING_SLOT_MAX } from "../config/holding";
 import type { GameState, MilestoneId, MonthCloseSummary } from "./types";
 
 export const MILESTONE_DEFS: {
@@ -49,6 +50,17 @@ export const unlockMilestones = (state: GameState): { state: GameState; unlocked
   }
   if ((next.subsidiaries ?? []).length > 0) add("first_acquisition");
   if (next.monthsPlayed >= 6 && next.compliance >= 80) add("compliance_80");
+
+  const bump = (n: number) => {
+    next.holdingSlotCap = Math.min(
+      HOLDING_SLOT_MAX,
+      Math.max(next.holdingSlotCap ?? HOLDING_SLOT_BASE, n),
+    );
+  };
+  if (has("first_acquisition")) bump(5);
+  if (has("survive_12")) bump(6);
+  if (has("year1_profit")) bump(7);
+  if (has("compliance_80")) bump(8);
 
   return { state: next, unlocked };
 };

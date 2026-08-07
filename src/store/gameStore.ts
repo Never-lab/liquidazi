@@ -30,7 +30,15 @@ import {
   withdrawTreasury,
   type LoanRequest,
 } from "../sim/actions";
-import { buyAcquisition, refreshAcquisitionBoard } from "../sim/acquisitions";
+import {
+  acceptSaleOffer,
+  buyAcquisition,
+  investSubsidiaryCapex,
+  listSubsidiaryForSale,
+  refreshAcquisitionBoard,
+  rejectSaleOffer,
+} from "../sim/acquisitions";
+import { migrateHoldingState } from "../sim/migrateHolding";
 import { resolveEventOption } from "../sim/eventCatalog";
 import { acceptOpportunity, declineOpportunity, seedNewGame, orderEmergencySupply } from "../sim/events";
 import { formatCloseToast, unlockMilestones } from "../sim/milestones";
@@ -116,6 +124,10 @@ interface GameStore {
   withdrawTreasury: (amount: number) => void;
   investGrowth: (amount: number) => void;
   buyAcquisition: (id: number) => void;
+  investSubsidiaryCapex: (id: number) => void;
+  listSubsidiaryForSale: (id: number) => void;
+  acceptSaleOffer: (id: number) => void;
+  rejectSaleOffer: (id: number) => void;
   acceptProject: (id: ProjectId) => void;
   skipProjectOffer: () => void;
   markRunSubmitted: () => void;
@@ -432,9 +444,10 @@ export const useGameStore = create<GameStore>()(
         }
       },
       buyAcquisition: (id) => {
-        const before = (get().game.subsidiaries ?? []).length;
-        let game = buyAcquisition(get().game, id);
-        if ((game.subsidiaries ?? []).length > before) {
+        const migrated = migrateHoldingState(get().game);
+        const before = migrated.subsidiaries.length;
+        let game = buyAcquisition(migrated, id);
+        if (game.subsidiaries.length > before) {
           const mil = unlockMilestones(game);
           game = mil.state;
           get().flashToast("Azienda acquisita", "good");
@@ -444,6 +457,54 @@ export const useGameStore = create<GameStore>()(
           sfxBad();
         }
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+      },
+      investSubsidiaryCapex: (id) => {
+        const migrated = migrateHoldingState(get().game);
+        const before = migrated.company.cash;
+        const game = investSubsidiaryCapex(migrated, id);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if (game.company.cash < before) {
+          get().flashToast("CAPEX investito: EBITDA in crescita", "good");
+          sfxGood();
+        } else {
+          get().flashToast("CAPEX non disponibile", "bad");
+          sfxBad();
+        }
+      },
+      listSubsidiaryForSale: (id) => {
+        const migrated = migrateHoldingState(get().game);
+        const before = migrated.subsidiaries.find((s) => s.id === id)?.listedUntilMonthIdx;
+        const game = listSubsidiaryForSale(migrated, id);
+        const after = game.subsidiaries.find((s) => s.id === id)?.listedUntilMonthIdx;
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if (before == null && after != null) {
+          get().flashToast("Partecipata messa in vendita", "neutral");
+        } else {
+          get().flashToast("Vendita non disponibile", "bad");
+          sfxBad();
+        }
+      },
+      acceptSaleOffer: (id) => {
+        const migrated = migrateHoldingState(get().game);
+        const before = migrated.subsidiaries.length;
+        const game = acceptSaleOffer(migrated, id);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if (game.subsidiaries.length < before) {
+          get().flashToast("Offerta accettata: partecipata venduta", "good");
+          sfxGood();
+        } else {
+          get().flashToast("Offerta non valida", "bad");
+          sfxBad();
+        }
+      },
+      rejectSaleOffer: (id) => {
+        const migrated = migrateHoldingState(get().game);
+        const before = migrated.saleOffers.length;
+        const game = rejectSaleOffer(migrated, id);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if (game.saleOffers.length < before) {
+          get().flashToast("Offerta rifiutata", "neutral");
+        }
       },
       acceptProject: (id) => {
         const before = get().game;

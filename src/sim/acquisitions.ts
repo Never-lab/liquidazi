@@ -1,5 +1,14 @@
 import { SECTORS, type SectorId } from "../config/market";
-import { MAX_SUBSIDIARIES } from "./actions";
+import {
+  CAPEX_COOLDOWN_MONTHS,
+  CAPEX_EBITDA_MULT,
+  HOLDING_SLOT_BASE,
+  LISTING_WINDOW_MONTHS,
+  OFFER_PRICE_MAX,
+  OFFER_PRICE_MIN,
+  VALUE_MULTIPLE_MAX,
+  VALUE_MULTIPLE_MIN,
+} from "../config/holding";
 import { maxDealNet, rng } from "./events";
 import {
   round2,
@@ -8,6 +17,7 @@ import {
   type AcquisitionTarget,
   type GameState,
   type Subsidiary,
+  type SaleOffer,
 } from "./types";
 
 const TARGET_NAMES = [
@@ -30,6 +40,22 @@ const RISK_CHANCE: Record<AcquisitionRisk, number> = {
 };
 
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
+
+const RISK_MULT = { low: 1.05, med: 1, high: 0.9 } as const;
+
+const CAPEX_BOOST = 0.16; // midpoint of CAPEX_BOOST_MIN..MAX for v1 determinism
+
+const DRIFT = { low: 0.01, med: 0.005, high: -0.005 } as const;
+
+export const estimateSubsidiaryValue = (sub: {
+  monthlyEbitda: number;
+  risk: AcquisitionRisk;
+  monthsOwned: number;
+}): number => {
+  const ageBoost = Math.min(0.15, sub.monthsOwned * 0.01);
+  const multiple = (VALUE_MULTIPLE_MIN + VALUE_MULTIPLE_MAX) / 2; // 11
+  return round2(sub.monthlyEbitda * multiple * RISK_MULT[sub.risk] * (1 + ageBoost));
+};
 
 export const generateAcquisitionBoard = (
   state: GameState,
@@ -72,7 +98,8 @@ export const refreshAcquisitionBoard = (state: GameState): GameState => {
 
 export const buyAcquisition = (state: GameState, targetId: number): GameState => {
   const subs = state.subsidiaries ?? [];
-  if (subs.length >= MAX_SUBSIDIARIES) return state;
+  const cap = state.holdingSlotCap ?? HOLDING_SLOT_BASE;
+  if (subs.length >= cap) return state;
   const target = (state.acquisitionBoard ?? []).find((t) => t.id === targetId);
   if (!target || state.company.cash < target.price) return state;
 
@@ -87,6 +114,9 @@ export const buyAcquisition = (state: GameState, targetId: number): GameState =>
     capacityBonus: target.capacityBonus,
     monthsOwned: 0,
     risk: target.risk,
+    purchasePrice: target.price,
+    listedUntilMonthIdx: null,
+    capexCooldownMonths: 0,
   };
   next.subsidiaries = [...(next.subsidiaries ?? []), sub];
   next.log.unshift({
@@ -94,6 +124,116 @@ export const buyAcquisition = (state: GameState, targetId: number): GameState =>
     monthIdx: toMonthIndex(next.calendar),
     tone: "good",
     text: `Acquisita ${target.name} (−${target.price.toLocaleString("it-IT")} €). EBITDA ~${target.monthlyEbitda.toLocaleString("it-IT")} €/mese.`,
+  });
+  next.log = next.log.slice(0, 12);
+  return next;
+};
+
+export const listSubsidiaryForSale = (state: GameState, subsidiaryId: number): GameState => {
+  const subs = state.subsidiaries ?? [];
+  const sub = subs.find((s) => s.id === subsidiaryId);
+  if (!sub || sub.listedUntilMonthIdx != null) return state;
+
+  const next = structuredClone(state);
+  const target = next.subsidiaries!.find((s) => s.id === subsidiaryId)!;
+  target.listedUntilMonthIdx = toMonthIndex(next.calendar) + LISTING_WINDOW_MONTHS;
+  next.saleOffers = (next.saleOffers ?? []).filter((o) => o.subsidiaryId !== subsidiaryId);
+  return next;
+};
+
+export const acceptSaleOffer = (state: GameState, offerId: number): GameState => {
+  const offer = (state.saleOffers ?? []).find((o) => o.id === offerId);
+  if (!offer) return state;
+  const sub = (state.subsidiaries ?? []).find((s) => s.id === offer.subsidiaryId);
+  if (!sub) return state;
+
+  const next = structuredClone(state);
+  const gain = round2(offer.price - sub.purchasePrice);
+  next.company.cash = round2(next.company.cash + offer.price);
+  next.ytd.capitalGains = round2(next.ytd.capitalGains + gain);
+  next.subsidiaries = (next.subsidiaries ?? []).filter((s) => s.id !== offer.subsidiaryId);
+  next.saleOffers = (next.saleOffers ?? []).filter((o) => o.subsidiaryId !== offer.subsidiaryId);
+  if (gain > 0) {
+    next.log.unshift({
+      id: next.nextId++,
+      monthIdx: toMonthIndex(next.calendar),
+      tone: "good",
+      text: `Venduta ${sub.name}: +${offer.price.toLocaleString("it-IT")} € (plusvalenza ${gain.toLocaleString("it-IT")} €).`,
+    });
+    next.log = next.log.slice(0, 12);
+  }
+  return next;
+};
+
+export const rejectSaleOffer = (state: GameState, offerId: number): GameState => {
+  const offer = (state.saleOffers ?? []).find((o) => o.id === offerId);
+  if (!offer) return state;
+  const next = structuredClone(state);
+  next.saleOffers = (next.saleOffers ?? []).filter((o) => o.id !== offerId);
+  return next;
+};
+
+const hasPendingOffer = (offers: SaleOffer[], subsidiaryId: number, currentIdx: number): boolean =>
+  offers.some((o) => o.subsidiaryId === subsidiaryId && o.expiresMonthIdx >= currentIdx);
+
+/** Monthly offer spawn/expire for listed subsidiaries. Mutates state in advanceMonth. */
+export const advanceHoldingSales = (state: GameState, rand: () => number): void => {
+  state.saleOffers ??= [];
+  const currentIdx = toMonthIndex(state.calendar);
+
+  state.saleOffers = state.saleOffers.filter((o) => o.expiresMonthIdx >= currentIdx);
+
+  for (const sub of state.subsidiaries ?? []) {
+    if (sub.listedUntilMonthIdx == null) continue;
+
+    if (currentIdx > sub.listedUntilMonthIdx) {
+      sub.listedUntilMonthIdx = null;
+      continue;
+    }
+
+    if (hasPendingOffer(state.saleOffers, sub.id, currentIdx)) continue;
+
+    const listingStartIdx = sub.listedUntilMonthIdx - LISTING_WINDOW_MONTHS;
+    const shouldSpawn =
+      currentIdx === listingStartIdx
+        ? true
+        : currentIdx === listingStartIdx + 1
+          ? rand() < 0.5
+          : rand() < 0.55;
+    if (!shouldSpawn) continue;
+
+    const estimate = estimateSubsidiaryValue(sub);
+    const price = round2(estimate * (OFFER_PRICE_MIN + rand() * (OFFER_PRICE_MAX - OFFER_PRICE_MIN)));
+    state.saleOffers.push({
+      id: state.nextId++,
+      subsidiaryId: sub.id,
+      price,
+      expiresMonthIdx: currentIdx + 1,
+    });
+  }
+};
+
+export const investSubsidiaryCapex = (state: GameState, subsidiaryId: number): GameState => {
+  const subs = state.subsidiaries ?? [];
+  const sub = subs.find((s) => s.id === subsidiaryId);
+  if (!sub) return state;
+  if (sub.listedUntilMonthIdx != null) return state;
+  if (sub.capexCooldownMonths > 0) return state;
+
+  const cost = round2(sub.monthlyEbitda * CAPEX_EBITDA_MULT);
+  if (state.company.cash < cost) return state;
+
+  const next = structuredClone(state);
+  const target = next.subsidiaries!.find((s) => s.id === subsidiaryId)!;
+  target.monthlyEbitda = round2(target.monthlyEbitda * (1 + CAPEX_BOOST));
+  next.company.cash = round2(next.company.cash - cost);
+  next.ytd.otherCosts = round2(next.ytd.otherCosts + cost);
+  target.capexCooldownMonths = CAPEX_COOLDOWN_MONTHS;
+  next.log.unshift({
+    id: next.nextId++,
+    monthIdx: toMonthIndex(next.calendar),
+    tone: "good",
+    text: `Investimento CAPEX ${target.name}: −${cost.toLocaleString("it-IT")} €; EBITDA +16%.`,
   });
   next.log = next.log.slice(0, 12);
   return next;
@@ -107,6 +247,10 @@ export const applySubsidiaryMonth = (state: GameState, rand: () => number): void
   let drip = 0;
   for (const sub of subs) {
     sub.monthsOwned += 1;
+    if (sub.capexCooldownMonths > 0) {
+      sub.capexCooldownMonths -= 1;
+    }
+    sub.monthlyEbitda = round2(Math.max(100, sub.monthlyEbitda * (1 + DRIFT[sub.risk])));
     drip = round2(drip + sub.monthlyEbitda);
   }
   if (drip > 0) {

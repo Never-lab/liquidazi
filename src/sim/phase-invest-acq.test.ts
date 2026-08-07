@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { HOLDING_SLOT_BASE } from "../config/holding";
 import {
   depositTreasury,
   GROWTH_PER_SLOT,
   investGrowth,
-  MAX_SUBSIDIARIES,
   withdrawTreasury,
 } from "./actions";
 import {
@@ -14,7 +14,7 @@ import {
 } from "./acquisitions";
 import { advanceMonth } from "./advanceMonth";
 import { monthlyCapacity, rng } from "./events";
-import { createInitialGameState } from "./types";
+import { createInitialGameState, round2 } from "./types";
 
 describe("Investimenti + acquisizioni lite", () => {
   it("deposit + withdraw conservano cassa+tesoreria", () => {
@@ -40,7 +40,7 @@ describe("Investimenti + acquisizioni lite", () => {
     expect(monthlyCapacity(s)).toBe(cap0 + 1);
   });
 
-  it("buy acquisition: paga, max 3, drip in mese", () => {
+  it("buy acquisition: paga, max slots, drip in mese", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.quietMode = true;
     s.company.cash = 200000;
@@ -50,15 +50,19 @@ describe("Investimenti + acquisizioni lite", () => {
     const cashBefore = s.company.cash;
     s = buyAcquisition(s, target.id);
     expect(s.subsidiaries).toHaveLength(1);
+    expect(s.subsidiaries[0]!.purchasePrice).toBe(target.price);
     expect(s.company.cash).toBe(cashBefore - target.price);
 
     const ebitda = s.subsidiaries[0]!.monthlyEbitda;
+    const risk = s.subsidiaries[0]!.risk;
     const cash2 = s.company.cash;
     applySubsidiaryMonth(s, rng(1));
-    expect(s.company.cash).toBe(cash2 + ebitda);
+    const drift = { low: 0.01, med: 0.005, high: -0.005 } as const;
+    const expectedDrip = round2(ebitda * (1 + drift[risk]));
+    expect(s.company.cash).toBe(cash2 + expectedDrip);
 
     // fill to max
-    while (s.subsidiaries.length < MAX_SUBSIDIARIES) {
+    while (s.subsidiaries.length < HOLDING_SLOT_BASE) {
       s.company.cash = 500000;
       const { board, nextId } = generateAcquisitionBoard(s);
       s.acquisitionBoard = board;
@@ -66,13 +70,13 @@ describe("Investimenti + acquisizioni lite", () => {
       const t = s.acquisitionBoard[0]!;
       s = buyAcquisition(s, t.id);
     }
-    expect(s.subsidiaries).toHaveLength(MAX_SUBSIDIARIES);
+    expect(s.subsidiaries).toHaveLength(HOLDING_SLOT_BASE);
     s.company.cash = 500000;
     const { board, nextId } = generateAcquisitionBoard(s);
     s.acquisitionBoard = board;
     s.nextId = nextId;
     const blocked = buyAcquisition(s, s.acquisitionBoard[0]!.id);
-    expect(blocked.subsidiaries).toHaveLength(MAX_SUBSIDIARIES);
+    expect(blocked.subsidiaries).toHaveLength(HOLDING_SLOT_BASE);
   });
 
   it("quietMode: drip sì, niente hit integrazione", () => {
@@ -88,15 +92,23 @@ describe("Investimenti + acquisizioni lite", () => {
         capacityBonus: 0,
         monthsOwned: 0,
         risk: "high",
+        purchasePrice: 5000,
+        listedUntilMonthIdx: null,
+        capexCooldownMonths: 0,
       },
     ];
     const before = s.company.cash;
-    // many rolls — quiet skips risk
+    // many rolls — quiet skips risk; EBITDA drifts each month (high: −0.5%)
     for (let i = 0; i < 20; i++) {
       applySubsidiaryMonth(s, rng(i + 99));
     }
-    // only drips: 20 * 500
-    expect(s.company.cash).toBe(before + 20 * 500);
+    let cash = before;
+    let ebitda = 500;
+    for (let i = 0; i < 20; i++) {
+      ebitda = round2(Math.max(100, ebitda * 0.995));
+      cash = round2(cash + ebitda);
+    }
+    expect(s.company.cash).toBe(cash);
   });
 
   it("tesoreria matura interessi in advanceMonth", () => {

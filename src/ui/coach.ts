@@ -91,7 +91,7 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
     return {
       id: "invest",
       title: "Investi l'utile",
-      body: "In Investimenti: parcheggia in tesoreria, reinvesti in crescita (+slot) o acquisisci fino a 3 partecipate.",
+      body: "In Investimenti: parcheggia in tesoreria o reinvesti in crescita (+slot). In Holding: acquisisci partecipate.",
     };
   }
   if (game.calendar.month === 5 || game.calendar.month === 10) {

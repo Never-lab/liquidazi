@@ -21,6 +21,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa Ã
 | Upgrade levels (slice 1) | [docs/superpowers/plans/2026-08-07-midgame-upgrade-levels.md](docs/superpowers/plans/2026-08-07-midgame-upgrade-levels.md) | [spec](docs/superpowers/specs/2026-08-07-midgame-progression-design.md) |
 | Annual projects (slice 2) | [docs/superpowers/plans/2026-08-07-midgame-annual-projects.md](docs/superpowers/plans/2026-08-07-midgame-annual-projects.md) | [spec](docs/superpowers/specs/2026-08-07-midgame-progression-design.md) |
 | Living staff (slice 3) | [docs/superpowers/plans/2026-08-07-midgame-living-staff.md](docs/superpowers/plans/2026-08-07-midgame-living-staff.md) | [spec](docs/superpowers/specs/2026-08-07-midgame-progression-design.md) |
+| Holding flip / acquisizioni | [docs/superpowers/plans/2026-08-07-holding-flip-acq.md](docs/superpowers/plans/2026-08-07-holding-flip-acq.md) | [spec](docs/superpowers/specs/2026-08-07-holding-flip-acq-design.md) |
 
 ## Next (coda attiva)
 
