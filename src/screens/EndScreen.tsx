@@ -16,8 +16,8 @@ export const EndScreen = () => {
   const won = game.status === "won";
 
   useEffect(() => {
-    if (won || !auth || game.career.submitted || game.monthsPlayed < 1) return;
-    if (game.status !== "lost") return;
+    if (!auth || game.career.submitted || game.monthsPlayed < 1) return;
+    if (game.status !== "lost" && game.status !== "won") return;
     let cancelled = false;
     setStatus("sending");
     void submitRun(auth.token, {
@@ -29,12 +29,18 @@ export const EndScreen = () => {
       peakDebt: game.career.peakDebt,
       lifetimeRevenue: game.career.lifetimeRevenue,
       finalCash: game.company.cash,
+      difficulty: game.difficulty ?? "normal",
+      outcome: game.status === "won" ? "won" : "lost",
     })
       .then(() => {
         if (cancelled) return;
         markRunSubmitted();
         setStatus("ok");
-        setMsg("Run pubblicata in classifica.");
+        setMsg(
+          game.status === "won"
+            ? "Run (vittoria) registrata per il bilanciamento."
+            : "Run pubblicata in classifica.",
+        );
       })
       .catch((e) => {
         if (cancelled) return;
@@ -44,7 +50,7 @@ export const EndScreen = () => {
     return () => {
       cancelled = true;
     };
-  }, [auth, game, markRunSubmitted, won]);
+  }, [auth, game, markRunSubmitted]);
 
   if (won) {
     return (
@@ -59,6 +65,8 @@ export const EndScreen = () => {
           Picco {formatCash(game.career.peakCash)} · fatturato{" "}
           {formatCash(game.career.lifetimeRevenue)}
         </p>
+        {status === "ok" && <p className={styles.ok}>{msg}</p>}
+        {status === "err" && <p className={styles.error}>{msg}</p>}
         <div className={styles.ctaRow}>
           <button type="button" className={styles.primary} onClick={continueAfterWin}>
             Continua

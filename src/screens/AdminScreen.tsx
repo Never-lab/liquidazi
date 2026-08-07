@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchAdminStats, type AdminStats } from "../api/client";
+import { formatCash } from "../components/formatCash";
 import { useGameStore } from "../store/gameStore";
 import styles from "./MenuScreen.module.css";
 
@@ -7,6 +8,13 @@ const fmtBytes = (n: number) => {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const DIFF_LABEL: Record<string, string> = {
+  easy: "Facile",
+  normal: "Normale",
+  hard: "Difficile",
+  unknown: "Sconosciuta (run vecchie)",
 };
 
 export const AdminScreen = () => {
@@ -28,6 +36,8 @@ export const AdminScreen = () => {
       .catch((e) => setError(e instanceof Error ? e.message : "Errore stats"))
       .finally(() => setLoading(false));
   }, [auth?.token, auth?.admin]);
+
+  const bal = stats?.balance;
 
   return (
     <div className={styles.menuWide}>
@@ -75,6 +85,86 @@ export const AdminScreen = () => {
               </strong>
             </li>
           </ul>
+
+          <p className={styles.boardLabel}>Bilancio run</p>
+          <p className={styles.subtitle}>
+            Solo account loggati. Le run senza difficoltà sono precedenti a questo
+            monitoraggio. Ospiti non compaiono.
+          </p>
+          {bal && bal.n > 0 ? (
+            <>
+              <ul className={styles.adminStats}>
+                <li>
+                  <span>N / media / mediana mesi</span>
+                  <strong>
+                    {bal.n} · {bal.avgMonths} · {bal.medianMonths}
+                  </strong>
+                </li>
+                <li>
+                  <span>≥12 mesi / ≥24 mesi</span>
+                  <strong>
+                    {bal.pctGe12}% / {bal.pctGe24}%
+                  </strong>
+                </li>
+                <li>
+                  <span>Vittorie / KO (+legacy)</span>
+                  <strong>
+                    {bal.wins} / {bal.losses}
+                    {bal.unknownOutcome ? ` (${bal.unknownOutcome} legacy)` : ""}
+                  </strong>
+                </li>
+                <li>
+                  <span>Bucket mesi</span>
+                  <strong>
+                    1–3:{bal.buckets["1-3"]} · 4–6:{bal.buckets["4-6"]} · 7–12:
+                    {bal.buckets["7-12"]} · 13–23:{bal.buckets["13-23"]} · 24+:
+                    {bal.buckets["24+"]}
+                  </strong>
+                </li>
+                <li>
+                  <span>Media picco cassa / debito / finale</span>
+                  <strong>
+                    {formatCash(bal.avgPeakCash)} · {formatCash(bal.avgPeakDebt)} ·{" "}
+                    {formatCash(bal.avgFinalCash)}
+                  </strong>
+                </li>
+              </ul>
+
+              <p className={styles.boardLabel}>Per difficoltà</p>
+              <ol className={styles.leaderList}>
+                {Object.entries(bal.byDifficulty)
+                  .sort((a, b) => b[1].n - a[1].n)
+                  .map(([id, row]) => (
+                    <li key={id}>
+                      <span className={styles.leaderMain}>
+                        <strong>{DIFF_LABEL[id] ?? id}</strong>
+                        <span className={styles.leaderMeta}>
+                          n={row.n} · media {row.avgMonths}m · ≥12 {row.pctGe12}%
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+              </ol>
+
+              <p className={styles.boardLabel}>Per settore</p>
+              <ol className={styles.leaderList}>
+                {Object.entries(bal.bySector)
+                  .sort((a, b) => b[1].n - a[1].n)
+                  .map(([id, row]) => (
+                    <li key={id}>
+                      <span className={styles.leaderMain}>
+                        <strong>{id}</strong>
+                        <span className={styles.leaderMeta}>
+                          n={row.n} · media {row.avgMonths}m
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+              </ol>
+            </>
+          ) : (
+            <p className={styles.subtitle}>Nessuna run ancora da aggregare.</p>
+          )}
 
           <p className={styles.boardLabel}>Ultime segnalazioni</p>
           {stats.recentFeedback.length === 0 ? (
