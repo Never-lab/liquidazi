@@ -436,6 +436,18 @@ export const payF24 = (state: GameState): GameState => {
   return next;
 };
 
+/** Pre-Lv1 sede already applied 0.85 to monthlyRent; reconstruct base for legacy saves. */
+const sedeRentBase = (
+  company: GameState["company"],
+  sedeLevel: UpgradeLevel,
+): number => {
+  if (company.monthlyRentBase != null) return company.monthlyRentBase;
+  if (sedeLevel >= 1) {
+    return round2(company.monthlyRent / 0.85);
+  }
+  return company.monthlyRent;
+};
+
 export const upgradeCost = (state: GameState, id: UpgradeId): number => {
   const def = UPGRADES[id];
   const levels = migrateUpgradeState(state);
@@ -443,7 +455,7 @@ export const upgradeCost = (state: GameState, id: UpgradeId): number => {
   const levelIdx = current >= 3 ? 2 : current;
   const costMult = UPGRADE_LEVELS[id][levelIdx]!.costMult;
   if (id === "sede") {
-    const rentBase = state.company.monthlyRentBase ?? state.company.monthlyRent;
+    const rentBase = sedeRentBase(state.company, current);
     return Math.round(Math.max(def.cost, Math.round(rentBase * 6)) * costMult);
   }
   return Math.round(def.cost * costMult);
@@ -464,7 +476,7 @@ export const buyUpgrade = (state: GameState, id: UpgradeId): GameState => {
   next.upgradeLevels[id] = newLevel;
   next.company.cash = round2(next.company.cash - cost);
   if (id === "sede") {
-    next.company.monthlyRentBase ??= next.company.monthlyRent;
+    next.company.monthlyRentBase = sedeRentBase(next.company, current);
     const factor = [1, 0.85, 0.78, 0.72][newLevel]!;
     next.company.monthlyRent = round2(next.company.monthlyRentBase * factor);
   }

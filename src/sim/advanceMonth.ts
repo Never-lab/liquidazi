@@ -198,8 +198,11 @@ export const advanceMonth = (state: GameState): GameState => {
         if (!l.paid && l.dueIdx <= idx) l.paid = true;
       }
       next.company.cash = round2(next.company.cash - due);
-      if (upgradeLevel(next.upgradeLevels, "gestionale_f24") >= 3) {
+      const f24Lv = upgradeLevel(next.upgradeLevels, "gestionale_f24");
+      if (f24Lv >= 3) {
         next.compliance = Math.min(100, next.compliance + 2);
+      } else if (f24Lv >= 2) {
+        next.compliance = Math.min(100, next.compliance + 1);
       }
       next.log.unshift({
         id: next.nextId++,

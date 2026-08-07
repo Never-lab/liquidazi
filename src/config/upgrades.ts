@@ -48,7 +48,10 @@ export const UPGRADE_LEVELS: Record<
 > = {
   gestionale_f24: [
     { costMult: 1.0, blurb: UPGRADES.gestionale_f24.blurb },
-    { costMult: 1.7, blurb: "F24 automatico più robusto: stesso servizio, team più grande." },
+    {
+      costMult: 1.7,
+      blurb: "F24 automatico + bonus compliance (+1) quando paga in automatico.",
+    },
     {
       costMult: 2.6,
       blurb: "F24 automatico + bonus compliance (+2) quando paga in automatico.",
@@ -88,7 +91,12 @@ export const UPGRADE_LIST = Object.values(UPGRADES);
 export const upgradeLevel = (
   levels: UpgradeLevels | undefined,
   id: UpgradeId,
-): UpgradeLevel => levels?.[id] ?? 0;
+): UpgradeLevel => {
+  const raw = levels?.[id] ?? 0;
+  const n = Math.trunc(Number(raw));
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(3, n)) as UpgradeLevel;
+};
 
 export const hasUpgrade = (
   levelsOrLegacy: UpgradeLevels | UpgradeId[] | undefined,

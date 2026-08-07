@@ -25,8 +25,13 @@ export const UpgradesPanel = () => {
         {UPGRADE_LIST.map((u) => {
           const lv = upgradeLevel(levels, u.id);
           const blurbIdx = Math.max(0, lv - 1);
-          const blurb = UPGRADE_LEVELS[u.id][blurbIdx]!.blurb;
-          const blurbText = lv === 0 ? `Prossimo: ${blurb}` : blurb;
+          const currentBlurb = UPGRADE_LEVELS[u.id][blurbIdx]!.blurb;
+          const blurbText =
+            lv === 0
+              ? `Prossimo: ${currentBlurb}`
+              : lv < 3
+                ? `${currentBlurb} Prossimo: ${UPGRADE_LEVELS[u.id][lv]!.blurb}`
+                : currentBlurb;
           const cost = upgradeCost(game, u.id);
           const atMax = lv >= 3;
           const canBuy = !atMax && game.company.cash >= cost;
