@@ -4,6 +4,7 @@ import { CoachBanner } from "../components/CoachBanner";
 import { EventChoiceBanner } from "../components/EventChoiceBanner";
 import { ProjectOfferBanner } from "../components/ProjectOfferBanner";
 import { EventFeed } from "../components/EventFeed";
+import { HoldingPanel } from "../components/HoldingPanel";
 import { InvestmentsPanel } from "../components/InvestmentsPanel";
 import { LoanPanel } from "../components/LoanPanel";
 import { SchedulePanel } from "../components/SchedulePanel";
@@ -30,12 +31,13 @@ const MESI = [
   "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
 ];
 
-type OpsTab = "fisco" | "credito" | "crescita" | "altro";
+type OpsTab = "fisco" | "credito" | "crescita" | "holding" | "altro";
 
 const OPS_TABS: { id: OpsTab; label: string; icon: IconName }[] = [
   { id: "fisco", label: "Fisco", icon: "tax" },
   { id: "credito", label: "Credito", icon: "bank" },
   { id: "crescita", label: "Crescita", icon: "growth" },
+  { id: "holding", label: "Holding", icon: "growth" },
   { id: "altro", label: "Bilancio", icon: "ledger" },
 ];
 
@@ -321,6 +323,7 @@ export const GameHUD = () => {
               <UpgradesPanel />
             </>
           )}
+          {opsTab === "holding" && <HoldingPanel />}
           {opsTab === "altro" && <ReportPanel />}
         </div>
       </Sheet>
