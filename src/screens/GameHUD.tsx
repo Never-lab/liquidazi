@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { CashSparkline, ChartsPanel } from "../components/Charts";
 import { CoachBanner } from "../components/CoachBanner";
 import { EventChoiceBanner } from "../components/EventChoiceBanner";
+import { ProjectOfferBanner } from "../components/ProjectOfferBanner";
 import { EventFeed } from "../components/EventFeed";
 import { InvestmentsPanel } from "../components/InvestmentsPanel";
 import { LoanPanel } from "../components/LoanPanel";
@@ -69,6 +70,8 @@ export const GameHUD = () => {
   const closeInvoiceTot = scheduleTotals(thisCloseRows(openInvoiceSchedule(game)));
   const offer = game.loanOffer;
   const pending = game.pendingEvent;
+  const pendingProjectOffer = game.projectOffer;
+  const monthBlocked = Boolean(pending || pendingProjectOffer);
   const summary = game.lastCloseSummary;
   const done = new Set(game.milestones ?? []);
   const diffLabel = DIFFICULTIES[game.difficulty ?? "normal"].label;
@@ -144,13 +147,23 @@ export const GameHUD = () => {
             <Button
               className={styles.closeBtn}
               onClick={closeMonth}
-              disabled={Boolean(pending)}
-              title={pending ? "Risolvi prima l'evento" : undefined}
+              disabled={monthBlocked}
+              title={
+                pending
+                  ? "Risolvi prima l'evento"
+                  : pendingProjectOffer
+                    ? "Scegli o salta il piano investimenti"
+                    : undefined
+              }
             >
               <Icon name="calendar" size={18} />
-              {pending ? "Risolvi evento…" : "Chiudi mese"}
+              {pending
+                ? "Risolvi evento…"
+                : pendingProjectOffer
+                  ? "Scegli progetto…"
+                  : "Chiudi mese"}
             </Button>
-            {closeInvoiceTot.count > 0 && !pending && (
+            {closeInvoiceTot.count > 0 && !monthBlocked && (
               <p className={styles.closeHint}>
                 {closeInvoiceTot.net >= 0 ? "+" : ""}
                 {formatCash(closeInvoiceTot.net)} · {closeInvoiceTot.count} scad.
@@ -176,6 +189,7 @@ export const GameHUD = () => {
       <div className={styles.alerts}>
         <CoachBanner />
         <EventChoiceBanner />
+        <ProjectOfferBanner />
 
         {summary && game.monthsPlayed > 0 && (
           <div

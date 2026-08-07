@@ -50,4 +50,22 @@ describe("coachTipFor commesse-legend", () => {
     expect(coachTipFor(s)?.id).not.toBe("commesse-legend");
     expect(coachTipFor(s)?.id).toBe("hire");
   });
+
+  it("shows staff-clima when morale is low with employees", () => {
+    const s = createInitialGameState();
+    s.monthsPlayed = 4;
+    s.liabilities = [];
+    s.employees = [
+      {
+        id: 1,
+        role: "Operaio",
+        grossMonthly: 1800,
+        hireMonthIdx: 2024 * 12,
+        senioritySteps: 0,
+        tfrAccrued: 0,
+      },
+    ];
+    s.staffMorale = 35;
+    expect(coachTipFor(s)?.id).toBe("staff-clima");
+  });
 });

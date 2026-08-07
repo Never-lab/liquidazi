@@ -5,9 +5,22 @@ import {
   employerCostMonthly,
 } from "../config/staffPay";
 import { sectorById } from "../config/market";
+import { DEFAULT_STAFF_MORALE } from "../sim/morale";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
 import styles from "./panels.module.css";
+
+export const staffMoraleBand = (morale: number): "basso" | "medio" | "alto" => {
+  if (morale < 40) return "basso";
+  if (morale >= 70) return "alto";
+  return "medio";
+};
+
+export const staffMoraleEffectCopy = (morale: number): string | null => {
+  if (morale < 40) return "Rischio dimissioni; capacità staff ridotta";
+  if (morale >= 70) return "Team efficace";
+  return null;
+};
 
 export const PayrollPanel = () => {
   const game = useGameStore((s) => s.game);
@@ -19,13 +32,22 @@ export const PayrollPanel = () => {
   const fire = useGameStore((s) => s.fireEmployee);
 
   const sectorLabel = sectorById(sector).label;
+  const morale = game.staffMorale ?? DEFAULT_STAFF_MORALE;
+  const banda = staffMoraleBand(morale);
+  const climaEffect = staffMoraleEffectCopy(morale);
 
   return (
     <section className={styles.panel}>
       <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle}>Personale</h2>
+        <div>
+          <h2 className={styles.panelTitle}>Personale</h2>
+          <span className={styles.badge}>
+            Clima {morale}/100 · {banda}
+          </span>
+        </div>
         <span className={styles.badge}>CCNL {sectorLabel}</span>
       </div>
+      {climaEffect && <p className={styles.muted}>{climaEffect}</p>}
 
       <div className={styles.cards}>
         {STAFF_ROLES.map((r) => {

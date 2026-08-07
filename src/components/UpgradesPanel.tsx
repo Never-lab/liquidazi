@@ -1,3 +1,4 @@
+import { getProjectDef } from "../config/projects";
 import {
   UPGRADE_LEVELS,
   UPGRADE_LIST,
@@ -15,8 +16,15 @@ export const UpgradesPanel = () => {
   const buy = useGameStore((s) => s.buyUpgrade);
   const levels = migrateUpgradeState(game);
 
+  const active = game.activeProject;
+
   return (
     <section className={styles.panel}>
+      {active && (
+        <p className={styles.muted}>
+          Progetto: {getProjectDef(active.id).label} · {active.monthsLeft} mesi
+        </p>
+      )}
       <h2 className={styles.panelTitle}>Upgrade azienda</h2>
       <p className={styles.muted}>
         Potenzia i quattro pilastri fino al Lv3 — non finiscono dopo il primo acquisto.

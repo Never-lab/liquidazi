@@ -40,8 +40,10 @@ import {
   type NewGameOptions,
 } from "../sim/types";
 import type { UpgradeId } from "../config/upgrades";
+import { getProjectDef, type ProjectId } from "../config/projects";
 import { upgradeLevel } from "../config/upgrades";
 import { migrateUpgradeState } from "../sim/migrateUpgrades";
+import { acceptProject, skipProjectOffer } from "../sim/projects";
 import { sfxBad, sfxGood, sfxMonthClose, sfxPay } from "../ui/sfx";
 import { formatCash } from "../components/formatCash";
 import { markIntroSeen, screenAfterAuth } from "../ui/introGate";
@@ -114,6 +116,8 @@ interface GameStore {
   withdrawTreasury: (amount: number) => void;
   investGrowth: (amount: number) => void;
   buyAcquisition: (id: number) => void;
+  acceptProject: (id: ProjectId) => void;
+  skipProjectOffer: () => void;
   markRunSubmitted: () => void;
   selectSlot: (index: number) => void;
   renameSlot: (index: number, label: string) => void;
@@ -259,7 +263,13 @@ export const useGameStore = create<GameStore>()(
           sfxBad();
           return;
         }
-        const game = advanceMonth(get().game);
+        if (get().game.projectOffer) {
+          get().flashToast("Scegli o salta il piano investimenti", "bad");
+          sfxBad();
+          return;
+        }
+        const before = get().game;
+        const game = advanceMonth(before);
         let screen = get().screen;
         if (game.status === "lost" || game.status === "won") screen = "gameover";
         const slots = syncSlot(get().slots, get().activeSlot, game);
@@ -273,6 +283,9 @@ export const useGameStore = create<GameStore>()(
         } else if (game.pendingEvent) {
           get().flashToast(`Decisione: ${game.pendingEvent.title}`, "neutral");
           sfxMonthClose();
+        } else if (before.activeProject && !game.activeProject) {
+          get().flashToast("Progetto completato", "good");
+          sfxGood();
         } else if (game.lastCloseSummary) {
           const d = game.lastCloseSummary.delta;
           get().flashToast(
@@ -431,6 +444,25 @@ export const useGameStore = create<GameStore>()(
           sfxBad();
         }
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+      },
+      acceptProject: (id) => {
+        const before = get().game;
+        const game = acceptProject(before, id);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if (game.activeProject && !before.activeProject) {
+          get().flashToast(`Progetto avviato: ${getProjectDef(id).label}`, "good");
+          sfxGood();
+        } else {
+          get().flashToast("Progetto non avviato", "bad");
+          sfxBad();
+        }
+      },
+      skipProjectOffer: () => {
+        const game = skipProjectOffer(get().game);
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        if (!game.projectOffer) {
+          get().flashToast("Piano investimenti saltato", "neutral");
+        }
       },
       markRunSubmitted: () => {
         const game = structuredClone(get().game);

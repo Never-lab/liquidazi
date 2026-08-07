@@ -48,6 +48,7 @@ describe("ruoli differenziati", () => {
 
   it("1 Operaio dà più capacità di 1 Impiegato", () => {
     const base = createInitialGameState({ city: "058091", sector: "servizi" });
+    base.staffMorale = 100;
     const withOp = hireEmployee(base, "Operaio");
     const withImp = hireEmployee(base, "Impiegato");
     expect(monthlyCapacity(withOp)).toBeGreaterThan(monthlyCapacity(withImp));

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { advanceMonth } from "./advanceMonth";
+import { skipProjectOffer } from "./projects";
 import { buyUpgrade, hireEmployee } from "./actions";
 import {
   BOARD_MAX_OPS,
@@ -11,16 +12,17 @@ import {
 import { createInitialGameState, round2 } from "./types";
 
 describe("Staff board + upgrades lite", () => {
-  it("capacity: primi 6 full, poi 1/3; 100 dipendenti non = 100 slot", () => {
+  it("capacity: primi 8 full at morale 100, poi 1/2; 100 dipendenti non = 100 slot", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.staffMorale = 100;
     const base = monthlyCapacity(s);
+    for (let i = 0; i < 8; i++) s = hireEmployee(s, "Operaio");
+    expect(monthlyCapacity(s)).toBe(base + 8);
     for (let i = 0; i < 6; i++) s = hireEmployee(s, "Operaio");
-    expect(monthlyCapacity(s)).toBe(base + 6);
-    for (let i = 0; i < 9; i++) s = hireEmployee(s, "Operaio");
-    // +9 extra → floor(9/3)=3, not +9
-    expect(monthlyCapacity(s)).toBe(base + 6 + 3);
-    for (let i = 0; i < 85; i++) s = hireEmployee(s, "Operaio");
-    expect(monthlyCapacity(s)).toBeLessThan(50);
+    // +6 extra pts → floor(6/2)=3, not +6
+    expect(monthlyCapacity(s)).toBe(base + 8 + 3);
+    for (let i = 0; i < 86; i++) s = hireEmployee(s, "Operaio");
+    expect(monthlyCapacity(s)).toBeLessThan(60);
   });
 
   it("tabellone scala con staff; capped a BOARD_MAX_OPS", () => {
@@ -50,6 +52,7 @@ describe("Staff board + upgrades lite", () => {
       otherCosts: 1000,
     };
     s = advanceMonth(s);
+    if (s.projectOffer) s = skipProjectOffer(s);
     expect(s.lastYearReport?.year).toBe(2024);
     expect(s.yearReports).toHaveLength(1);
     expect(s.yearReports[0]?.revenue).toBe(20000);
@@ -62,6 +65,7 @@ describe("Staff board + upgrades lite", () => {
       interest: 100,
       otherCosts: 1200,
     };
+    s.projectOffer = null;
     s = advanceMonth(s);
     expect(s.yearReports).toHaveLength(2);
     expect(s.yearReports[1]?.year).toBe(2025);

@@ -1,5 +1,6 @@
 import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
+import { getProjectDef } from "../config/projects";
 import { capacityPointsFor } from "../config/staffPay";
 import { upgradeLevel } from "../config/upgrades";
 import { migrateUpgradeState } from "./migrateUpgrades";
@@ -20,6 +21,7 @@ import {
   shouldRollPressure,
   ticketFactorFromPressure,
 } from "./pressures";
+import { DEFAULT_STAFF_MORALE } from "./morale";
 import { applyRivalSteal, seedRival } from "./rival";
 
 export { rng };
@@ -38,8 +40,8 @@ const SUPPLIER_NAMES = [
 /** Soft cap on board rows so UI stays readable. */
 export const BOARD_MAX_OPS = 10;
 
-/** Full-value staff headcount before diminishing returns. */
-const STAFF_FULL_VALUE = 6;
+/** Full-value staff capacity points before diminishing returns. */
+export const STAFF_FULL_VALUE = 8;
 
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
 
@@ -52,29 +54,41 @@ export const countRole = (state: GameState, role: string): number =>
   state.employees.filter((e) => e.role === role).length;
 
 /**
- * Sale slots / month. First 6 capacity points count 1:1; extras count 1/3.
- * Processi upgrade adds +1 without headcount.
+ * Sale slots / month. First 8 capacity points count 1:1; extras count 1/2.
+ * Morale scales slot count after soft-cap (not raw points). Processi adds +1 without headcount.
  */
 export const monthlyCapacity = (state: GameState): number => {
   const upgradeLevels = migrateUpgradeState(state);
   const points = staffCapacityPoints(state);
   const core = Math.min(points, STAFF_FULL_VALUE);
   const extra = Math.max(0, points - STAFF_FULL_VALUE);
-  const staffSlots = Math.floor(core + Math.floor(extra / 3));
+  const staffSlots = Math.floor(core + Math.floor(extra / 2));
+  const morale = state.staffMorale ?? DEFAULT_STAFF_MORALE;
+  const effectiveSlots = Math.max(
+    0,
+    Math.round(staffSlots * (0.75 + 0.25 * (morale / 100))),
+  );
   const repBonus = Math.floor(state.company.reputation / 40);
   const procLv = upgradeLevel(upgradeLevels, "processi");
   const processi = procLv;
   const temp = (state.tempCapacityMonths ?? 0) > 0 ? 1 : 0;
   const growth = state.growthCapacityBonus ?? 0;
   const subCap = (state.subsidiaries ?? []).reduce((s, sub) => s + sub.capacityBonus, 0);
+  const projCap = state.activeProject
+    ? getProjectDef(state.activeProject.id).capacityBonus
+    : 0;
+  const projSlot = state.activeProject
+    ? getProjectDef(state.activeProject.id).slotPenalty
+    : 0;
   const base =
-    1 + staffSlots + repBonus + processi + temp + growth + subCap;
+    1 + effectiveSlots + repBonus + processi + temp + growth + subCap + projCap;
   const afterContracts = base - contractSlotsUsed(state);
-  const penalized = afterContracts - capacityPressurePenalty(state);
+  const penalized = afterContracts - capacityPressurePenalty(state) - projSlot;
   // Soft floor: don't soft-lock a board with 0 free slots when you have no contracts
-  // (pa_wave + scorte 0 still hurts via ticket ×0.72).
+  // (pa_wave + scorte 0 still hurts via ticket ×0.72). slotPenalty still applies.
   if (penalized <= 0 && contractSlotsUsed(state) === 0) {
-    return Math.max(0, Math.min(1, afterContracts));
+    const floored = Math.max(0, Math.min(1, afterContracts - capacityPressurePenalty(state)));
+    return Math.max(0, floored - projSlot);
   }
   return Math.max(0, penalized);
 };
@@ -119,7 +133,7 @@ export const maxDealNet = (state: GameState): number => {
   const commercialeMult = [1, 1.08, 1.12, 1.16][upgradeLevel(upgradeLevels, "commerciale")]!;
   const supplyMult = (state.supplyMonths ?? 0) > 0 ? 1 : 0.72;
   const pressureTicket = ticketFactorFromPressure(state);
-  return round2(
+  const capped = round2(
     Math.min(
       ticketCeiling(state),
       Math.max(
@@ -136,6 +150,10 @@ export const maxDealNet = (state: GameState): number => {
       ),
     ),
   );
+  const projectTicketMult = state.activeProject
+    ? getProjectDef(state.activeProject.id).ticketMult
+    : 1;
+  return round2(capped * projectTicketMult);
 };
 
 const pushSale = (

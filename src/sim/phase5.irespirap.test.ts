@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { advanceMonth } from "./advanceMonth";
 import { issueCustomerInvoice, payF24 } from "./actions";
+import { skipProjectOffer } from "./projects";
 import { createInitialGameState, round2, toMonthIndex, type GameState } from "./types";
 
 /** Gioca n mesi emettendo una vendita fissa a inizio mese. */
 const playMonths = (s: GameState, n: number, saleNet = 10000): GameState => {
   for (let i = 0; i < n; i++) {
     s = issueCustomerInvoice(s, saleNet);
+    if (s.projectOffer) s = skipProjectOffer(s);
     s = advanceMonth(s);
     s = payF24(s); // niente sanzioni, focus su IRES/IRAP
   }
@@ -44,6 +46,7 @@ describe("Phase 5 — IRES/IRAP annuali + diritto camerale", () => {
     s = playMonths(s, 4); // gen-apr anno 2
     // maggio: chiusura senza payF24, così le liability di giugno restano aperte
     s = issueCustomerInvoice(s, 10000);
+    if (s.projectOffer) s = skipProjectOffer(s);
     s = advanceMonth(s);
 
     const priorIres = s.priorYearTax!.ires;
@@ -66,6 +69,7 @@ describe("Phase 5 — IRES/IRAP annuali + diritto camerale", () => {
     // diritto camerale esce dalla cassa alla chiusura di giugno
     const cashJune = s.company.cash;
     s = issueCustomerInvoice(s, 10000);
+    if (s.projectOffer) s = skipProjectOffer(s);
     s = advanceMonth(s);
     const invoiceGross = s.invoices.find((i) => i.settled && i.gross > 12000)!.gross;
     expect(s.company.cash).toBeCloseTo(cashJune + invoiceGross - snap.diritto_camerale_flat);
@@ -77,6 +81,7 @@ describe("Phase 5 — IRES/IRAP annuali + diritto camerale", () => {
     s = playMonths(s, 9); // gen-set anno 2
     // ottobre: chiusura senza payF24 → acconto2 resta aperto a novembre
     s = issueCustomerInvoice(s, 10000);
+    if (s.projectOffer) s = skipProjectOffer(s);
     s = advanceMonth(s);
 
     expect(s.calendar.month).toBe(11);

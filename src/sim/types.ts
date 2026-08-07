@@ -14,6 +14,7 @@ import {
   type SectorId,
 } from "../config/market";
 import { DIFFICULTIES, type DifficultyId } from "../config/difficulty";
+import type { ProjectId } from "../config/projects";
 import type { UpgradeId } from "../config/upgrades";
 
 export type { CityId, SectorId, DifficultyId };
@@ -257,6 +258,17 @@ export interface Subsidiary {
   risk: AcquisitionRisk;
 }
 
+export type ActiveProject = {
+  id: ProjectId;
+  monthsLeft: number;
+  frozenCash: number;
+};
+
+export type ProjectOffer = {
+  year: number;
+  options: ProjectId[];
+};
+
 export interface GameState {
   company: Company;
   calendar: Calendar;
@@ -332,6 +344,14 @@ export interface GameState {
   rival: Rival | null;
   /** monthsPlayed when last forced shock was queued (cooldown) */
   lastShockAt: number | null;
+  /** Annual investment project in progress (max one) */
+  activeProject: ActiveProject | null;
+  /** Pending January offer (blocks month close until accept/skip) */
+  projectOffer: ProjectOffer | null;
+  /** Calendar year when last offer was created (prevent double) */
+  projectOfferYear: number | null;
+  /** Company climate 0–100; scales staff capacity and drives turnover */
+  staffMorale?: number;
 }
 
 export type MilestoneId =
@@ -467,5 +487,9 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     activeContracts: [],
     rival: null,
     lastShockAt: null,
+    activeProject: null,
+    projectOffer: null,
+    projectOfferYear: null,
+    staffMorale: 70,
   };
 };

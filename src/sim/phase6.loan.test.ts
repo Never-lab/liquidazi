@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { advanceMonth } from "./advanceMonth";
+import { skipProjectOffer } from "./projects";
 import {
   acceptLoanOffer,
   buildLoanSchedule,
@@ -174,7 +175,10 @@ describe("Phase 6 — lose / soft win", () => {
     let s = createInitialGameState();
     s.quietMode = true;
     s.company.cash = 80000;
-    for (let i = 0; i < 24; i++) s = advanceMonth(s);
+    for (let i = 0; i < 24; i++) {
+      if (s.projectOffer) s = skipProjectOffer(s);
+      s = advanceMonth(s);
+    }
     expect(s.status).toBe("won");
     expect(s.monthsPlayed).toBe(24);
     expect(s.career.year2Reached).toBe(true);
