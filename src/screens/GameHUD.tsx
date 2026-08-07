@@ -21,6 +21,7 @@ import { pressureEffectBlurb } from "../sim/pressures";
 import { dueF24Total, openInvoiceSchedule, scheduleTotals, thisCloseRows } from "../sim/selectors";
 import { LOSE_MONTHS_BELOW_ZERO } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
+import { Icon, type IconName } from "../ui/icons";
 import styles from "./GameHUD.module.css";
 
 const MESI = [
@@ -29,6 +30,13 @@ const MESI = [
 ];
 
 type OpsTab = "fisco" | "credito" | "crescita" | "altro";
+
+const OPS_TABS: { id: OpsTab; label: string; icon: IconName }[] = [
+  { id: "fisco", label: "Fisco", icon: "tax" },
+  { id: "credito", label: "Credito", icon: "bank" },
+  { id: "crescita", label: "Crescita", icon: "growth" },
+  { id: "altro", label: "Bilancio", icon: "ledger" },
+];
 
 export const GameHUD = () => {
   const game = useGameStore((s) => s.game);
@@ -112,7 +120,10 @@ export const GameHUD = () => {
         </div>
         <div className={styles.stickyActions}>
           <div key={cashPulse} className={styles.statPulse}>
-            <span className={styles.statLabel}>Cassa</span>
+            <span className={styles.statLabel}>
+              <Icon name="wallet" size={12} className={styles.statIcon} />
+              Cassa
+            </span>
             <strong
               className={`${styles.cash} ${game.company.cash < 0 ? styles.cashBad : ""}`}
             >
@@ -121,7 +132,10 @@ export const GameHUD = () => {
             <CashSparkline history={game.history} bad={game.company.cash < 0} />
           </div>
           <div>
-            <span className={styles.statLabel}>F24</span>
+            <span className={styles.statLabel}>
+              <Icon name="receipt" size={12} className={styles.statIcon} />
+              F24
+            </span>
             <strong className={`${styles.cash} ${openTax > 0 ? styles.dueWarn : ""}`}>
               {formatCash(openTax)}
             </strong>
@@ -133,6 +147,7 @@ export const GameHUD = () => {
               disabled={Boolean(pending)}
               title={pending ? "Risolvi prima l'evento" : undefined}
             >
+              <Icon name="calendar" size={18} />
               {pending ? "Risolvi evento…" : "Chiudi mese"}
             </Button>
             {closeInvoiceTot.count > 0 && !pending && (
@@ -152,7 +167,7 @@ export const GameHUD = () => {
             className={done.has(m.id) ? styles.goalDone : styles.goalTodo}
             title={m.blurb}
           >
-            {done.has(m.id) ? "✓ " : ""}
+            {done.has(m.id) ? <Icon name="check" size={12} className={styles.goalCheck} /> : null}
             {m.label}
           </span>
         ))}
@@ -189,20 +204,29 @@ export const GameHUD = () => {
 
         {f24Due > 0 && (
           <div className={styles.f24Due} role="alert">
-            <p>
-              <strong>F24 da versare:</strong> {formatCash(f24Due)}. Scadenza ~giorno 16.
-            </p>
-            <Button onClick={doPayF24}>Paga F24</Button>
+            <div className={styles.alertCopy}>
+              <Icon name="receipt" size={20} className={styles.alertIcon} />
+              <p>
+                <strong>F24 da versare:</strong> {formatCash(f24Due)}. Scadenza ~giorno 16.
+              </p>
+            </div>
+            <Button onClick={doPayF24}>
+              <Icon name="receipt" size={18} />
+              Paga F24
+            </Button>
           </div>
         )}
 
         {offer && (
           <div className={styles.rescue} role="alert">
-            <p>
-              <strong>Difficoltà di cassa.</strong> Prestito{" "}
-              {formatCash(offer.principal)} / {offer.tenorMonths} mesi
-              {offer.guarantee === "fondo_garanzia_pmi" ? " (Fondo PMI)" : ""}.
-            </p>
+            <div className={styles.alertCopy}>
+              <Icon name="bank" size={20} className={styles.alertIcon} />
+              <p>
+                <strong>Difficoltà di cassa.</strong> Prestito{" "}
+                {formatCash(offer.principal)} / {offer.tenorMonths} mesi
+                {offer.guarantee === "fondo_garanzia_pmi" ? " (Fondo PMI)" : ""}.
+              </p>
+            </div>
             <div className={styles.rescueActions}>
               <Button onClick={acceptOffer}>Accetta</Button>
               <Button variant="ghost" onClick={declineOffer}>
@@ -220,6 +244,7 @@ export const GameHUD = () => {
 
           <div className={styles.toolbar}>
             <Button variant="secondary" onClick={() => setOpsOpen(true)}>
+              <Icon name="ops" size={18} />
               Operazioni
             </Button>
             <button
@@ -227,15 +252,18 @@ export const GameHUD = () => {
               className={styles.auxToggle}
               onClick={() => setAuxOpen((v) => !v)}
             >
+              <Icon name="chart" size={16} />
               {auxOpen ? "Nascondi grafici / feed" : "Grafici e cronologia"}
             </button>
             <div className={styles.toolbarRight}>
               {!coachOn && (
                 <Button variant="ghost" onClick={enableCoach}>
+                  <Icon name="book" size={18} />
                   Guide
                 </Button>
               )}
               <Button variant="ghost" onClick={() => setScreen("menu")}>
+                <Icon name="home" size={18} />
                 Menu
               </Button>
             </div>
@@ -252,32 +280,26 @@ export const GameHUD = () => {
 
       <Sheet open={opsOpen} title="Operazioni" onClose={() => setOpsOpen(false)}>
         <div className={styles.opsTabs}>
-          {(
-            [
-              ["fisco", "Fisco / Personale"],
-              ["credito", "Credito"],
-              ["crescita", "Crescita"],
-              ["altro", "Bilancio"],
-            ] as const
-          ).map(([id, label]) => (
+          {OPS_TABS.map((tab) => (
             <button
-              key={id}
+              key={tab.id}
               type="button"
-              className={opsTab === id ? styles.opsTabActive : styles.opsTab}
-              onClick={() => setOpsTab(id)}
+              className={opsTab === tab.id ? styles.opsTabActive : styles.opsTab}
+              onClick={() => setOpsTab(tab.id)}
             >
-              {label}
+              <Icon name={tab.icon} size={16} />
+              {tab.label}
             </button>
           ))}
         </div>
         <div className={styles.ops}>
-            {opsTab === "fisco" && (
-              <>
-                <PayrollPanel />
-                <TaxPanel />
-                <SchedulePanel />
-              </>
-            )}
+          {opsTab === "fisco" && (
+            <>
+              <PayrollPanel />
+              <TaxPanel />
+              <SchedulePanel />
+            </>
+          )}
           {opsTab === "credito" && <LoanPanel />}
           {opsTab === "crescita" && (
             <>

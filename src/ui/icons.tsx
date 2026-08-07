@@ -13,7 +13,18 @@ export type IconName =
   | "user"
   | "chevron"
   | "feedback"
-  | "guest";
+  | "guest"
+  | "calendar"
+  | "receipt"
+  | "wallet"
+  | "ops"
+  | "chart"
+  | "bank"
+  | "growth"
+  | "ledger"
+  | "tax"
+  | "home"
+  | "check";
 
 type Props = {
   name: IconName;
@@ -107,6 +118,76 @@ const Glyph = ({ name }: { name: IconName }) => {
           <path d="M9 11h6M9 14h4" {...pathProps} />
         </>
       );
+    case "calendar":
+      return (
+        <>
+          <path d="M5 6h14v14H5V6z" {...pathProps} />
+          <path d="M5 10h14M9 4v4M15 4v4" {...pathProps} />
+        </>
+      );
+    case "receipt":
+      return (
+        <>
+          <path d="M7 3h10v18l-2-1.5L13 21l-2-1.5L9 21l-2-1.5V3z" {...pathProps} />
+          <path d="M10 8h4M10 12h4M10 16h3" {...pathProps} />
+        </>
+      );
+    case "wallet":
+      return (
+        <>
+          <path d="M4 7h16v12H4V7z" {...pathProps} />
+          <path d="M4 10h16M16 14h2" {...pathProps} />
+        </>
+      );
+    case "ops":
+      return (
+        <>
+          <path d="M5 5h6v6H5V5zM13 5h6v6h-6V5zM5 13h6v6H5v-6zM13 13h6v6h-6v-6z" {...pathProps} />
+        </>
+      );
+    case "chart":
+      return (
+        <>
+          <path d="M4 19h16M7 16V9M12 16V5M17 16v-4" {...pathProps} />
+        </>
+      );
+    case "bank":
+      return (
+        <>
+          <path d="M4 10h16v10H4V10z" {...pathProps} />
+          <path d="M3 10l9-6 9 6M8 14v3M12 14v3M16 14v3" {...pathProps} />
+        </>
+      );
+    case "growth":
+      return (
+        <>
+          <path d="M4 18l6-6 3 3 7-8" {...pathProps} />
+          <path d="M15 7h5v5" {...pathProps} />
+        </>
+      );
+    case "ledger":
+      return (
+        <>
+          <path d="M6 4h12v16H6V4z" {...pathProps} />
+          <path d="M9 8h6M9 12h6M9 16h4" {...pathProps} />
+        </>
+      );
+    case "tax":
+      return (
+        <>
+          <path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" {...pathProps} />
+          <path d="M9 12h6M12 9v6" {...pathProps} />
+        </>
+      );
+    case "home":
+      return (
+        <>
+          <path d="M4 11l8-7 8 7v9H4v-9z" {...pathProps} />
+          <path d="M10 20v-6h4v6" {...pathProps} />
+        </>
+      );
+    case "check":
+      return <path d="M5 12l5 5 9-10" {...pathProps} />;
     default:
       return null;
   }

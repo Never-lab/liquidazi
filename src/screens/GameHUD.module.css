@@ -200,11 +200,18 @@
 }
 
 .statLabel {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
+}
+
+.statIcon {
+  flex-shrink: 0;
+  opacity: 0.85;
 }
 
 .cash {
@@ -249,6 +256,9 @@
 
 .goalTodo,
 .goalDone {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   padding: 3px 8px;
   border-radius: var(--radius-sm);
@@ -262,6 +272,10 @@
   color: var(--color-accent);
   background: var(--color-accent-soft);
   font-weight: 600;
+}
+
+.goalCheck {
+  flex-shrink: 0;
 }
 
 .alerts {
@@ -340,10 +354,23 @@
   color: #3a2218;
 }
 
+.alertCopy {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.alertIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  opacity: 0.9;
+}
+
 .f24Due p,
 .rescue p {
   margin: 0;
-  flex: 1 1 200px;
   font-size: 14px;
   line-height: 1.4;
 }
@@ -371,6 +398,9 @@
 }
 
 .auxToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: transparent;
   border: none;
   color: var(--color-text-muted);
@@ -429,6 +459,10 @@
 
 .opsTab,
 .opsTabActive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   border-radius: var(--radius-md);
