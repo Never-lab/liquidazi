@@ -451,15 +451,15 @@ export const upgradeCost = (state: GameState, id: UpgradeId): number => {
 
 /** Level-up company upgrade (Lv1→Lv3). */
 export const buyUpgrade = (state: GameState, id: UpgradeId): GameState => {
-  if (!UPGRADES[id]) return state;
-  const levels = migrateUpgradeState(state);
-  const current = upgradeLevel(levels, id);
-  if (current >= 3) return state;
-  const cost = upgradeCost(state, id);
-  if (state.company.cash < cost) return state;
-
   const next = structuredClone(state);
-  next.upgradeLevels = { ...levels };
+  next.upgradeLevels = migrateUpgradeState(next);
+
+  if (!UPGRADES[id]) return next;
+  const current = upgradeLevel(next.upgradeLevels, id);
+  if (current >= 3) return next;
+  const cost = upgradeCost(next, id);
+  if (next.company.cash < cost) return next;
+
   const newLevel = (current + 1) as UpgradeLevel;
   next.upgradeLevels[id] = newLevel;
   next.company.cash = round2(next.company.cash - cost);

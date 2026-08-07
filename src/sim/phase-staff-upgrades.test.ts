@@ -114,6 +114,16 @@ describe("Staff board + upgrades lite", () => {
     expect(frozen.company.cash).toBe(s.company.cash);
   });
 
+  it("buyUpgrade no-op persists legacy upgradeLevels migrate", () => {
+    const s = createInitialGameState();
+    s.upgrades = ["processi"];
+    s.upgradeLevels = undefined;
+    s.company.cash = 0;
+    const result = buyUpgrade(s, "processi");
+    expect(result.upgradeLevels?.processi).toBe(1);
+    expect(result.company.cash).toBe(0);
+  });
+
   it("sede levels apply factor vs rent base not compound", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.company.cash = 100000;

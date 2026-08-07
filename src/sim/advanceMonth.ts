@@ -128,11 +128,11 @@ const runPayroll = (next: GameState, idx: number): void => {
  * forward.
  */
 export const advanceMonth = (state: GameState): GameState => {
-  if (state.status !== "running") return state;
-  if (state.pendingEvent) return state;
-
   const next = structuredClone(state);
   next.upgradeLevels = migrateUpgradeState(next);
+
+  if (state.status !== "running") return next;
+  if (state.pendingEvent) return next;
   next.upgrades ??= [];
   next.yearReports ??= next.lastYearReport ? [next.lastYearReport] : [];
   next.tempCapacityMonths ??= 0;
