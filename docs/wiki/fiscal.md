@@ -1,0 +1,36 @@
+# Fiscal (F24 + riscossione)
+
+Educational pipeline — not live tax law. Constants: `src/config/collection.ts`. Logic: `src/sim/collection.ts`, wired from `advanceMonth`.
+
+## Monthly F24
+
+IVA liquidation and withholdings from the prior month come due (UI banner). Paying clears liabilities; **skipping** triggers the existing one-shot penalty path (`penalized`) plus compliance hit (bank spread).
+
+## Mora
+
+While tax is overdue and no open `collectionCase`, monthly mora accrues at **`MONTHLY_MORA_RATE = 0.01`**. `monthsTaxOverdue` tracks continuous overdue months.
+
+## Cartella
+
+At **`MONTHS_BEFORE_CARTELLA = 6`** continuous overdue months → open cartella (`pendingEvent` id `fiscal_cartella`). Choices:
+
+| Choice | Effect (summary) |
+|--------|------------------|
+| Paga tutto | Clear case if cash allows; compliance recovery |
+| Rateizza | **12** months plan, **10%** fee (`RATEATION_*`) |
+| Ignora | Compliance hit; enforcement path |
+
+While `collectionCase != null`, do not open a second cartella; case tick owns principal/plan.
+
+## Enforcement → lose
+
+- Enforcement aggio **`ENFORCEMENT_AGGIO = 0.08`**
+- **`ENFORCEMENT_MONTHS_TO_TERMINAL = 4`** then terminal stage
+- **`TERMINAL_MONTHS_TO_LOST = 3`** → `status` lost with **`loseReason: "fiscal"`**
+- Lost threshold helper: `lostThreshold(ytdRevenue) = max(2000, 5% ytd)`
+
+## Boss months
+
+June / November IRES–IRAP style payments remain separate from collection (see README / fiscal snapshot). Collection is about unpaid F24 / cartella.
+
+Tests: `src/sim/phase-collection.test.ts`, `phase4.f24.test.ts`.

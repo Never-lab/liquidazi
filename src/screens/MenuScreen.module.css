@@ -702,6 +702,41 @@
   background: var(--color-accent);
 }
 
+.guideLayout {
+  display: grid;
+  gap: 1rem;
+  width: min(52rem, 100%);
+}
+
+@media (min-width: 720px) {
+  .guideLayout {
+    grid-template-columns: 14rem 1fr;
+    align-items: start;
+  }
+}
+
+.guideNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.guideNavBtn,
+.guideNavOn {
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.guideNavOn {
+  border-color: currentColor;
+  font-weight: 600;
+}
+
 @media (max-width: 560px) {
   .shell {
     padding: 20px 16px 40px;

@@ -66,6 +66,7 @@ export type Screen =
   | "setup"
   | "game"
   | "tutorial"
+  | "guide"
   | "gameover"
   | "leaderboard"
   | "saves"

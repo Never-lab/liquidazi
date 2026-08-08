@@ -1,0 +1,17 @@
+# Come si gioca
+
+## Cassa e utile
+
+La **cassa** è quello che hai in banca. L’utile contabile non è liquidità: puoi essere “in utile” e restare a corto di soldi se i clienti pagano tardi.
+
+## Il loop
+
+1. Accetta commesse dal tabellone (e gestisci scorte, staff, contratti).
+2. Premi **Chiudi il mese**: entrano ed escono le scadenze (fatture, affitto, stipendi, tasse).
+3. Guarda il Δ cassa, i banner (F24, decisioni) e la posta.
+
+## Obiettivo
+
+Tieni la cassa in piedi. **Dodici mesi di seguito in rosso** = fine partita. In difficoltà la banca può offrirti un prestito di salvataggio.
+
+Il **Tutorial** nel menu è l’onboarding breve (tre passi). Questa **Guida** è il riferimento da consultare quando serve.

@@ -27,6 +27,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa Ã
 | Balance pass (#5 shock timing + #1 oneri staff) | [docs/superpowers/plans/2026-08-08-balance-pass.md](docs/superpowers/plans/2026-08-08-balance-pass.md) | [spec](docs/superpowers/specs/2026-08-08-balance-pass-design.md) |
 | Fiscal collection (cartella / rateazione / pignoramento) | [docs/superpowers/plans/2026-08-08-fiscal-collection.md](docs/superpowers/plans/2026-08-08-fiscal-collection.md) | [spec](docs/superpowers/specs/2026-08-08-fiscal-collection-design.md) |
 | Notification inbox (mail, replace EventFeed) | â€” | [spec](docs/superpowers/specs/2026-08-08-notification-inbox-design.md) |
+| Wiki + Guida in-game + graphify refresh | [plan](docs/superpowers/plans/2026-08-08-wiki-guida.md) | [spec](docs/superpowers/specs/2026-08-08-wiki-guida-design.md) |
 
 ## Next (coda attiva)
 
