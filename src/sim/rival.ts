@@ -97,3 +97,48 @@ export const applyRivalSteal = (state: GameState): GameState => {
   }
   return stolen > 0 ? next : state;
 };
+
+/** Late-game contain vs anchor (monthsPlayed ≥ 18). */
+export const tickRivalPayoff = (state: GameState): GameState => {
+  if (!state.rival || state.monthsPlayed < 18) return state;
+  if (state.rival.contained) return state;
+
+  const next = structuredClone(state);
+  const rival = { ...next.rival! };
+
+  if (rival.floor == null && rival.heat < 40) {
+    rival.contained = true;
+    rival.floor = undefined;
+    rival.anchorClears = undefined;
+    next.rival = rival;
+    next.log.unshift({
+      id: next.nextId++,
+      monthIdx: toMonthIndex(next.calendar),
+      tone: "good",
+      text: `${rival.name} contenuto: pressione bassa a lungo. Steal quasi assente.`,
+    });
+    next.log = next.log.slice(0, 12);
+    return next;
+  }
+
+  if (rival.floor == null && rival.heat >= 70) {
+    rival.floor = 55;
+    rival.anchorClears = 0;
+    rival.heat = Math.max(rival.floor, rival.heat);
+    next.rival = rival;
+    next.log.unshift({
+      id: next.nextId++,
+      monthIdx: toMonthIndex(next.calendar),
+      tone: "bad",
+      text: `${rival.name} ancorato: pressione non scende sotto 55 finché non rispondi due volte (campagna/prezzi).`,
+    });
+    next.log = next.log.slice(0, 12);
+    return next;
+  }
+
+  if (rival.floor != null) {
+    rival.heat = Math.min(100, Math.max(rival.floor, rival.heat));
+    next.rival = rival;
+  }
+  return next;
+};

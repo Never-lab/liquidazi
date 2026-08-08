@@ -6,6 +6,7 @@ import {
   rivalCampaignCost,
   rivalPhase,
   tickRivalHeat,
+  tickRivalPayoff,
 } from "./rival";
 import { createInitialGameState, type Opportunity } from "./types";
 
@@ -120,5 +121,34 @@ describe("applyRivalSteal bands", () => {
     s.rival = { name: "X", heat: 50, floor: 55 };
     s = tickRivalHeat(s, 10, 10);
     expect(s.rival!.heat).toBeGreaterThanOrEqual(55);
+  });
+});
+
+describe("tickRivalPayoff", () => {
+  it("contain at month 18 when heat low", () => {
+    let s = createInitialGameState();
+    s.monthsPlayed = 18;
+    s.rival = { name: "X", heat: 30 };
+    s = tickRivalPayoff(s);
+    expect(s.rival?.contained).toBe(true);
+  });
+
+  it("anchor floor at month 18 when heat high", () => {
+    let s = createInitialGameState();
+    s.monthsPlayed = 18;
+    s.rival = { name: "X", heat: 80 };
+    s = tickRivalPayoff(s);
+    expect(s.rival?.floor).toBe(55);
+    s = tickRivalHeat(s, 10, 10);
+    expect(s.rival!.heat).toBeGreaterThanOrEqual(55);
+  });
+
+  it("no payoff before month 18", () => {
+    let s = createInitialGameState();
+    s.monthsPlayed = 17;
+    s.rival = { name: "X", heat: 30 };
+    s = tickRivalPayoff(s);
+    expect(s.rival?.contained).toBeUndefined();
+    expect(s.rival?.floor).toBeUndefined();
   });
 });

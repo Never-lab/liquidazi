@@ -309,13 +309,17 @@ const CHOICE_POOL: ChoiceDef[] = [
           s.ytd.otherCosts = round2(s.ytd.otherCosts + cost);
           if (s.rival) {
             s.rival = { ...s.rival, heat: Math.max(0, s.rival.heat - 14) };
-            if (s.rival.floor != null && !s.rival.contained) {
+            const floor = s.rival.floor;
+            if (floor != null && !s.rival.contained) {
               const clears = (s.rival.anchorClears ?? 0) + 1;
               if (clears >= 2) {
                 s.rival = { ...s.rival, floor: undefined, anchorClears: 0 };
               } else {
-                s.rival = { ...s.rival, anchorClears: clears };
-                s.rival.heat = Math.max(s.rival.floor, s.rival.heat);
+                s.rival = {
+                  ...s.rival,
+                  anchorClears: clears,
+                  heat: Math.max(floor, s.rival.heat),
+                };
               }
             }
           }
@@ -335,13 +339,17 @@ const CHOICE_POOL: ChoiceDef[] = [
           s.company.reputation = Math.max(0, s.company.reputation - 6);
           if (s.rival) {
             s.rival = { ...s.rival, heat: Math.max(0, s.rival.heat - 6) };
-            if (s.rival.floor != null && !s.rival.contained) {
+            const floor = s.rival.floor;
+            if (floor != null && !s.rival.contained) {
               const clears = (s.rival.anchorClears ?? 0) + 1;
               if (clears >= 2) {
                 s.rival = { ...s.rival, floor: undefined, anchorClears: 0 };
               } else {
-                s.rival = { ...s.rival, anchorClears: clears };
-                s.rival.heat = Math.max(s.rival.floor, s.rival.heat);
+                s.rival = {
+                  ...s.rival,
+                  anchorClears: clears,
+                  heat: Math.max(floor, s.rival.heat),
+                };
               }
             }
           }
