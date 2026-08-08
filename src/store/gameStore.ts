@@ -299,7 +299,11 @@ export const useGameStore = create<GameStore>()(
           game.lastShockAt === game.monthsPlayed &&
           game.log[0]
         ) {
-          get().flashToast(game.log[0].text, game.log[0].tone === "good" ? "good" : "bad");
+          const shockLog =
+            game.log[0].text.startsWith("Fondo emergenza:") && game.log[1]
+              ? game.log[1]
+              : game.log[0];
+          get().flashToast(shockLog.text, shockLog.tone === "good" ? "good" : "bad");
           sfxMonthClose();
         } else if (game.pendingEvent) {
           get().flashToast(`Decisione: ${game.pendingEvent.title}`, "neutral");

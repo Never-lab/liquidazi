@@ -1099,7 +1099,7 @@ export const resolveEventOption = (state: GameState, optionId: string): GameStat
   const next = structuredClone(state);
   next.tempCapacityMonths ??= 0;
   opt.apply(next);
-  coverNegativeCashFromTreasury(next);
+  if (SHOCK_POOL.includes(def)) coverNegativeCashFromTreasury(next);
   next.pendingEvent = null;
   return next;
 };

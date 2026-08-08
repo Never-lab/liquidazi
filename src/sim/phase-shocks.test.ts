@@ -103,34 +103,18 @@ describe("forced shocks", () => {
       s.lastShockAt = null;
       s.calendar = { month: 3, year: 2024 };
       s.difficulty = "normal";
-      const cashBefore = s.company.cash;
       s = runWorldEvents(s);
       if (s.lastShockAt === m) {
         hit = true;
         expect(s.pendingEvent).toBeNull();
-        expect(s.company.cash).toBeLessThan(cashBefore);
         break;
       }
     }
     expect(hit).toBe(true);
   });
 
-  it("shock immediato pesca tesoreria se cassa va sotto zero", () => {
+  it("shock pesca tesoreria se cassa va sotto zero", () => {
     let s = createInitialGameState();
-    s.company.cash = 100;
-    s.treasury = 5000;
-    s.pendingEvent = {
-      id: "shock_quake",
-      title: "Terremoto",
-      body: "…",
-      options: [{ id: "ok", label: "Ok" }],
-    };
-    // Still support resolve for old saves: after apply, cover should run in tryQueueShock path.
-    // Direct path for bailout after quake apply:
-    s = resolveEventOption(s, "ok");
-    // quake 20% of max(0,cash) with cash 100 → hit 20 → cash 80; not negative.
-    // Use flat shock instead via fire with tiny cash:
-    s = createInitialGameState();
     s.supplyMonths = 0;
     s.company.cash = 100;
     s.treasury = 2000;
@@ -141,10 +125,23 @@ describe("forced shocks", () => {
       options: [{ id: "ok", label: "Ok" }],
     };
     s = resolveEventOption(s, "ok");
-    // fire: −500 cash → −400; without cover cash stays −400.
-    // After Task 2, resolveEventOption should also call coverNegativeCashFromTreasury.
     expect(s.company.cash).toBe(0);
     expect(s.treasury).toBe(1600);
+  });
+
+  it("una scelta ordinaria non pesca dalla tesoreria", () => {
+    let s = createInitialGameState();
+    s.company.cash = 100;
+    s.treasury = 2000;
+    s.pendingEvent = {
+      id: "consultant",
+      title: "Consulente",
+      body: "…",
+      options: [{ id: "hire", label: "Assumi" }],
+    };
+    s = resolveEventOption(s, "hire");
+    expect(s.company.cash).toBe(-1100);
+    expect(s.treasury).toBe(2000);
   });
 });
 

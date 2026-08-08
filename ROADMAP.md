@@ -108,6 +108,8 @@ Prima di implementare: uno spec corto `docs/superpowers/specs/YYYY-MM-DD-balance
 - Alternativa più dura (se serve): base shock = `cash + treasury` (o % su entrambi). Settlement +1 è più didattico (“liquidità non è parcheggio magico”).
 - UI: “In transito” su Investimenti; non annullabile nello stesso mese.
 
+Il settlement +1 non è stato rilasciato: l'exploit è stato corretto applicando subito gli shock, mentre il settlement resta rinviato.
+
 **File tipici:** `actions.ts` (treasury), `advanceMonth.ts`, `eventCatalog.ts` (`shockCash`), `InvestmentsPanel`.
 
 ### 6. Evento storage / perdita scorte senza stock — **P2**
