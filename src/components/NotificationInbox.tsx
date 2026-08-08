@@ -83,6 +83,3 @@ export const NotificationInbox = () => {
     </div>
   );
 };
-
-/** @internal test helper — re-export for clarity */
-export { markLogRead };
