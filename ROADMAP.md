@@ -43,7 +43,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Competitive bets (P0)** — landing / first-win / share card · [spec](docs/superpowers/specs/2026-08-08-competitive-bets-design.md) (non inseguire Capital Rift MMO).
+1. **Competitive bets — B1 landing** — [spec bets](docs/superpowers/specs/2026-08-08-competitive-bets-design.md) · [landing](docs/superpowers/specs/2026-08-08-landing-design.md) · [plan](docs/superpowers/plans/2026-08-08-landing.md)
 2. **Ads stub (rails + end banner)** — [plan](docs/superpowers/plans/2026-08-08-ads-stub.md) · [spec](docs/superpowers/specs/2026-08-08-ads-stub-design.md) (segnaposto; rete dopo).
 3. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
 4. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
