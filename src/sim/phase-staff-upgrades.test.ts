@@ -27,12 +27,15 @@ describe("Staff board + upgrades lite", () => {
 
   it("tabellone scala con staff; capped a BOARD_MAX_OPS", () => {
     const solo = createInitialGameState({ city: "058091", sector: "servizi" });
-    const { ops: few } = generateOpportunities(solo);
+    const { ops: few } = generateOpportunities(solo, { forceRegime: "normale" });
     const salesFew = few.filter((o) => o.kind === "sale").length;
 
     let hired = solo;
     for (let i = 0; i < 4; i++) hired = hireEmployee(hired, "Operaio");
-    const { ops: more } = generateOpportunities({ ...hired, nextId: 50, monthsPlayed: 2 });
+    const { ops: more } = generateOpportunities(
+      { ...hired, nextId: 50, monthsPlayed: 2 },
+      { forceRegime: "normale" },
+    );
     const salesMore = more.filter((o) => o.kind === "sale").length;
 
     expect(salesMore).toBeGreaterThan(salesFew);

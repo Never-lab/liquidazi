@@ -31,7 +31,7 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
       monthsPlayed: 3,
       nextId: 99,
       calendar: { month: 3, year: 2024 },
-    });
+    }, { forceRegime: "normale" });
     const sales = ops.filter((o) => o.kind === "sale");
     expect(sales.length).toBeGreaterThan(0);
     for (const op of sales) {

@@ -76,10 +76,10 @@ describe("ruoli differenziati", () => {
     const baseSeeded = { ...base, nextId: 50, monthsPlayed: 2 };
     const impSeeded = { ...imp, nextId: 50, monthsPlayed: 2 };
     expect(monthlyCapacity(impSeeded)).toBe(monthlyCapacity(baseSeeded));
-    const salesBase = generateOpportunities(baseSeeded).ops.filter(
+    const salesBase = generateOpportunities(baseSeeded, { forceRegime: "normale" }).ops.filter(
       (o) => o.kind === "sale",
     ).length;
-    const salesImp = generateOpportunities(impSeeded).ops.filter(
+    const salesImp = generateOpportunities(impSeeded, { forceRegime: "normale" }).ops.filter(
       (o) => o.kind === "sale",
     ).length;
     expect(salesImp).toBeGreaterThan(salesBase);

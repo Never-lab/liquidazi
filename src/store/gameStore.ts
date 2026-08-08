@@ -47,6 +47,7 @@ import { acceptOpportunity, declineOpportunity, seedNewGame, orderEmergencySuppl
 import { formatCloseToast, unlockMilestones } from "../sim/milestones";
 import {
   createInitialGameState,
+  type DemandRegime,
   type GameState,
   type NewGameOptions,
 } from "../sim/types";
@@ -93,6 +94,8 @@ interface GameStore {
   auth: AuthSession | null;
   coachOn: boolean;
   toast: { text: string; tone: ToastTone } | null;
+  /** One-shot secca/boom popup after month close; null when hidden. */
+  demandPopup: DemandRegime | null;
   preferredDifficulty: DifficultyId;
   slots: SaveSlot[];
   activeSlot: number;
@@ -108,6 +111,7 @@ interface GameStore {
   enableCoach: () => void;
   setPreferredDifficulty: (d: DifficultyId) => void;
   flashToast: (text: string, tone?: ToastTone) => void;
+  dismissDemandPopup: () => void;
   newGame: (opts: NewGameOptions) => void;
   advanceMonth: () => void;
   continueAfterWin: () => void;
@@ -169,6 +173,7 @@ export const useGameStore = create<GameStore>()(
       auth: null,
       coachOn: true,
       toast: null,
+      demandPopup: null,
       preferredDifficulty: "normal",
       slots: emptySlots(),
       activeSlot: 0,
@@ -258,6 +263,7 @@ export const useGameStore = create<GameStore>()(
         set({ toast: { text, tone } });
         toastTimer = setTimeout(() => set({ toast: null }), 2400);
       },
+      dismissDemandPopup: () => set({ demandPopup: null }),
       persistActiveSlot: () => {
         const { slots, activeSlot, game } = get();
         set({ slots: syncSlot(slots, activeSlot, game) });
@@ -291,7 +297,12 @@ export const useGameStore = create<GameStore>()(
         let screen = get().screen;
         if (game.status === "lost" || game.status === "won") screen = "gameover";
         const slots = syncSlot(get().slots, get().activeSlot, game);
-        set({ game, screen, slots });
+        const regime = game.demandRegime;
+        const demandPopup =
+          game.status === "running" && (regime === "secca" || regime === "boom")
+            ? regime
+            : null;
+        set({ game, screen, slots, demandPopup });
         if (game.status === "lost") {
           get().flashToast("Fallimento: 12 mesi in rosso", "bad");
           sfxBad();

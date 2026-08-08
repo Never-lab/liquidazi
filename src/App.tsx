@@ -2,6 +2,7 @@ import { AdminScreen } from "./screens/AdminScreen";
 import { CloudSavePill } from "./components/CloudSavePill";
 import { DisclaimerFooter } from "./components/DisclaimerFooter";
 import { ToastHost } from "./components/Toast";
+import { DemandPopupHost } from "./components/DemandPopup";
 import { AuthScreen } from "./screens/AuthScreen";
 import { FeedbackScreen } from "./screens/FeedbackScreen";
 import { EndScreen } from "./screens/EndScreen";
@@ -48,6 +49,7 @@ function App() {
       </main>
 
       <ToastHost />
+      <DemandPopupHost />
       <CloudSavePill />
       <DisclaimerFooter />
     </div>

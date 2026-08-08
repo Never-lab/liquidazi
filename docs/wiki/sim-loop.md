@@ -34,6 +34,16 @@ Forced mid/late shocks live in `src/sim/eventCatalog.ts` (`forcedShock*` / `runW
 
 Ticket size still uses continuous `0.85 + rep/100 × 0.35`. Fiscal **compliance** is separate (bank spread / F24).
 
+## Demand seasons (board)
+
+Each board refresh rolls `demandRegime` (20% secca / 60% normale / 20% boom), independent of staff capacity:
+
+- **Secca:** 0–2 sale offers (× `regimeMult` 0.15 × rep demand mult, then clamp)
+- **Normale:** prior feel; board soft-cap 10
+- **Boom:** board soft-cap rises to 12
+
+Capacity still limits **accepts**. Contracts use separate RNG. Extreme months show a short in-game popup (not the mail inbox).
+
 ## Other monthly pieces
 
 - Treasury interest accrues on parked `treasury` (stays in treasury).

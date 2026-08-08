@@ -32,7 +32,7 @@ describe("deal caps and opportunities", () => {
 
   it("generates a board scaled to capacity (not a fixed 2–3)", () => {
     const s = createInitialGameState({ city: "015146", sector: "ristorazione" });
-    const { ops } = generateOpportunities(s);
+    const { ops } = generateOpportunities(s, { forceRegime: "normale" });
     expect(ops.filter((o) => o.kind === "sale").length).toBeGreaterThanOrEqual(1);
     expect(ops.length).toBeLessThanOrEqual(10);
     expect(ops.every((o) => o.net <= maxDealNet(s))).toBe(true);
