@@ -1,7 +1,7 @@
 # Competitive bets (post Capital Rift scan) — Design
 
 **Date:** 2026-08-08  
-**Status:** Draft for approval (brainstorming)  
+**Status:** Approved — **B1 landing** chosen first ([landing design](./2026-08-08-landing-design.md))  
 **Goal:** Turn market research into a short list of bets Liquidazi should win — without copying Capital Rift’s shared-world MMO model.
 
 ## Research summary (locked context)
