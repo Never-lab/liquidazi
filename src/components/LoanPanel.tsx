@@ -11,8 +11,10 @@ import {
 } from "../sim/actions";
 import { MAX_OPEN_LOANS, openLoans } from "../sim/loans";
 import type { LoanGuarantee } from "../sim/types";
+import { loanOfferHint } from "../ui/controlHints";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
+import { Hint } from "./ui/Hint";
 import styles from "./panels.module.css";
 
 const GUARANTEE_LABEL: Record<LoanGuarantee, string> = {
@@ -227,22 +229,31 @@ export const LoanPanel = () => {
                   )}
                 </div>
                 <div className={styles.dealActions}>
-                  <button
-                    type="button"
-                    className={styles.button}
-                    disabled={!!offer.disabledReason}
-                    onClick={() =>
-                      doRequestLoan({
-                        principal: offer.principal,
-                        tenorMonths: offer.tenorMonths,
-                        rateType: offer.rateType,
-                        guarantee: offer.guarantee,
-                        refinanceLoanId: refiId,
-                      })
+                  <Hint
+                    text={
+                      loanOfferHint(offer.disabledReason) ??
+                      (refiId != null
+                        ? "Rifinanzia questo mutuo con la nuova offerta."
+                        : "Richiedi questo mutuo.")
                     }
                   >
-                    {refiId != null ? "Rifinanzia" : "Richiedi"}
-                  </button>
+                    <button
+                      type="button"
+                      className={styles.button}
+                      disabled={!!offer.disabledReason}
+                      onClick={() =>
+                        doRequestLoan({
+                          principal: offer.principal,
+                          tenorMonths: offer.tenorMonths,
+                          rateType: offer.rateType,
+                          guarantee: offer.guarantee,
+                          refinanceLoanId: refiId,
+                        })
+                      }
+                    >
+                      {refiId != null ? "Rifinanzia" : "Richiedi"}
+                    </button>
+                  </Hint>
                 </div>
               </article>
             ))}
@@ -303,22 +314,31 @@ export const LoanPanel = () => {
                 Rata stimata {formatCash(customPayment)}/mese · TAN {formatPct(customAnnualRate)}
               </p>
               <div className={styles.row}>
-                <button
-                  type="button"
-                  className={styles.button}
-                  disabled={!!customRefusal}
-                  onClick={() =>
-                    doRequestLoan({
-                      principal: customPrincipal,
-                      tenorMonths: customTenor,
-                      rateType,
-                      guarantee,
-                      refinanceLoanId: refiId,
-                    })
+                <Hint
+                  text={
+                    customRefusal ??
+                    (refiId != null
+                      ? "Rifinanzia con i parametri personalizzati."
+                      : "Richiedi mutuo con i parametri personalizzati.")
                   }
                 >
-                  {refiId != null ? "Rifinanzia mutuo" : "Richiedi mutuo"}
-                </button>
+                  <button
+                    type="button"
+                    className={styles.button}
+                    disabled={!!customRefusal}
+                    onClick={() =>
+                      doRequestLoan({
+                        principal: customPrincipal,
+                        tenorMonths: customTenor,
+                        rateType,
+                        guarantee,
+                        refinanceLoanId: refiId,
+                      })
+                    }
+                  >
+                    {refiId != null ? "Rifinanzia mutuo" : "Richiedi mutuo"}
+                  </button>
+                </Hint>
                 {customRefusal && <span className={styles.warning}>{customRefusal}</span>}
               </div>
             </>
@@ -371,6 +391,11 @@ export const LoanPanel = () => {
               type="button"
               className={styles.buttonSecondary}
               disabled={fido.drawn >= fido.limit}
+              title={
+                fido.drawn >= fido.limit
+                  ? "Fido già interamente utilizzato."
+                  : "Preleva dal fido di cassa (interessi mensili sullo scoperto)."
+              }
               onClick={() => doDrawFido(Number(fidoDraw))}
             >
               Preleva
@@ -395,6 +420,13 @@ export const LoanPanel = () => {
             type="button"
             className={styles.buttonSecondary}
             disabled={!(Number(fidoLimit) > 0) || Number(fidoLimit) > fidoCap}
+            title={
+              !(Number(fidoLimit) > 0)
+                ? "Indica un limite fido maggiore di zero."
+                : Number(fidoLimit) > fidoCap
+                  ? `Limite oltre il massimo (${formatCash(fidoCap)}).`
+                  : `Apri fido fino a ${formatCash(fidoCap)} in base a compliance e garanzie.`
+            }
             onClick={() => doRequestFido(Number(fidoLimit))}
           >
             Apri fido (max {formatCash(fidoCap)})

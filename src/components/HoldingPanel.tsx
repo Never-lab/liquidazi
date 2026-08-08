@@ -1,8 +1,10 @@
 import { CAPEX_EBITDA_MULT } from "../config/holding";
 import { estimateSubsidiaryValue } from "../sim/acquisitions";
 import { migrateHoldingState } from "../sim/migrateHolding";
+import { capexHint } from "../ui/controlHints";
 import { formatCash } from "./formatCash";
 import { useGameStore } from "../store/gameStore";
+import { Hint } from "./ui/Hint";
 import styles from "./panels.module.css";
 
 const RISK_LABEL = { low: "basso", med: "medio", high: "alto" } as const;
@@ -78,14 +80,14 @@ export const HoldingPanel = () => {
             const listed = s.listedUntilMonthIdx != null;
             const onCooldown = s.capexCooldownMonths > 0;
             const shortCash = game.company.cash < capexCost;
+            // Listed / cooldown / cash — first matching gate wins in capexHint.
             const capexBlocked = listed || onCooldown || shortCash;
-            const capexReason = listed
-              ? "Non disponibile mentre è in vendita"
-              : onCooldown
-                ? `Prossimo CAPEX tra ${s.capexCooldownMonths} mesi (avanza il calendario)`
-                : shortCash
-                  ? `Cassa insufficiente (servono ${formatCash(capexCost)})`
-                  : `Investi ${formatCash(capexCost)} → +16% EBITDA; poi 6 mesi di attesa`;
+            const hintText = capexHint({
+              listed,
+              cooldownMonths: s.capexCooldownMonths,
+              shortCash,
+              costLabel: formatCash(capexCost),
+            });
             const capexLabel = listed
               ? "CAPEX · in vendita"
               : onCooldown
@@ -105,17 +107,19 @@ export const HoldingPanel = () => {
                   {listed ? " · in vendita" : onCooldown ? ` · CAPEX tra ${s.capexCooldownMonths} mesi` : ""}
                 </span>
                 <div className={styles.dealActions}>
-                  <button
-                    className={styles.buttonSecondary}
-                    disabled={capexBlocked}
-                    title={capexReason}
-                    onClick={() => capex(s.id)}
-                  >
-                    {capexLabel}
-                  </button>
+                  <Hint text={hintText}>
+                    <button
+                      className={styles.buttonSecondary}
+                      disabled={capexBlocked}
+                      onClick={() => capex(s.id)}
+                    >
+                      {capexLabel}
+                    </button>
+                  </Hint>
                   <button
                     className={styles.buttonSecondary}
                     disabled={listed}
+                    title={listed ? "Non disponibile mentre è in vendita." : "Apri la finestra di vendita."}
                     onClick={() => listForSale(s.id)}
                   >
                     Metti in vendita
@@ -137,27 +141,39 @@ export const HoldingPanel = () => {
         <p className={styles.muted}>Nessun target aperto — avanza i mesi.</p>
       ) : (
         <div className={styles.cards}>
-          {board.map((t) => (
-            <article key={t.id} className={styles.deal}>
-              <div>
-                <h3 className={styles.dealTitle}>{t.name}</h3>
-                <p className={styles.dealMeta}>
-                  {t.sector} · {formatCash(t.price)} · EBITDA {formatCash(t.monthlyEbitda)}/mese ·
-                  rischio {RISK_LABEL[t.risk]}
-                  {t.capacityBonus ? " · +1 slot" : ""}
-                </p>
-              </div>
-              <div className={styles.dealActions}>
-                <button
-                  className={styles.button}
-                  disabled={game.company.cash < t.price || subs.length >= cap}
-                  onClick={() => buy(t.id)}
-                >
-                  Acquista
-                </button>
-              </div>
-            </article>
-          ))}
+          {board.map((t) => {
+            const noSlot = subs.length >= cap;
+            const shortCash = game.company.cash < t.price;
+            const buyBlocked = noSlot || shortCash;
+            const buyHint = noSlot
+              ? `Slot holding pieni (${subs.length}/${cap}).`
+              : shortCash
+                ? `Cassa insufficiente (servono ${formatCash(t.price)}).`
+                : `Acquista per ${formatCash(t.price)} (usa 1 slot).`;
+            return (
+              <article key={t.id} className={styles.deal}>
+                <div>
+                  <h3 className={styles.dealTitle}>{t.name}</h3>
+                  <p className={styles.dealMeta}>
+                    {t.sector} · {formatCash(t.price)} · EBITDA {formatCash(t.monthlyEbitda)}/mese ·
+                    rischio {RISK_LABEL[t.risk]}
+                    {t.capacityBonus ? " · +1 slot" : ""}
+                  </p>
+                </div>
+                <div className={styles.dealActions}>
+                  <Hint text={buyHint}>
+                    <button
+                      className={styles.button}
+                      disabled={buyBlocked}
+                      onClick={() => buy(t.id)}
+                    >
+                      Acquista
+                    </button>
+                  </Hint>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </section>

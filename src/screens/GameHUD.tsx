@@ -14,6 +14,7 @@ import { ReportPanel } from "../components/ReportPanel";
 import { TaxPanel } from "../components/TaxPanel";
 import { UpgradesPanel } from "../components/UpgradesPanel";
 import { Button } from "../components/ui/Button";
+import { Hint } from "../components/ui/Hint";
 import { Sheet } from "../components/ui/Sheet";
 import { formatCash } from "../components/formatCash";
 import { DIFFICULTIES } from "../config/difficulty";
@@ -28,6 +29,7 @@ import {
 import { dueF24Total, openInvoiceSchedule, scheduleTotals, thisCloseRows } from "../sim/selectors";
 import { LOSE_MONTHS_BELOW_ZERO } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
+import { monthCloseHint } from "../ui/controlHints";
 import { Icon, type IconName } from "../ui/icons";
 import styles from "./GameHUD.module.css";
 
@@ -79,6 +81,10 @@ export const GameHUD = () => {
   const pending = game.pendingEvent;
   const pendingProjectOffer = game.projectOffer;
   const monthBlocked = Boolean(pending || pendingProjectOffer);
+  const closeHint = monthCloseHint({
+    pendingEvent: Boolean(pending),
+    pendingProjectOffer: Boolean(pendingProjectOffer),
+  });
   const summary = game.lastCloseSummary;
   const done = new Set(game.milestones ?? []);
   const diffLabel = DIFFICULTIES[game.difficulty ?? "normal"].label;
@@ -103,7 +109,7 @@ export const GameHUD = () => {
             {seasonHint ? ` · ${seasonHint}` : ""}
           </p>
           <h2 className={styles.company}>{game.company.name}</h2>
-          <p className={styles.monthLine}>
+          <p className={styles.monthLine} title="Mese di gioco, scorte magazzino (mesi di copertura) e reputazione (domanda / insoluti).">
             {MESI[game.calendar.month - 1]} {game.calendar.year}
             {" · "}m{game.monthsPlayed + 1}
             {" · "}scorte {game.supplyMonths ?? 0}m
@@ -138,7 +144,7 @@ export const GameHUD = () => {
           </div>
         </div>
         <div className={styles.stickyActions}>
-          <div key={cashPulse} className={styles.statPulse}>
+          <div key={cashPulse} className={styles.statPulse} title="Liquidità disponibile per spese e opportunità.">
             <span className={styles.statLabel}>
               <Icon name="wallet" size={12} className={styles.statIcon} />
               Cassa
@@ -150,7 +156,7 @@ export const GameHUD = () => {
             </strong>
             <CashSparkline history={game.history} bad={game.company.cash < 0} />
           </div>
-          <div>
+          <div title="Debiti F24 aperti (scadenza didattica il 16 del mese successivo).">
             <span className={styles.statLabel}>
               <Icon name="receipt" size={12} className={styles.statIcon} />
               F24
@@ -161,25 +167,27 @@ export const GameHUD = () => {
           </div>
           <NotificationInbox />
           <div className={styles.closeStack}>
-            <Button
-              className={styles.closeBtn}
-              onClick={closeMonth}
-              disabled={monthBlocked}
-              title={
-                pending
-                  ? "Risolvi prima l'evento"
-                  : pendingProjectOffer
-                    ? "Scegli o salta il piano investimenti"
-                    : undefined
-              }
-            >
-              <Icon name="calendar" size={18} />
-              {pending
-                ? "Risolvi evento…"
-                : pendingProjectOffer
-                  ? "Scegli progetto…"
-                  : "Chiudi mese"}
-            </Button>
+            {closeHint ? (
+              <Hint text={closeHint}>
+                <Button
+                  className={styles.closeBtn}
+                  onClick={closeMonth}
+                  disabled={monthBlocked}
+                >
+                  <Icon name="calendar" size={18} />
+                  {pending
+                    ? "Risolvi evento…"
+                    : pendingProjectOffer
+                      ? "Scegli progetto…"
+                      : "Chiudi mese"}
+                </Button>
+              </Hint>
+            ) : (
+              <Button className={styles.closeBtn} onClick={closeMonth} disabled={monthBlocked}>
+                <Icon name="calendar" size={18} />
+                Chiudi mese
+              </Button>
+            )}
             {closeInvoiceTot.count > 0 && !monthBlocked && (
               <p className={styles.closeHint}>
                 {closeInvoiceTot.net >= 0 ? "+" : ""}
