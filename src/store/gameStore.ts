@@ -60,9 +60,11 @@ import { migrateUpgradeState } from "../sim/migrateUpgrades";
 import { acceptProject, skipProjectOffer } from "../sim/projects";
 import { sfxBad, sfxGood, sfxMonthClose, sfxPay } from "../ui/sfx";
 import { formatCash } from "../components/formatCash";
+import { coerceScreenIfSignedOut, SIGNED_OUT_DOOR } from "../ui/entryScreen";
 import { markIntroSeen, screenAfterAuth } from "../ui/introGate";
 
 export type Screen =
+  | "landing"
   | "auth"
   | "intro"
   | "menu"
@@ -173,7 +175,7 @@ export const useGameStore = create<GameStore>()(
   persist(
     (set, get) => ({
       game: createInitialGameState(),
-      screen: "auth",
+      screen: SIGNED_OUT_DOOR,
       auth: null,
       coachOn: true,
       toast: null,
@@ -254,7 +256,7 @@ export const useGameStore = create<GameStore>()(
           cloudQueue.clear();
           set({
             auth: null,
-            screen: "auth",
+            screen: SIGNED_OUT_DOOR,
             slots: emptySlots(),
             activeSlot: 0,
             game: createInitialGameState(),
@@ -683,7 +685,7 @@ export const useGameStore = create<GameStore>()(
       version: 10,
       partialize: (state) => ({
         game: state.game,
-        screen: state.screen === "auth" ? "auth" : state.screen,
+        screen: state.screen,
         auth: state.auth,
         coachOn: state.coachOn,
         preferredDifficulty: state.preferredDifficulty,
@@ -692,7 +694,7 @@ export const useGameStore = create<GameStore>()(
       }),
       migrate: () => ({
         game: createInitialGameState(),
-        screen: "auth" as Screen,
+        screen: SIGNED_OUT_DOOR as Screen,
         auth: null,
         coachOn: true,
         preferredDifficulty: "normal" as DifficultyId,
@@ -705,6 +707,12 @@ export const useGameStore = create<GameStore>()(
           for (const slot of state.slots) {
             if (slot.game) migrateGameState(slot.game);
           }
+        }
+        if (state) {
+          state.screen = coerceScreenIfSignedOut(
+            state.screen,
+            Boolean(state.auth),
+          ) as Screen;
         }
         if (!state?.auth) return;
         const { token } = state.auth;

@@ -1,0 +1,190 @@
+.root {
+  position: relative;
+  isolation: isolate;
+  min-height: min(100vh, 100dvh);
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 36px 20px 56px;
+  overflow: hidden;
+}
+
+.atmosphere {
+  position: absolute;
+  inset: -20% -30% auto;
+  height: 70%;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 30%, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 85% 20%, color-mix(in srgb, var(--color-border-strong) 35%, transparent), transparent 50%);
+  pointer-events: none;
+  animation: landAtmosphere 14s ease-in-out infinite alternate;
+}
+
+.hero {
+  padding: 12px 0 36px;
+  border-bottom: 1px solid var(--color-border);
+  animation: landRise 0.55s ease-out both;
+}
+
+.brand {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 11vw, 4rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  color: var(--color-text);
+}
+
+.headline {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 4.2vw, 1.75rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-text);
+  max-width: 18ch;
+}
+
+.support {
+  margin: 0 0 26px;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  line-height: 1.45;
+  max-width: 38ch;
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  animation: landRise 0.7s ease-out 0.08s both;
+}
+
+.points {
+  padding: 28px 0 8px;
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.pointList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pointList li {
+  color: var(--color-text-muted);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.pointList strong {
+  color: var(--color-text);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 24px 0 20px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 10px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+}
+
+.disclaimer {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  max-width: 42ch;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.linkBtn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.linkBtn:hover {
+  color: var(--color-text);
+}
+
+@keyframes landRise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landAtmosphere {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2%, 3%, 0) scale(1.04);
+  }
+}
+
+@media (max-width: 520px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atmosphere,
+  .hero,
+  .ctaRow {
+    animation: none;
+  }
+}
