@@ -366,17 +366,17 @@ export const useGameStore = create<GameStore>()(
       },
       acceptOpportunity: (id) => {
         const before = get().game;
-        const game = acceptOpportunity(before, id);
+        let game = acceptOpportunity(before, id);
+        const hint = game.lastUiHint;
+        if (hint) {
+          game = { ...game, lastUiHint: null };
+        }
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
         const tookDeal = game.opportunities.every((o) => o.id !== id);
         if (tookDeal) {
           sfxGood();
         } else {
-          const msg =
-            game.log[0] && game.log[0].id !== before.log[0]?.id
-              ? game.log[0].text
-              : "Commessa non accettata";
-          get().flashToast(msg, "bad");
+          get().flashToast(hint?.text ?? "Commessa non accettata", hint?.tone ?? "bad");
           sfxBad();
         }
       },
