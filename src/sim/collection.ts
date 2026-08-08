@@ -1,11 +1,18 @@
 import {
   COMPLIANCE_CARTELLA,
+  COMPLIANCE_ENFORCEMENT_CLEAR,
   COMPLIANCE_IGNORE,
   COMPLIANCE_PAY_CLOSE,
+  COMPLIANCE_RATEATION_DONE,
+  COMPLIANCE_SKIP_RATA,
+  ENFORCEMENT_AGGIO,
+  ENFORCEMENT_MONTHS_TO_TERMINAL,
+  lostThreshold,
   MONTHLY_MORA_RATE,
   MONTHS_BEFORE_CARTELLA,
   RATEATION_FEE,
   RATEATION_MONTHS,
+  TERMINAL_MONTHS_TO_LOST,
 } from "../config/collection";
 import { round2, toMonthIndex, type GameState } from "./types";
 import type { TaxLiability } from "./types";
@@ -64,6 +71,86 @@ export const drainCashThenTreasury = (state: GameState, amount: number): number 
   return taken;
 };
 
+const closeCollectionCase = (state: GameState, complianceBonus: number): void => {
+  markOverdueLiabilitiesPaid(state);
+  state.collectionCase = null;
+  state.monthsTaxOverdue = 0;
+  state.compliance = Math.min(100, state.compliance + complianceBonus);
+};
+
+const applyEnforcementDrain = (state: GameState, c: NonNullable<GameState["collectionCase"]>): void => {
+  const fromCash = round2(Math.min(state.company.cash, c.principal));
+  state.company.cash = round2(state.company.cash - fromCash);
+  let remaining = round2(c.principal - fromCash);
+  state.treasury ??= 0;
+  let fromTreasury = 0;
+  if (remaining > 0) {
+    fromTreasury = round2(Math.min(state.treasury, remaining));
+    state.treasury = round2(state.treasury - fromTreasury);
+    remaining = round2(remaining - fromTreasury);
+  }
+  const gross = round2(fromCash + fromTreasury);
+  c.principal = remaining;
+
+  const aggio = round2(gross * ENFORCEMENT_AGGIO);
+  if (aggio > 0) {
+    const aggioPaid = drainCashThenTreasury(state, aggio);
+    const aggioResidual = round2(aggio - aggioPaid);
+    if (aggioResidual > 0) {
+      c.principal = round2(c.principal + aggioResidual);
+    }
+  }
+};
+
+export const tickCollectionCase = (state: GameState): void => {
+  const c = state.collectionCase;
+  if (!c) return;
+
+  if (c.stage === "rateazione" && c.plan) {
+    const { installment } = c.plan;
+    state.treasury ??= 0;
+    const available = round2(state.company.cash + state.treasury);
+    if (available < installment) {
+      c.stage = "enforcement";
+      c.monthsInStage = 0;
+      delete c.plan;
+      state.compliance = Math.max(0, state.compliance - COMPLIANCE_SKIP_RATA);
+      return;
+    }
+    drainCashThenTreasury(state, installment);
+    c.plan.monthsLeft -= 1;
+    c.principal = round2(c.principal - installment);
+    if (c.plan.monthsLeft <= 0) {
+      closeCollectionCase(state, COMPLIANCE_RATEATION_DONE);
+    }
+    return;
+  }
+
+  if (c.stage === "enforcement") {
+    applyEnforcementDrain(state, c);
+    c.monthsInStage += 1;
+    if (c.principal <= 0) {
+      closeCollectionCase(state, COMPLIANCE_ENFORCEMENT_CLEAR);
+      return;
+    }
+    const threshold = lostThreshold(state.ytd.revenue);
+    if (c.monthsInStage >= ENFORCEMENT_MONTHS_TO_TERMINAL && c.principal > threshold) {
+      c.stage = "terminal";
+      c.monthsInStage = 0;
+    }
+    return;
+  }
+
+  if (c.stage === "terminal") {
+    applyEnforcementDrain(state, c);
+    c.monthsInStage += 1;
+    if (c.monthsInStage >= TERMINAL_MONTHS_TO_LOST && c.principal > 0) {
+      state.status = "lost";
+      state.loseReason = "fiscal";
+    }
+  }
+};
+
 export const maybeOpenCartella = (state: GameState): void => {
   if (state.collectionCase != null) return;
   if ((state.monthsTaxOverdue ?? 0) < MONTHS_BEFORE_CARTELLA) return;
@@ -103,9 +190,8 @@ export const resolveCartellaChoice = (state: GameState, optionId: string): GameS
   const c = next.collectionCase;
   if (!c || c.stage !== "cartella") return next;
 
-  next.pendingEvent = null;
-
   if (optionId === "pay_all") {
+    next.pendingEvent = null;
     const paid = drainCashThenTreasury(next, c.principal);
     const residual = round2(c.principal - paid);
     if (residual <= 0) {
@@ -125,6 +211,7 @@ export const resolveCartellaChoice = (state: GameState, optionId: string): GameS
   }
 
   if (optionId === "rateize") {
+    next.pendingEvent = null;
     const total = round2(c.principal * (1 + RATEATION_FEE));
     next.collectionCase = {
       ...c,
@@ -141,6 +228,7 @@ export const resolveCartellaChoice = (state: GameState, optionId: string): GameS
   }
 
   if (optionId === "ignore") {
+    next.pendingEvent = null;
     next.collectionCase = {
       ...c,
       stage: "enforcement",

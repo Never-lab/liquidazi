@@ -12,7 +12,7 @@ import {
   treasuryAnnualRate,
 } from "./actions";
 import { applySubsidiaryMonth, advanceHoldingSales, refreshAcquisitionBoard } from "./acquisitions";
-import { applyMonthlyMora, maybeOpenCartella, updateMonthsTaxOverdue } from "./collection";
+import { applyMonthlyMora, maybeOpenCartella, tickCollectionCase, updateMonthsTaxOverdue } from "./collection";
 import { tickContracts } from "./contracts";
 import { runWorldEvents } from "./eventCatalog";
 import { refreshMarketBoard, rng, monthlyCapacity } from "./events";
@@ -327,6 +327,7 @@ export const advanceMonth = (state: GameState): GameState => {
   applyMonthlyMora(next);
   updateMonthsTaxOverdue(next);
   maybeOpenCartella(next);
+  tickCollectionCase(next);
 
   // 2b. scatti anzianità (ogni SENIORITY_MONTHS mesi di servizio, cap MAX_SENIORITY_STEPS)
   for (const emp of next.employees) {
@@ -588,6 +589,9 @@ export const advanceMonth = (state: GameState): GameState => {
   if (next.monthsBelowZero >= LOSE_MONTHS_BELOW_ZERO) {
     next.status = "lost";
     next.loanOffer = null;
+    if (next.loseReason !== "fiscal") {
+      next.loseReason = "cash";
+    }
   } else if (
     next.status === "running" &&
     next.monthsPlayed >= CAMPAIGN_WIN_MONTHS &&

@@ -4,11 +4,15 @@ import {
   CARTELLA_EVENT_ID,
   maybeOpenCartella,
   resolveCartellaChoice,
+  tickCollectionCase,
 } from "./collection";
 import {
+  ENFORCEMENT_AGGIO,
+  ENFORCEMENT_MONTHS_TO_TERMINAL,
   MONTHLY_MORA_RATE,
   RATEATION_FEE,
   RATEATION_MONTHS,
+  TERMINAL_MONTHS_TO_LOST,
 } from "../config/collection";
 import { advanceMonth } from "./advanceMonth";
 import { issueCustomerInvoice, payF24 } from "./actions";
@@ -109,5 +113,89 @@ describe("fiscal cartella", () => {
     expect(s.collectionCase?.stage).toBe("enforcement");
     expect(s.collectionCase?.monthsInStage).toBe(0);
     expect(s.pendingEvent).toBeNull();
+  });
+
+  it("invalid optionId leaves pendingEvent intact", () => {
+    let s = seedOverdue();
+    maybeOpenCartella(s);
+    s = resolveCartellaChoice(s, "bogus");
+    expect(s.pendingEvent?.id).toBe(CARTELLA_EVENT_ID);
+    expect(s.collectionCase?.stage).toBe("cartella");
+  });
+});
+
+describe("fiscal rateazione and enforcement", () => {
+  it("rata saltata → enforcement", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.company.cash = 0;
+    s.treasury = 0;
+    const installment = 100;
+    s.collectionCase = {
+      stage: "rateazione",
+      principal: 1200,
+      monthsInStage: 0,
+      firstOverdueIdx: 0,
+      plan: { installment, monthsLeft: 12, totalMonths: 12 },
+    };
+    tickCollectionCase(s);
+    expect(s.collectionCase?.stage).toBe("enforcement");
+    expect(s.collectionCase?.plan).toBeUndefined();
+    expect(s.company.cash).toBe(0);
+  });
+
+  it("enforcement preleva cassa poi tesoreria + aggio", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.company.cash = 300;
+    s.treasury = 500;
+    s.collectionCase = {
+      stage: "enforcement",
+      principal: 600,
+      monthsInStage: 0,
+      firstOverdueIdx: 0,
+    };
+    tickCollectionCase(s);
+    expect(s.company.cash).toBe(0);
+    const gross = 600;
+    const aggio = round2(gross * ENFORCEMENT_AGGIO);
+    expect(s.treasury).toBeCloseTo(500 - 300 - aggio);
+    expect(s.collectionCase).toBeNull();
+  });
+
+  it("dopo 4 mesi enforcement sopra soglia → terminal → lost fiscale", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.company.cash = 0;
+    s.treasury = 0;
+    s.collectionCase = {
+      stage: "enforcement",
+      principal: 5000,
+      monthsInStage: 0,
+      firstOverdueIdx: 0,
+    };
+    for (let i = 0; i < ENFORCEMENT_MONTHS_TO_TERMINAL; i++) {
+      tickCollectionCase(s);
+    }
+    expect(s.collectionCase?.stage).toBe("terminal");
+    expect(s.collectionCase?.monthsInStage).toBe(0);
+    for (let i = 0; i < TERMINAL_MONTHS_TO_LOST; i++) {
+      tickCollectionCase(s);
+    }
+    expect(s.status).toBe("lost");
+    expect(s.loseReason).toBe("fiscal");
+  });
+
+  it("clear dues before month 6 → no cartella", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    for (let i = 0; i < 10; i++) {
+      s = issueCustomerInvoice(s, 1000);
+      s = advanceMonth(s);
+      s = payF24(s);
+      s = advanceMonth(s);
+    }
+    expect(s.pendingEvent?.id).not.toBe(CARTELLA_EVENT_ID);
+    expect(s.collectionCase).toBeNull();
   });
 });
