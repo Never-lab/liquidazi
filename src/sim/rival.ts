@@ -23,6 +23,10 @@ export const rivalPhase = (monthsPlayed: number): RivalPhase => {
 export const pressureBandLabel = (band: PressureBand): string =>
   band === "calma" ? "Calma" : band === "tesa" ? "Tesa" : "Guerra";
 
+/** Cost of rival_push campaign option. */
+export const rivalCampaignCost = (cash: number): number =>
+  Math.max(800, Math.round(Math.max(0, cash) * 0.04));
+
 export const seedRival = (state: GameState): Rival => {
   const city = cityById(state.company.city);
   const names = ["NordTrade", "Locale Fast", "PrimoPiano", "MetroServizi", "Concorrenza+"];

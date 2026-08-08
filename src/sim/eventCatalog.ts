@@ -1,6 +1,7 @@
 import { DIFFICULTIES } from "../config/difficulty";
 import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { maxDealNet, rng } from "./events";
+import { rivalCampaignCost } from "./rival";
 import {
   round2,
   toMonthIndex,
@@ -301,19 +302,29 @@ const CHOICE_POOL: ChoiceDef[] = [
     options: [
       {
         id: "campaign",
-        label: "Campagna (−800 €)",
+        label: "Campagna (costo variabile)",
         apply: (s) => {
-          s.company.cash = round2(s.company.cash - 800);
-          s.ytd.otherCosts = round2(s.ytd.otherCosts + 800);
+          const cost = rivalCampaignCost(s.company.cash);
+          s.company.cash = round2(s.company.cash - cost);
+          s.ytd.otherCosts = round2(s.ytd.otherCosts + cost);
           if (s.rival) {
             s.rival = { ...s.rival, heat: Math.max(0, s.rival.heat - 14) };
+            if (s.rival.floor != null && !s.rival.contained) {
+              const clears = (s.rival.anchorClears ?? 0) + 1;
+              if (clears >= 2) {
+                s.rival = { ...s.rival, floor: undefined, anchorClears: 0 };
+              } else {
+                s.rival = { ...s.rival, anchorClears: clears };
+                s.rival.heat = Math.max(s.rival.floor, s.rival.heat);
+              }
+            }
           }
           s.company.reputation = Math.min(100, s.company.reputation + 2);
           const who = s.rival?.name ?? "Il rivale";
           pushLog(
             s,
             "good",
-            `${who}: campagna commerciale −800 € · heat ${Math.round(s.rival?.heat ?? 0)}.`,
+            `${who}: campagna commerciale −${cost.toLocaleString("it-IT")} € · pressione ${Math.round(s.rival?.heat ?? 0)}.`,
           );
         },
       },
@@ -324,6 +335,15 @@ const CHOICE_POOL: ChoiceDef[] = [
           s.company.reputation = Math.max(0, s.company.reputation - 6);
           if (s.rival) {
             s.rival = { ...s.rival, heat: Math.max(0, s.rival.heat - 6) };
+            if (s.rival.floor != null && !s.rival.contained) {
+              const clears = (s.rival.anchorClears ?? 0) + 1;
+              if (clears >= 2) {
+                s.rival = { ...s.rival, floor: undefined, anchorClears: 0 };
+              } else {
+                s.rival = { ...s.rival, anchorClears: clears };
+                s.rival.heat = Math.max(s.rival.floor, s.rival.heat);
+              }
+            }
           }
           const net = round2(maxDealNet(s) * 0.7);
           s.opportunities.push({
@@ -348,10 +368,18 @@ const CHOICE_POOL: ChoiceDef[] = [
         label: "Ignora",
         apply: (s) => {
           if (s.rival) {
-            s.rival = { ...s.rival, heat: Math.min(100, s.rival.heat + 10) };
+            let heat = Math.min(100, s.rival.heat + 10);
+            if (s.rival.floor != null && !s.rival.contained) {
+              heat = Math.max(s.rival.floor, heat);
+            }
+            s.rival = { ...s.rival, heat };
           }
           const who = s.rival?.name ?? "Il rivale";
-          pushLog(s, "bad", `${who}: lo ignori — heat sale a ${Math.round(s.rival?.heat ?? 0)}.`);
+          pushLog(
+            s,
+            "bad",
+            `${who}: lo ignori — pressione sale a ${Math.round(s.rival?.heat ?? 0)}.`,
+          );
         },
       },
     ],
@@ -757,11 +785,11 @@ const SHOCK_POOL: ChoiceDef[] = [
     kind: "choice",
     id: "shock_rival_raid",
     title: "Il rivale ti svuota il mese",
-    body: "La concorrenza locale firma tre tuoi prospect in blocco. Heat alle stelle.",
+    body: "La concorrenza locale firma tre tuoi prospect in blocco. Pressione alle stelle.",
     options: [
       {
         id: "ok",
-        label: "Subisci (−3 sale, heat +20)",
+        label: "Subisci (−3 sale, pressione +20)",
         apply: (s) => {
           let removed = 0;
           s.opportunities = s.opportunities.filter((o) => {
@@ -770,13 +798,17 @@ const SHOCK_POOL: ChoiceDef[] = [
             return false;
           });
           if (s.rival) {
-            s.rival = { ...s.rival, heat: Math.min(100, s.rival.heat + 20) };
+            let heat = Math.min(100, s.rival.heat + 20);
+            if (s.rival.floor != null && !s.rival.contained) {
+              heat = Math.max(s.rival.floor, heat);
+            }
+            s.rival = { ...s.rival, heat };
           }
           pushLog(
             s,
             "bad",
             `Raid rivale: −${removed} lead` +
-              (s.rival ? `, heat ${Math.round(s.rival.heat)}` : "") +
+              (s.rival ? `, pressione ${Math.round(s.rival.heat)}` : "") +
               ".",
           );
         },
@@ -836,7 +868,10 @@ const tryQueueShock = (state: GameState, rand: () => number): boolean => {
   const chance = 0.16 + comfort * 0.12; // ~0.28 / 0.40 / 0.52
   if (rand() > chance) return false;
 
-  const def = SHOCK_POOL[Math.floor(rand() * SHOCK_POOL.length)]!;
+  let def = SHOCK_POOL[Math.floor(rand() * SHOCK_POOL.length)]!;
+  if (state.rival && state.rival.heat >= 70 && rand() < 0.35) {
+    def = findChoiceDef("shock_rival_raid") ?? def;
+  }
   const opt = def.options[0];
   if (!opt) return false;
   opt.apply(state);
@@ -1044,14 +1079,20 @@ export const runWorldEvents = (state: GameState): GameState => {
     return next;
   }
 
-  // Rival challenge when heat is high (prefer over generic pool)
-  if (next.rival && next.rival.heat >= 55) {
-    const rivalChance = 0.2 + (next.rival.heat - 55) / 160;
+  // Rival challenge when pressure is Tesa+ (prefer over generic pool)
+  if (next.rival && next.rival.heat >= 40) {
+    const rivalChance = 0.25 + (next.rival.heat - 40) / 120;
     if (rand() < rivalChance) {
       const def = findChoiceDef("rival_push")!;
       const pending = toPending(def);
+      const cost = rivalCampaignCost(next.company.cash);
       pending.title = `${next.rival.name} alza la voce`;
-      pending.body = `${next.rival.name} ti sfida in zona (heat ${Math.round(next.rival.heat)}). Campagna, guerra prezzi o ignori?`;
+      pending.body = `${next.rival.name} ti sfida in zona (pressione ${Math.round(next.rival.heat)}). Campagna (~${cost.toLocaleString("it-IT")} €), guerra prezzi o ignori?`;
+      pending.options = pending.options.map((o) =>
+        o.id === "campaign"
+          ? { ...o, label: `Campagna (−${cost.toLocaleString("it-IT")} €)` }
+          : o,
+      );
       next.pendingEvent = pending;
       pushLog(next, "neutral", `Decisione: ${pending.title}`);
       return next;

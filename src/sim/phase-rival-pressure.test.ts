@@ -3,6 +3,7 @@ import {
   applyRivalSteal,
   pressureBand,
   pressureBandLabel,
+  rivalCampaignCost,
   rivalPhase,
   tickRivalHeat,
 } from "./rival";
@@ -49,6 +50,11 @@ describe("rival pressure helpers", () => {
     expect(pressureBandLabel("calma")).toBe("Calma");
     expect(pressureBandLabel("tesa")).toBe("Tesa");
     expect(pressureBandLabel("guerra")).toBe("Guerra");
+  });
+
+  it("rivalCampaignCost floor and scale", () => {
+    expect(rivalCampaignCost(10000)).toBe(800);
+    expect(rivalCampaignCost(50000)).toBe(2000);
   });
 });
 

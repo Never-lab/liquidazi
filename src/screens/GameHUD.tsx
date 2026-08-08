@@ -20,6 +20,11 @@ import { DIFFICULTIES } from "../config/difficulty";
 import { cityById } from "../config/market";
 import { MILESTONE_DEFS } from "../sim/milestones";
 import { pressureEffectBlurb } from "../sim/pressures";
+import {
+  pressureBand,
+  pressureBandLabel,
+  RIVAL_PRESSURE_TOOLTIP,
+} from "../sim/rival";
 import { dueF24Total, openInvoiceSchedule, scheduleTotals, thisCloseRows } from "../sim/selectors";
 import { LOSE_MONTHS_BELOW_ZERO } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
@@ -117,8 +122,17 @@ export const GameHUD = () => {
               </p>
             )}
             {game.rival && (
-              <p className={styles.chip}>
-                {game.rival.name} · {Math.round(game.rival.heat)}
+              <p className={styles.chip} title={RIVAL_PRESSURE_TOOLTIP}>
+                {(() => {
+                  const band = pressureBand(game.rival.heat);
+                  if (game.rival.contained) {
+                    return `${game.rival.name} · Contenuto`;
+                  }
+                  if (band === "calma") {
+                    return `${game.rival.name} · ${pressureBandLabel(band)}`;
+                  }
+                  return `${game.rival.name} · ${pressureBandLabel(band)} · ${Math.round(game.rival.heat)}`;
+                })()}
               </p>
             )}
           </div>
