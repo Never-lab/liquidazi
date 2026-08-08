@@ -180,6 +180,12 @@ export interface ActiveContract {
 export interface Rival {
   name: string;
   heat: number;
+  /** Late-game: rival largely contained */
+  contained?: boolean;
+  /** Minimum heat while anchored (ignored if contained) */
+  floor?: number;
+  /** Serious rival responses toward clearing an anchor (0–2). */
+  anchorClears?: number;
 }
 
 export interface LogEntry {
