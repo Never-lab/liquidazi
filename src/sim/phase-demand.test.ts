@@ -4,6 +4,7 @@ import {
   BOARD_MAX_OPS_BOOM,
   boardCapFor,
   clampSaleTarget,
+  demandPopupForAdvance,
   generateOpportunities,
   refreshMarketBoard,
   regimeMult,
@@ -74,5 +75,13 @@ describe("generateOpportunities demand regimes", () => {
     let s = createInitialGameState();
     s = refreshMarketBoard(s);
     expect(["secca", "normale", "boom"]).toContain(s.demandRegime);
+  });
+
+  it("demandPopupForAdvance is edge-triggered", () => {
+    expect(demandPopupForAdvance("running", "normale", "secca")).toBe("secca");
+    expect(demandPopupForAdvance("running", "secca", "secca")).toBeNull();
+    expect(demandPopupForAdvance("running", "boom", "normale")).toBeNull();
+    expect(demandPopupForAdvance("running", "normale", "boom")).toBe("boom");
+    expect(demandPopupForAdvance("lost", "normale", "secca")).toBeNull();
   });
 });

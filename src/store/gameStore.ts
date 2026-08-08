@@ -41,9 +41,10 @@ import {
   rejectSaleOffer,
 } from "../sim/acquisitions";
 import { migrateHoldingState } from "../sim/migrateHolding";
-import { CARTELLA_EVENT_ID, resolveCartellaChoice } from "../sim/collection";
+import { CARTELLA_EVENT_ID, f24BlockedByCollection, resolveCartellaChoice } from "../sim/collection";
 import { resolveEventOption } from "../sim/eventCatalog";
-import { acceptOpportunity, declineOpportunity, seedNewGame, orderEmergencySupply } from "../sim/events";
+import { acceptOpportunity, declineOpportunity, demandPopupForAdvance, seedNewGame, orderEmergencySupply } from "../sim/events";
+import { migrateGameState } from "../sim/migrateGameState";
 import { formatCloseToast, unlockMilestones } from "../sim/milestones";
 import {
   createInitialGameState,
@@ -196,7 +197,7 @@ export const useGameStore = create<GameStore>()(
           active = slots[resumable];
         }
         const game = active?.game
-          ? structuredClone(active.game)
+          ? migrateGameState(structuredClone(active.game))
           : createInitialGameState();
         set({
           auth: session,
@@ -225,7 +226,9 @@ export const useGameStore = create<GameStore>()(
           activeSlot: saves.activeSlot ?? 0,
           preferredDifficulty: saves.preferredDifficulty ?? "normal",
           coachOn: saves.coachOn ?? true,
-          game: active?.game ? structuredClone(active.game) : createInitialGameState(),
+          game: active?.game
+            ? migrateGameState(structuredClone(active.game))
+            : createInitialGameState(),
           screen: screenAfterAuth(),
         });
       },
@@ -298,13 +301,19 @@ export const useGameStore = create<GameStore>()(
         if (game.status === "lost" || game.status === "won") screen = "gameover";
         const slots = syncSlot(get().slots, get().activeSlot, game);
         const regime = game.demandRegime;
-        const demandPopup =
-          game.status === "running" && (regime === "secca" || regime === "boom")
-            ? regime
-            : null;
+        const demandPopup = demandPopupForAdvance(
+          game.status,
+          before.demandRegime,
+          regime,
+        );
         set({ game, screen, slots, demandPopup });
         if (game.status === "lost") {
-          get().flashToast("Fallimento: 12 mesi in rosso", "bad");
+          get().flashToast(
+            game.loseReason === "fiscal"
+              ? "Fallimento: insolvenza fiscale"
+              : "Fallimento: 12 mesi in rosso",
+            "bad",
+          );
           sfxBad();
         } else if (game.status === "won") {
           get().flashToast("Traguardo: 24 mesi di attività", "good");
@@ -417,10 +426,18 @@ export const useGameStore = create<GameStore>()(
         sfxBad();
       },
       payF24: () => {
-        const before = get().game.company.cash;
-        const game = payF24(get().game);
+        const before = get().game;
+        if (f24BlockedByCollection(before)) {
+          get().flashToast(
+            "F24 bloccato: gestisci il debito in riscossione",
+            "bad",
+          );
+          sfxBad();
+          return;
+        }
+        const game = payF24(before);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-        const paid = before - game.company.cash;
+        const paid = before.company.cash - game.company.cash;
         get().flashToast(
           paid > 0 ? `F24 versato: −${formatCash(paid)}` : "Niente da versare",
           paid > 0 ? "good" : "neutral",
@@ -601,7 +618,9 @@ export const useGameStore = create<GameStore>()(
         const slots = get().slots;
         const slot = slots[index];
         if (!slot) return;
-        const game = slot.game ? structuredClone(slot.game) : createInitialGameState();
+        const game = slot.game
+          ? migrateGameState(structuredClone(slot.game))
+          : createInitialGameState();
         set({
           activeSlot: index,
           game,
@@ -651,6 +670,12 @@ export const useGameStore = create<GameStore>()(
         activeSlot: 0,
       }),
       onRehydrateStorage: () => (state) => {
+        if (state?.game) migrateGameState(state.game);
+        if (state?.slots) {
+          for (const slot of state.slots) {
+            if (slot.game) migrateGameState(slot.game);
+          }
+        }
         if (!state?.auth) return;
         const { token } = state.auth;
         void fetchMe(token)
@@ -684,7 +709,9 @@ export const useGameStore = create<GameStore>()(
               activeSlot,
               preferredDifficulty: saves.preferredDifficulty ?? current.preferredDifficulty,
               coachOn: saves.coachOn ?? current.coachOn,
-              game: active?.game ? structuredClone(active.game) : createInitialGameState(),
+              game: active?.game
+                ? migrateGameState(structuredClone(active.game))
+                : createInitialGameState(),
             });
           })
           .catch((error: unknown) => {

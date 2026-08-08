@@ -11,6 +11,7 @@ import {
   type UpgradeId,
   type UpgradeLevel,
 } from "../config/upgrades";
+import { f24BlockedByCollection } from "./collection";
 import { migrateUpgradeState } from "./migrateUpgrades";
 import { marketModifiersFromIndex } from "./market";
 import { hasPressure } from "./pressures";
@@ -423,11 +424,17 @@ export { FIDO_MAX, FIDO_SPREAD_BPS };
 
 /** Paga in batch tutte le liability F24 dovute (IVA + IRPEF + INPS + IRES/IRAP). */
 export const payF24 = (state: GameState): GameState => {
+  if (f24BlockedByCollection(state)) return state;
   const next = structuredClone(state);
   const idx = toMonthIndex(next.calendar);
+  const snap =
+    next.collectionCase?.stage === "rateazione" && next.collectionCase.liabilityIds?.length
+      ? new Set(next.collectionCase.liabilityIds)
+      : null;
   let total = 0;
   for (const l of next.liabilities) {
     if (!l.paid && l.dueIdx <= idx) {
+      if (snap?.has(l.id)) continue;
       l.paid = true;
       total = round2(total + l.amount);
     }

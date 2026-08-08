@@ -281,7 +281,6 @@ export interface Subsidiary {
 }
 
 export type CollectionStage =
-  | "overdue"
   | "cartella"
   | "rateazione"
   | "enforcement"
@@ -299,6 +298,8 @@ export interface CollectionCase {
   principal: number;
   monthsInStage: number;
   firstOverdueIdx: number;
+  /** Liability ids frozen at cartella open; F24 / close only touch these. */
+  liabilityIds?: number[];
   plan?: CollectionPlan;
 }
 

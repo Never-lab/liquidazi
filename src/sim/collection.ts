@@ -44,13 +44,25 @@ export const updateMonthsTaxOverdue = (state: GameState): void => {
   }
 };
 
+/** Mark paid: snapshot ids if present, else all overdue (legacy saves). */
 export const markOverdueLiabilitiesPaid = (state: GameState): void => {
+  const ids = state.collectionCase?.liabilityIds;
+  if (ids && ids.length > 0) {
+    const set = new Set(ids);
+    for (const l of state.liabilities) {
+      if (!l.paid && set.has(l.id)) l.paid = true;
+    }
+    return;
+  }
   const idx = toMonthIndex(state.calendar);
   for (const l of state.liabilities) {
-    if (!l.paid && l.dueIdx <= idx) {
-      l.paid = true;
-    }
+    if (!l.paid && l.dueIdx <= idx) l.paid = true;
   }
+};
+
+export const f24BlockedByCollection = (state: GameState): boolean => {
+  const stage = state.collectionCase?.stage;
+  return stage === "cartella" || stage === "enforcement" || stage === "terminal";
 };
 
 /** Drains cash first, then treasury; returns amount actually taken. */
@@ -156,7 +168,8 @@ export const maybeOpenCartella = (state: GameState): void => {
   if ((state.monthsTaxOverdue ?? 0) < MONTHS_BEFORE_CARTELLA) return;
 
   const idx = toMonthIndex(state.calendar);
-  const principal = overdueTotal(state, idx);
+  const overdue = overdueLiabilities(state, idx);
+  const principal = round2(overdue.reduce((sum, l) => sum + l.amount, 0));
   if (principal <= 0) return;
 
   state.collectionCase = {
@@ -164,6 +177,7 @@ export const maybeOpenCartella = (state: GameState): void => {
     principal,
     monthsInStage: 0,
     firstOverdueIdx: idx,
+    liabilityIds: overdue.map((l) => l.id),
   };
   state.compliance = Math.max(0, state.compliance - COMPLIANCE_CARTELLA);
   state.pendingEvent = {
