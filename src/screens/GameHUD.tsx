@@ -121,6 +121,14 @@ export const GameHUD = () => {
                 {game.rival.name} · {Math.round(game.rival.heat)}
               </p>
             )}
+            {game.collectionCase?.stage === "rateazione" && game.collectionCase.plan && (
+              <p
+                className={styles.chip}
+                title="Rateazione fiscale attiva — dettagli in Operazioni → Fisco"
+              >
+                Rateazione · {game.collectionCase.plan.monthsLeft}m
+              </p>
+            )}
           </div>
         </div>
         <div className={styles.stickyActions}>
@@ -193,7 +201,10 @@ export const GameHUD = () => {
         <EventChoiceBanner />
         <ProjectOfferBanner />
 
-        {summary && game.monthsPlayed > 0 && (
+        {/* One crisis at a time: while a pending decision is open, skip Δ mese / F24 /
+            duplicate cartella banner. Collection crisis banner only for enforcement/terminal
+            (cartella is already the blue “Decisione del mese”). */}
+        {summary && game.monthsPlayed > 0 && !pending && (
           <div
             key={game.monthsPlayed}
             className={`${styles.monthSummary} ${
@@ -219,33 +230,31 @@ export const GameHUD = () => {
         )}
 
         {game.collectionCase &&
-          (game.collectionCase.stage === "cartella" ||
-            game.collectionCase.stage === "enforcement" ||
+          (game.collectionCase.stage === "enforcement" ||
             game.collectionCase.stage === "terminal") && (
             <div className={styles.rescue} role="alert">
               <div className={styles.alertCopy}>
                 <Icon name="tax" size={20} className={styles.alertIcon} />
                 <p>
                   <strong>
-                    {game.collectionCase.stage === "cartella"
-                      ? "Cartella di pagamento"
-                      : game.collectionCase.stage === "terminal"
-                        ? "Rischio chiusura fiscale"
-                        : "Pignoramento in corso"}
+                    {game.collectionCase.stage === "terminal"
+                      ? "Rischio chiusura fiscale"
+                      : "Pignoramento in corso"}
                     :
                   </strong>{" "}
                   {formatCash(game.collectionCase.principal)}
                   {game.collectionCase.stage === "terminal"
                     ? " — pochi mesi alla chiusura per insolvenza fiscale."
-                    : game.collectionCase.stage === "cartella"
-                      ? " — scegli se pagare, rateizzare o ignorare."
-                      : " — prelievo forzato su cassa e tesoreria."}
+                    : " — prelievo forzato su cassa e tesoreria."}
                 </p>
               </div>
             </div>
           )}
 
-        {f24Due > 0 && (
+        {f24Due > 0 &&
+          !pending &&
+          game.collectionCase?.stage !== "enforcement" &&
+          game.collectionCase?.stage !== "terminal" && (
           <div className={styles.f24Due} role="alert">
             <div className={styles.alertCopy}>
               <Icon name="receipt" size={20} className={styles.alertIcon} />
@@ -260,7 +269,7 @@ export const GameHUD = () => {
           </div>
         )}
 
-        {offer && (
+        {offer && !pending && (
           <div className={styles.rescue} role="alert">
             <div className={styles.alertCopy}>
               <Icon name="bank" size={20} className={styles.alertIcon} />

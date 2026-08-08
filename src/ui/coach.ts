@@ -11,13 +11,8 @@ export type CoachTip = {
 
 /** Guided tips for the first months — contextual, not a modal gauntlet. */
 export const coachTipFor = (game: GameState): CoachTip | null => {
-  if (game.pendingEvent) {
-    return {
-      id: "pending-event",
-      title: "Decisione aperta",
-      body: "Scegli un'opzione nel banner blu prima di chiudere un altro mese.",
-    };
-  }
+  // Pending decision already owns the screen — no second “Decisione aperta” tip.
+  if (game.pendingEvent) return null;
   if (game.projectOffer) {
     return {
       id: "project-offer",

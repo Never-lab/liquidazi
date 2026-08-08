@@ -2,6 +2,20 @@ import { describe, expect, it } from "vitest";
 import { createInitialGameState } from "../sim/types";
 import { coachTipFor } from "./coach";
 
+describe("coachTipFor pending", () => {
+  it("silences coach when a pending decision owns the HUD", () => {
+    const s = createInitialGameState();
+    s.monthsPlayed = 5;
+    s.pendingEvent = {
+      id: "fiscal_cartella",
+      title: "Cartella",
+      body: "…",
+      options: [{ id: "pay_all", label: "Paga" }],
+    };
+    expect(coachTipFor(s)).toBeNull();
+  });
+});
+
 describe("coachTipFor commesse-legend", () => {
   it("shows after month 0 loop tips when monthsPlayed is 1–2 and no F24 due", () => {
     const s = createInitialGameState();
