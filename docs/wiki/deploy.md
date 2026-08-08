@@ -25,11 +25,13 @@ Edit **`docs/wiki/` in git** only; Wiki UI is a mirror.
 
 ## Graphify
 
-Install `graphifyy` (uv/pip). From repo root:
+Install `graphifyy` (uv/pip). From repo root (code graph, no LLM key required):
 
-```text
-graphify .           # or project’s full pipeline
-graphify . --wiki
+```bash
+python -m graphify extract . --code-only --out .
+python -m graphify cluster-only . --no-viz --no-label
 ```
 
-Commit policy: keep `GRAPH_REPORT.md` and small wiki extracts; gitignore heavy HTML/SVG if needed. Agents: if `graphify-out/` is missing, regenerate locally before deep architecture questions.
+Then generate agent wiki articles under `graphify-out/wiki/` via `graphify.wiki.to_wiki` (see last refresh commit / agent session). Committed artifacts: `graphify-out/graph.json`, `GRAPH_REPORT.md`, `wiki/`.
+
+Agents: if `graphify-out/` is missing, regenerate locally before deep architecture questions.
