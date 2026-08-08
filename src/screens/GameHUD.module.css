@@ -1,3 +1,28 @@
+.deskWithAds {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.adRail {
+  display: none;
+  flex: 0 0 auto;
+  position: sticky;
+  top: 72px;
+}
+
+@media (min-width: 1200px) {
+  .adRail {
+    display: block;
+  }
+}
+
 .desk {
   display: flex;
   flex-direction: column;
@@ -6,6 +31,8 @@
   max-width: var(--desk-max);
   width: 100%;
   margin: 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .deskBody {

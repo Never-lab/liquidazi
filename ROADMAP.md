@@ -42,10 +42,11 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
-2. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
-3. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
-4. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
+1. **Ads stub (rails + end banner)** — [plan](docs/superpowers/plans/2026-08-08-ads-stub.md) · [spec](docs/superpowers/specs/2026-08-08-ads-stub-design.md) (segnaposto; rete dopo).
+2. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
+3. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
+4. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
+5. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
 
 ---
 
