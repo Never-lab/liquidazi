@@ -3,7 +3,7 @@ import { CashSparkline, ChartsPanel } from "../components/Charts";
 import { CoachBanner } from "../components/CoachBanner";
 import { EventChoiceBanner } from "../components/EventChoiceBanner";
 import { ProjectOfferBanner } from "../components/ProjectOfferBanner";
-import { EventFeed } from "../components/EventFeed";
+import { NotificationInbox } from "../components/NotificationInbox";
 import { HoldingPanel } from "../components/HoldingPanel";
 import { InvestmentsPanel } from "../components/InvestmentsPanel";
 import { LoanPanel } from "../components/LoanPanel";
@@ -145,6 +145,7 @@ export const GameHUD = () => {
               {formatCash(openTax)}
             </strong>
           </div>
+          <NotificationInbox />
           <div className={styles.closeStack}>
             <Button
               className={styles.closeBtn}
@@ -296,7 +297,7 @@ export const GameHUD = () => {
               onClick={() => setAuxOpen((v) => !v)}
             >
               <Icon name="chart" size={16} />
-              {auxOpen ? "Nascondi grafici / feed" : "Grafici e cronologia"}
+              {auxOpen ? "Nascondi grafici" : "Grafici"}
             </button>
             <div className={styles.toolbarRight}>
               {!coachOn && (
@@ -316,7 +317,6 @@ export const GameHUD = () => {
         {auxOpen && (
           <aside className={styles.deskSide}>
             <ChartsPanel history={game.history} />
-            <EventFeed />
           </aside>
         )}
       </div>

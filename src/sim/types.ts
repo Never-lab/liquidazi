@@ -349,6 +349,8 @@ export interface GameState {
   opportunities: Opportunity[];
   /** recent narrative / event feed */
   log: LogEntry[];
+  /** Highest log id the player has marked read in the mail inbox (unread = id > this). */
+  logReadThruId: number;
   /** time series for charts */
   history: HistoryPoint[];
   /** when true, skip random world events (unit tests / replay) */
@@ -510,6 +512,7 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
         text: "Azienda aperta. Non inventare fatture: prendi le commesse del mese.",
       },
     ],
+    logReadThruId: 0,
     history: [
       {
         monthIdx: 2024 * 12,
