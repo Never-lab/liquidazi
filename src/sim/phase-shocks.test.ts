@@ -36,6 +36,39 @@ describe("forced shocks", () => {
     expect(s.company.cash).toBe(9500);
   });
 
+  it("shock incendio a scorte zero aggiunge premium stockout", () => {
+    let s = createInitialGameState();
+    s.supplyMonths = 0;
+    s.company.cash = 10000;
+    s.pendingEvent = {
+      id: "shock_fire",
+      title: "Incendio",
+      body: "…",
+      options: [{ id: "ok", label: "Ok" }],
+    };
+    s = resolveEventOption(s, "ok");
+    // base 500 + max(1600, round(10000*0.12)) = 500+1600
+    expect(s.supplyMonths).toBe(0);
+    expect(s.company.cash).toBe(7900);
+    expect(s.ytd.otherCosts).toBe(2100);
+  });
+
+  it("shock fornitore già a zero: −700 + premium lost=2", () => {
+    let s = createInitialGameState();
+    s.supplyMonths = 0;
+    s.company.cash = 10000;
+    s.pendingEvent = {
+      id: "shock_supplier_bust",
+      title: "Fornitore",
+      body: "…",
+      options: [{ id: "ok", label: "Ok" }],
+    };
+    s = resolveEventOption(s, "ok");
+    expect(s.supplyMonths).toBe(0);
+    expect(s.company.cash).toBe(7700); // 700+1600
+    expect(s.ytd.otherCosts).toBe(2300);
+  });
+
   it("shock terremoto toglie 20% cassa", () => {
     let s = createInitialGameState();
     s.company.cash = 20000;
@@ -125,8 +158,9 @@ describe("forced shocks", () => {
       options: [{ id: "ok", label: "Ok" }],
     };
     s = resolveEventOption(s, "ok");
+    // base 500 + stockout max(1600, ~12) = 2100 → cash −2000 covered by treasury
     expect(s.company.cash).toBe(0);
-    expect(s.treasury).toBe(1600);
+    expect(s.treasury).toBe(0);
   });
 
   it("una scelta ordinaria non pesca dalla tesoreria", () => {
