@@ -41,6 +41,7 @@ import {
   type GameState,
   type LiabilityKind,
 } from "./types";
+import { repDefaultMult } from "./reputation";
 import {
   baseGrossFor,
   grossWithSeniority,
@@ -245,7 +246,8 @@ export const advanceMonth = (state: GameState): GameState => {
         rand() <
           profile.defaultChance *
             DIFFICULTIES[next.difficulty ?? "normal"].defaultMult *
-            defaultBoost
+            defaultBoost *
+            repDefaultMult(next.company.reputation)
       ) {
         inv.settled = true;
         inv.defaulted = true;

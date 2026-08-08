@@ -17,7 +17,7 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
     const bare = createInitialGameState({ city: "058091", sector: "ristorazione" });
     const servizi = createInitialGameState({ city: "058091", sector: "servizi" });
     expect(maxDealNet(servizi)).toBeGreaterThan(maxDealNet(bare));
-    expect(monthlyCapacity(bare)).toBe(1 + Math.floor(50 / 40));
+    expect(monthlyCapacity(bare)).toBe(1 + Math.round(50 / 20));
 
     let hired = hireEmployee(bare, "Operaio");
     hired.staffMorale = 100;
@@ -45,6 +45,7 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
     let s = createInitialGameState({ city: "058091", sector: "commercio" });
     s = {
       ...s,
+      company: { ...s.company, reputation: 20 },
       opportunities: [
         {
           id: 1,
@@ -77,6 +78,7 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
       nextId: 10,
     };
     const cap = monthlyCapacity(s);
+    expect(cap).toBe(2);
     for (let i = 1; i <= cap; i++) {
       s = acceptOpportunity(s, i);
     }

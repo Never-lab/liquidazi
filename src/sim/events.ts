@@ -23,6 +23,7 @@ import {
 } from "./pressures";
 import { DEFAULT_STAFF_MORALE } from "./morale";
 import { applyRivalSteal, seedRival } from "./rival";
+import { repDemandMult, repSlotBonus } from "./reputation";
 
 export { rng };
 
@@ -68,7 +69,7 @@ export const monthlyCapacity = (state: GameState): number => {
     0,
     Math.round(staffSlots * (0.75 + 0.25 * (morale / 100))),
   );
-  const repBonus = Math.floor(state.company.reputation / 40);
+  const repBonus = repSlotBonus(state.company.reputation);
   const procLv = upgradeLevel(upgradeLevels, "processi");
   const processi = procLv;
   const temp = (state.tempCapacityMonths ?? 0) > 0 ? 1 : 0;
@@ -181,7 +182,7 @@ const pushSale = (
     clientType,
     termMonths,
   };
-  ops.push(maybeMakeContract(raw, rand));
+  ops.push(maybeMakeContract(raw, rand, state.company.reputation));
   return id + 1;
 };
 
@@ -216,6 +217,10 @@ export const generateOpportunities = (
   const impiegati = countRole(state, "Impiegato");
   const jitter = Math.floor(rand() * 3) - 1; // -1, 0, +1
   let saleTarget = Math.max(1, capacity + jitter + commercialeBonus + impiegati);
+  saleTarget = Math.max(
+    1,
+    Math.round(saleTarget * repDemandMult(state.company.reputation)),
+  );
   let supplyTarget = Math.max(0, Math.round(saleTarget * (0.28 + rand() * 0.1)));
   // Never soft-lock: if scorte are empty, always offer at least one supply.
   if ((state.supplyMonths ?? 0) <= 0) {

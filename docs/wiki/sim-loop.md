@@ -23,6 +23,17 @@ Forced mid/late shocks live in `src/sim/eventCatalog.ts` (`forcedShock*` / `runW
 
 `coverNegativeCashFromTreasury` pulls from `game.treasury` when cash goes below zero due to shock resolution (bailout path is shock-oriented; see `phase-shocks.test.ts`).
 
+## Reputation (commercial)
+
+`company.reputation` (0–100) feeds `src/sim/reputation.ts`:
+
+- Slot bonus `round(rep/20)` capped at 5 (80→100 is +4→+5 slots)
+- Board sale count × `(0.75 + rep/200)`
+- Contract offer odds × `clamp(0.55 + rep/200, 0.4, 1.1)`
+- Private AR defaults × `(1.45 − rep/200)`
+
+Ticket size still uses continuous `0.85 + rep/100 × 0.35`. Fiscal **compliance** is separate (bank spread / F24).
+
 ## Other monthly pieces
 
 - Treasury interest accrues on parked `treasury` (stays in treasury).
