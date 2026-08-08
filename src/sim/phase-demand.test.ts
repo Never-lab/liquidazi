@@ -4,9 +4,12 @@ import {
   BOARD_MAX_OPS_BOOM,
   boardCapFor,
   clampSaleTarget,
+  generateOpportunities,
+  refreshMarketBoard,
   regimeMult,
   rollDemandRegime,
 } from "./events";
+import { createInitialGameState } from "./types";
 
 describe("demand regime helpers", () => {
   it("rollDemandRegime respects 20/60/20 buckets", () => {
@@ -34,5 +37,42 @@ describe("demand regime helpers", () => {
     expect(clampSaleTarget(0, "normale")).toBe(1);
     expect(clampSaleTarget(20, "boom")).toBe(12);
     expect(clampSaleTarget(0.2, "boom")).toBe(1);
+  });
+});
+
+describe("generateOpportunities demand regimes", () => {
+  const manyOperai = (count: number, idBase: number) =>
+    Array.from({ length: count }, (_, i) => ({
+      id: idBase + i,
+      role: "Operaio",
+      grossMonthly: 1500,
+      hireMonthIdx: 0,
+      tfrAccrued: 0,
+      senioritySteps: 0,
+    }));
+
+  it("secca yields 0–2 sale ops", () => {
+    const s = createInitialGameState();
+    s.employees.push(...manyOperai(20, 1000));
+    const { ops, demandRegime } = generateOpportunities(s, { forceRegime: "secca" });
+    expect(demandRegime).toBe("secca");
+    const sales = ops.filter((o) => o.kind === "sale");
+    expect(sales.length).toBeGreaterThanOrEqual(0);
+    expect(sales.length).toBeLessThanOrEqual(2);
+  });
+
+  it("boom fills boardCap 12 with high staff", () => {
+    const s = createInitialGameState();
+    s.employees.push(...manyOperai(30, 2000));
+    s.company.reputation = 100;
+    const { ops, demandRegime } = generateOpportunities(s, { forceRegime: "boom" });
+    expect(demandRegime).toBe("boom");
+    expect(ops.length).toBe(BOARD_MAX_OPS_BOOM);
+  });
+
+  it("refreshMarketBoard persists demandRegime", () => {
+    let s = createInitialGameState();
+    s = refreshMarketBoard(s);
+    expect(["secca", "normale", "boom"]).toContain(s.demandRegime);
   });
 });

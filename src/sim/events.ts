@@ -232,7 +232,8 @@ const pushSupply = (
 
 export const generateOpportunities = (
   state: GameState,
-): { ops: Opportunity[]; nextId: number } => {
+  opts?: { forceRegime?: DemandRegime },
+): { ops: Opportunity[]; nextId: number; demandRegime: DemandRegime } => {
   const profile = SECTOR_PROFILES[state.company.sector];
   const rand = rng(toMonthIndex(state.calendar) * 997 + state.nextId * 13 + state.monthsPlayed);
   const upgradeLevels = migrateUpgradeState(state);
@@ -240,27 +241,35 @@ export const generateOpportunities = (
   const capacity = monthlyCapacity(state);
   const commercialeBonus = upgradeLevel(upgradeLevels, "commerciale");
   const impiegati = countRole(state, "Impiegato");
+  const regime = opts?.forceRegime ?? rollDemandRegime(rand);
   const jitter = Math.floor(rand() * 3) - 1; // -1, 0, +1
-  let saleTarget = Math.max(1, capacity + jitter + commercialeBonus + impiegati);
-  saleTarget = Math.max(
-    1,
-    Math.round(saleTarget * repDemandMult(state.company.reputation)),
-  );
+  const base = capacity + jitter + commercialeBonus + impiegati;
+  const raw = base * regimeMult(regime) * repDemandMult(state.company.reputation);
+  let saleTarget = clampSaleTarget(raw, regime);
   let supplyTarget = Math.max(0, Math.round(saleTarget * (0.28 + rand() * 0.1)));
   // Never soft-lock: if scorte are empty, always offer at least one supply.
   if ((state.supplyMonths ?? 0) <= 0) {
     supplyTarget = Math.max(1, supplyTarget);
   }
+  const boardCap = boardCapFor(regime);
   const total = saleTarget + supplyTarget;
-  if (total > BOARD_MAX_OPS) {
-    const scale = BOARD_MAX_OPS / total;
-    saleTarget = Math.max(1, Math.round(saleTarget * scale));
+  if (total > boardCap) {
+    const scale = boardCap / total;
+    saleTarget = Math.round(saleTarget * scale);
+    if (regime === "secca") {
+      saleTarget = Math.min(2, Math.max(0, saleTarget));
+    } else {
+      saleTarget = Math.max(1, saleTarget);
+    }
     supplyTarget = Math.max(
       (state.supplyMonths ?? 0) <= 0 ? 1 : 0,
-      BOARD_MAX_OPS - saleTarget,
+      boardCap - saleTarget,
     );
-    if (saleTarget + supplyTarget > BOARD_MAX_OPS) {
-      saleTarget = BOARD_MAX_OPS - supplyTarget;
+    if (saleTarget + supplyTarget > boardCap) {
+      saleTarget = boardCap - supplyTarget;
+      if (regime === "secca") {
+        saleTarget = Math.min(2, Math.max(0, saleTarget));
+      }
     }
   }
 
@@ -272,7 +281,7 @@ export const generateOpportunities = (
   for (let i = 0; i < supplyTarget; i++) {
     id = pushSupply(ops, cap, rand, id);
   }
-  return { ops, nextId: id };
+  return { ops, nextId: id, demandRegime: regime };
 };
 
 /** Floor for emergency restock net (early-game). */
@@ -408,9 +417,10 @@ export const seedNewGame = (state: GameState): GameState => {
   if (!next.quietMode && shouldRollPressure(next)) {
     next = rollPressure(next);
   }
-  const { ops, nextId } = generateOpportunities(next);
+  const { ops, nextId, demandRegime } = generateOpportunities(next);
   next.opportunities = ops;
   next.nextId = Math.max(next.nextId, nextId);
+  next.demandRegime = demandRegime;
   next = applyRivalSteal(next);
   next.log = [
     {
@@ -436,9 +446,10 @@ export const seedNewGame = (state: GameState): GameState => {
 
 export const refreshMarketBoard = (state: GameState): GameState => {
   let next = structuredClone(state);
-  const { ops, nextId } = generateOpportunities(next);
+  const { ops, nextId, demandRegime } = generateOpportunities(next);
   next.opportunities = ops;
   next.nextId = Math.max(next.nextId, nextId);
+  next.demandRegime = demandRegime;
   next = applyRivalSteal(next);
   return next;
 };

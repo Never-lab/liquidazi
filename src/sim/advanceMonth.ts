@@ -150,6 +150,7 @@ export const advanceMonth = (state: GameState): GameState => {
   next.collectionCase ??= null;
   next.monthsTaxOverdue ??= 0;
   next.logReadThruId ??= 0;
+  next.demandRegime ??= "normale";
   next.lastUiHint ??= null;
   next.activeProject ??= null;
   next.projectOffer ??= null;
