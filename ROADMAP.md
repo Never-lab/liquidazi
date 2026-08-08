@@ -125,7 +125,7 @@ Il settlement +1 non è stato rilasciato: l'exploit è stato corretto applicando
 | 1 | ~~**#5 tesoreria lag**~~ → shipped | Shock at month open; no treasury settlement in this slice |
 | 2 | ~~**#1 costo annuale staff**~~ → shipped | Oneri annuali personale in FY close |
 | 3 | **#2 domanda boom/secca** | Varianza run lunghe |
-| 4 | — | #3 scorte shipped |
+| 4 | ~~**#3 scorte**~~ → shipped | Emergenza 10% cassa; contratti +8%; UI mesi |
 | 5 | **#6 shock senza stock** | Ritocco eventi, dopo che scorte hanno valore |
 
 ---
