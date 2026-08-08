@@ -46,6 +46,7 @@ import {
   MAX_SENIORITY_STEPS,
   SENIORITY_MONTHS,
   STAFF_ROLES,
+  totalAnnualStaffOneri,
   type StaffRole,
 } from "../config/staffPay";
 
@@ -458,6 +459,21 @@ export const advanceMonth = (state: GameState): GameState => {
   }
 
   if (month === 12) {
+    const staffOneri = totalAnnualStaffOneri(next.employees);
+    if (staffOneri > 0) {
+      const b = next.company.cash;
+      next.company.cash = round2(next.company.cash - staffOneri);
+      next.ytd.otherCosts = round2(next.ytd.otherCosts + staffOneri);
+      next.log.unshift({
+        id: next.nextId++,
+        monthIdx: idx,
+        tone: "bad",
+        text: `Oneri annuali personale: −${staffOneri.toLocaleString("it-IT")} € (${next.employees.length} dipendenti).`,
+      });
+      next.log = next.log.slice(0, 12);
+      note("Oneri annuali personale", b);
+    }
+
     const { revenue, purchases, payrollCost, interest, otherCosts, capitalGains = 0 } = next.ytd;
     const gainsForIres = Math.max(0, capitalGains);
     const profit = round2(revenue - purchases - payrollCost - interest - otherCosts + gainsForIres);
@@ -480,6 +496,7 @@ export const advanceMonth = (state: GameState): GameState => {
       irapBase,
       ires,
       irap,
+      staffAnnualOneri: staffOneri,
     };
     next.yearReports = [...(next.yearReports ?? []), next.lastYearReport].slice(
       -YEAR_REPORTS_MAX,

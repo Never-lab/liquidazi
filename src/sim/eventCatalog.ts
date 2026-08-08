@@ -22,6 +22,22 @@ const pushLog = (
   state.log = state.log.slice(0, 12);
 };
 
+/** If cash went negative, pull from treasury (emergency fund). Returns amount taken. */
+export const coverNegativeCashFromTreasury = (s: GameState): number => {
+  s.treasury ??= 0;
+  if (s.company.cash >= 0 || s.treasury <= 0) return 0;
+  const need = round2(-s.company.cash);
+  const take = round2(Math.min(s.treasury, need));
+  s.treasury = round2(s.treasury - take);
+  s.company.cash = round2(s.company.cash + take);
+  pushLog(
+    s,
+    "neutral",
+    `Fondo emergenza: −${take.toLocaleString("it-IT")} € dalla tesoreria per coprire la cassa.`,
+  );
+  return take;
+};
+
 type ChoiceDef = {
   kind: "choice";
   id: string;
@@ -342,7 +358,7 @@ const CHOICE_POOL: ChoiceDef[] = [
   },
 ];
 
-/** Forced mid/late-game shocks — single option, blocks Chiudi mese until acknowledged. */
+/** Forced mid/late-game shocks — single option applied immediately. */
 const shockCash = (s: GameState, pct: number, floor: number): number => {
   const hit = round2(Math.max(floor, Math.max(0, s.company.cash) * pct));
   s.company.cash = round2(s.company.cash - hit);
@@ -821,9 +837,11 @@ const tryQueueShock = (state: GameState, rand: () => number): boolean => {
   if (rand() > chance) return false;
 
   const def = SHOCK_POOL[Math.floor(rand() * SHOCK_POOL.length)]!;
-  state.pendingEvent = toPending(def);
+  const opt = def.options[0];
+  if (!opt) return false;
+  opt.apply(state);
+  coverNegativeCashFromTreasury(state);
   state.lastShockAt = state.monthsPlayed;
-  pushLog(state, "bad", `Imprevisto grave: ${def.title}`);
   return true;
 };
 
@@ -1013,7 +1031,7 @@ export const runWorldEvents = (state: GameState): GameState => {
   // Don't stack a new choice if one is somehow still pending
   if (next.pendingEvent) return next;
 
-  // Comfort shocks first — non-skippable, block Chiudi mese
+  // Comfort shocks first — applied immediately
   if (!next.quietMode && tryQueueShock(next, rand)) {
     return next;
   }
@@ -1081,6 +1099,7 @@ export const resolveEventOption = (state: GameState, optionId: string): GameStat
   const next = structuredClone(state);
   next.tempCapacityMonths ??= 0;
   opt.apply(next);
+  if (SHOCK_POOL.includes(def)) coverNegativeCashFromTreasury(next);
   next.pendingEvent = null;
   return next;
 };

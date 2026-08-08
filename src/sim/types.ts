@@ -213,6 +213,8 @@ export interface YearReport extends YearToDate {
   irapBase: number;
   ires: number;
   irap: number;
+  /** Oneri annuali personale (didattici), 0 se assenti. */
+  staffAnnualOneri?: number;
 }
 
 export interface CareerStats {
