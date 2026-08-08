@@ -78,6 +78,7 @@ export const MenuScreen = () => {
           <NavItem icon="spark" label="Controllo" onClick={() => setScreen("admin")} />
         )}
         <NavItem icon="book" label="Tutorial" onClick={() => setScreen("tutorial")} />
+        <NavItem icon="book" label="Guida" onClick={() => setScreen("guide")} />
         <NavItem icon="feedback" label="Segnala / migliora" onClick={() => setScreen("feedback")} />
         {auth ? (
           <NavItem icon="logout" label={`Esci (${auth.username})`} onClick={logout} />

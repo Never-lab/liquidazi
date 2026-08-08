@@ -12,6 +12,7 @@ import { MenuScreen } from "./screens/MenuScreen";
 import { SavesScreen } from "./screens/SavesScreen";
 import { SetupScreen } from "./screens/SetupScreen";
 import { TutorialScreen } from "./screens/TutorialScreen";
+import { GuideScreen } from "./screens/GuideScreen";
 import { useGameStore } from "./store/gameStore";
 import styles from "./App.module.css";
 
@@ -37,6 +38,7 @@ function App() {
         {screen === "menu" && <MenuScreen />}
         {screen === "setup" && <SetupScreen />}
         {screen === "tutorial" && <TutorialScreen />}
+        {screen === "guide" && <GuideScreen />}
         {screen === "game" && <GameHUD />}
         {screen === "gameover" && <EndScreen />}
         {screen === "leaderboard" && <LeaderboardScreen />}
