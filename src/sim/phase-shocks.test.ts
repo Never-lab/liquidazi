@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   comfortLevel,
+  coverNegativeCashFromTreasury,
   forcedShockCount,
   resolveEventOption,
   runWorldEvents,
@@ -109,5 +110,36 @@ describe("forced shocks", () => {
       }
     }
     expect(hit).toBe(true);
+  });
+});
+
+describe("coverNegativeCashFromTreasury", () => {
+  it("copre cassa negativa dalla tesoreria fino a zero", () => {
+    const s = createInitialGameState();
+    s.company.cash = -400;
+    s.treasury = 1000;
+    const taken = coverNegativeCashFromTreasury(s);
+    expect(taken).toBe(400);
+    expect(s.company.cash).toBe(0);
+    expect(s.treasury).toBe(600);
+    expect(s.log[0]?.text).toMatch(/Fondo emergenza/);
+  });
+
+  it("non tocca tesoreria se cassa non negativa", () => {
+    const s = createInitialGameState();
+    s.company.cash = 100;
+    s.treasury = 500;
+    expect(coverNegativeCashFromTreasury(s)).toBe(0);
+    expect(s.treasury).toBe(500);
+    expect(s.company.cash).toBe(100);
+  });
+
+  it("esauri tesoreria se insufficiente", () => {
+    const s = createInitialGameState();
+    s.company.cash = -800;
+    s.treasury = 300;
+    expect(coverNegativeCashFromTreasury(s)).toBe(300);
+    expect(s.company.cash).toBe(-500);
+    expect(s.treasury).toBe(0);
   });
 });
