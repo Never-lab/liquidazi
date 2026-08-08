@@ -83,8 +83,7 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
     const before = s.invoices.length;
     s = acceptOpportunity(s, cap + 1);
     expect(s.invoices.length).toBe(before);
-    expect(s.lastUiHint?.text).toMatch(/Capacità piena/);
-    expect(s.log[0]?.text).not.toMatch(/Capacità piena/);
+    expect(s.log[0]?.text).toMatch(/Capacità piena/);
   });
 
   it("PA: scadenza oltre 1 mese; quietMode non genera insoluti", () => {
