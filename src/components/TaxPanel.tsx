@@ -1,4 +1,5 @@
 import { dueF24Total } from "../sim/selectors";
+import { f24BlockedByCollection } from "../sim/collection";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
 import styles from "./panels.module.css";
@@ -16,7 +17,6 @@ const STAGE_LABEL: Record<string, string> = {
   rateazione: "Rateazione",
   enforcement: "Pignoramento / riscossione",
   terminal: "Chiusura per insolvenza fiscale",
-  overdue: "Insoluto",
 };
 
 export const TaxPanel = () => {
@@ -26,6 +26,7 @@ export const TaxPanel = () => {
   const openLiabilities = game.liabilities.filter((l) => !l.paid);
   const dueNow = dueF24Total(game);
   const c = game.collectionCase;
+  const f24Blocked = f24BlockedByCollection(game);
 
   return (
     <section className={styles.panel}>
@@ -80,10 +81,19 @@ export const TaxPanel = () => {
       )}
 
       <div className={styles.row}>
-        <button className={styles.button} disabled={dueNow <= 0} onClick={doPayF24}>
+        <button
+          className={styles.button}
+          disabled={dueNow <= 0 || f24Blocked}
+          onClick={doPayF24}
+        >
           Paga F24 ({formatCash(dueNow)})
         </button>
       </div>
+      {f24Blocked && (
+        <p className={styles.muted}>
+          F24 bloccato: gestisci il debito in riscossione (cartella / pignoramento).
+        </p>
+      )}
       <p className={styles.muted}>
         Scadenza F24: giorno 16 del mese successivo alla competenza. Insoluto
         prolungato → cartella, rateazione o pignoramento.

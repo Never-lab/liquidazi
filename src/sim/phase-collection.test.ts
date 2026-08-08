@@ -122,6 +122,52 @@ describe("fiscal cartella", () => {
     expect(s.pendingEvent?.id).toBe(CARTELLA_EVENT_ID);
     expect(s.collectionCase?.stage).toBe("cartella");
   });
+
+  it("cartella snapshots liability ids", () => {
+    const s = seedOverdue();
+    const id = s.liabilities[0]!.id;
+    maybeOpenCartella(s);
+    expect(s.collectionCase?.liabilityIds).toEqual([id]);
+  });
+
+  it("payF24 is no-op during cartella (no double pay)", () => {
+    let s = seedOverdue(10_000);
+    maybeOpenCartella(s);
+    const cash0 = s.company.cash;
+    const principal0 = s.collectionCase!.principal;
+    s = payF24(s);
+    expect(s.company.cash).toBe(cash0);
+    expect(s.liabilities.every((l) => !l.paid)).toBe(true);
+    expect(s.collectionCase?.principal).toBe(principal0);
+  });
+
+  it("rateazione: new F24 payable; snapshot liabilities stay unpaid until close", () => {
+    let s = seedOverdue(50_000);
+    maybeOpenCartella(s);
+    const snapId = s.collectionCase!.liabilityIds![0]!;
+    s = resolveCartellaChoice(s, "rateize");
+    expect(s.collectionCase?.stage).toBe("rateazione");
+
+    const idx = toMonthIndex(s.calendar);
+    const newId = s.nextId++;
+    s.liabilities.push({
+      id: newId,
+      kind: "IVA",
+      amount: 200,
+      dueIdx: idx,
+      paid: false,
+      penalized: false,
+    });
+    s = payF24(s);
+    expect(s.liabilities.find((l) => l.id === newId)?.paid).toBe(true);
+    expect(s.liabilities.find((l) => l.id === snapId)?.paid).toBe(false);
+
+    for (let i = 0; i < RATEATION_MONTHS; i++) {
+      tickCollectionCase(s);
+    }
+    expect(s.collectionCase).toBeNull();
+    expect(s.liabilities.find((l) => l.id === snapId)?.paid).toBe(true);
+  });
 });
 
 describe("fiscal rateazione and enforcement", () => {

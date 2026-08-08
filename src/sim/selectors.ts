@@ -6,11 +6,19 @@ import {
   type Invoice,
   type TaxLiability,
 } from "./types";
+import { f24BlockedByCollection } from "./collection";
 
 /** Liabilities payable right now with the F24 (due this month or overdue). */
 export const dueF24Liabilities = (state: GameState): TaxLiability[] => {
+  if (f24BlockedByCollection(state)) return [];
   const idx = toMonthIndex(state.calendar);
-  return state.liabilities.filter((l) => !l.paid && l.dueIdx <= idx);
+  const snap =
+    state.collectionCase?.stage === "rateazione" && state.collectionCase.liabilityIds?.length
+      ? new Set(state.collectionCase.liabilityIds)
+      : null;
+  return state.liabilities.filter(
+    (l) => !l.paid && l.dueIdx <= idx && !(snap?.has(l.id) ?? false),
+  );
 };
 
 export const dueF24Total = (state: GameState): number =>

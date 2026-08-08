@@ -14,7 +14,8 @@ dist-ssr
 server/data/*.json
 server/data/saves/
 
-# graphify — keep report/wiki/graph; drop tooling + heavy viz
+# graphify — keep report/wiki; drop tooling, heavy viz, and large graph.json
+graphify-out/graph.json
 graphify-out/.graphify_python
 graphify-out/.graphify_root
 graphify-out/.graphify_detect.json

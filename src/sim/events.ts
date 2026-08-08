@@ -55,6 +55,16 @@ export const rollDemandRegime = (rand: () => number): DemandRegime => {
   return "boom";
 };
 
+/** Edge-trigger: popup only when regime becomes secca/boom (not every repeat month). */
+export const demandPopupForAdvance = (
+  status: GameState["status"],
+  prev: DemandRegime,
+  next: DemandRegime,
+): DemandRegime | null =>
+  status === "running" && (next === "secca" || next === "boom") && next !== prev
+    ? next
+    : null;
+
 export const regimeMult = (r: DemandRegime): number =>
   r === "secca" ? 0.15 : r === "boom" ? 1.35 : 1;
 

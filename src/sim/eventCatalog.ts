@@ -23,6 +23,23 @@ const pushLog = (
   state.log = state.log.slice(0, 12);
 };
 
+/** Count toward clearing rival floor after contain responses. */
+const applyRivalAnchorClear = (s: GameState): void => {
+  if (!s.rival) return;
+  const floor = s.rival.floor;
+  if (floor == null || s.rival.contained) return;
+  const clears = (s.rival.anchorClears ?? 0) + 1;
+  if (clears >= 2) {
+    s.rival = { ...s.rival, floor: undefined, anchorClears: 0 };
+  } else {
+    s.rival = {
+      ...s.rival,
+      anchorClears: clears,
+      heat: Math.max(floor, s.rival.heat),
+    };
+  }
+};
+
 /** If cash went negative, pull from treasury (emergency fund). Returns amount taken. */
 export const coverNegativeCashFromTreasury = (s: GameState): number => {
   s.treasury ??= 0;
@@ -309,19 +326,7 @@ const CHOICE_POOL: ChoiceDef[] = [
           s.ytd.otherCosts = round2(s.ytd.otherCosts + cost);
           if (s.rival) {
             s.rival = { ...s.rival, heat: Math.max(0, s.rival.heat - 14) };
-            const floor = s.rival.floor;
-            if (floor != null && !s.rival.contained) {
-              const clears = (s.rival.anchorClears ?? 0) + 1;
-              if (clears >= 2) {
-                s.rival = { ...s.rival, floor: undefined, anchorClears: 0 };
-              } else {
-                s.rival = {
-                  ...s.rival,
-                  anchorClears: clears,
-                  heat: Math.max(floor, s.rival.heat),
-                };
-              }
-            }
+            applyRivalAnchorClear(s);
           }
           s.company.reputation = Math.min(100, s.company.reputation + 2);
           const who = s.rival?.name ?? "Il rivale";
@@ -339,19 +344,7 @@ const CHOICE_POOL: ChoiceDef[] = [
           s.company.reputation = Math.max(0, s.company.reputation - 6);
           if (s.rival) {
             s.rival = { ...s.rival, heat: Math.max(0, s.rival.heat - 6) };
-            const floor = s.rival.floor;
-            if (floor != null && !s.rival.contained) {
-              const clears = (s.rival.anchorClears ?? 0) + 1;
-              if (clears >= 2) {
-                s.rival = { ...s.rival, floor: undefined, anchorClears: 0 };
-              } else {
-                s.rival = {
-                  ...s.rival,
-                  anchorClears: clears,
-                  heat: Math.max(floor, s.rival.heat),
-                };
-              }
-            }
+            applyRivalAnchorClear(s);
           }
           const net = round2(maxDealNet(s) * 0.7);
           s.opportunities.push({

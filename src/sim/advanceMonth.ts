@@ -3,16 +3,17 @@ import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
 import { hasUpgrade, upgradeLevel } from "../config/upgrades";
 import { migrateUpgradeState } from "./migrateUpgrades";
+import { migrateGameState } from "./migrateGameState";
 import {
   buildRescueOffer,
   euriborAt,
   FIDO_SPREAD_BPS,
   complianceSpreadPenaltyBps,
-  frenchPayment,
   treasuryAnnualRate,
 } from "./actions";
 import { applySubsidiaryMonth, advanceHoldingSales, refreshAcquisitionBoard } from "./acquisitions";
-import { applyMonthlyMora, maybeOpenCartella, tickCollectionCase, updateMonthsTaxOverdue } from "./collection";
+import { applyMonthlyMora, f24BlockedByCollection, maybeOpenCartella, tickCollectionCase, updateMonthsTaxOverdue } from "./collection";
+import { dueF24Liabilities } from "./selectors";
 import { tickContracts } from "./contracts";
 import { runWorldEvents } from "./eventCatalog";
 import { refreshMarketBoard, rng, monthlyCapacity } from "./events";
@@ -32,7 +33,7 @@ import {
   supplyConsumeExtra,
   tickPressure,
 } from "./pressures";
-import { seedRival, tickRivalHeat, tickRivalPayoff } from "./rival";
+import { tickRivalHeat, tickRivalPayoff } from "./rival";
 import {
   CAMPAIGN_WIN_MONTHS,
   LOSE_MONTHS_BELOW_ZERO,
@@ -143,43 +144,7 @@ export const advanceMonth = (state: GameState): GameState => {
   if (state.status !== "running") return next;
   if (state.pendingEvent) return next;
   if (state.projectOffer) return next;
-  next.upgrades ??= [];
-  next.yearReports ??= next.lastYearReport ? [next.lastYearReport] : [];
-  next.tempCapacityMonths ??= 0;
-  next.pendingEvent ??= null;
-  next.collectionCase ??= null;
-  next.monthsTaxOverdue ??= 0;
-  next.logReadThruId ??= 0;
-  next.demandRegime ??= "normale";
-  next.lastUiHint ??= null;
-  next.activeProject ??= null;
-  next.projectOffer ??= null;
-  next.projectOfferYear ??= null;
-  next.staffMorale ??= 70;
-  next.supplyMonths ??= 0;
-  next.milestones ??= [];
-  next.activeContracts ??= [];
-  next.quarterPressure ??= null;
-  if (!next.rival) next.rival = seedRival(next);
-  // Defensive defaults: fields added after some saves were created should
-  // never resurrect as undefined/NaN on load (see persist migration above).
-  if (next.loan) {
-    const loanAnnualRate =
-      next.loan.rateType === "fixed"
-        ? (next.loan.fixedAnnualRate ?? euriborAt(next.monthsPlayed) + next.loan.spreadBps / 10000)
-        : euriborAt(next.monthsPlayed) + next.loan.spreadBps / 10000;
-    next.loan.monthlyPayment ??= frenchPayment(
-      next.loan.outstanding,
-      loanAnnualRate,
-      Math.max(1, next.loan.tenorMonths - next.loan.monthsPaid),
-    );
-  }
-  for (const emp of next.employees) {
-    emp.senioritySteps ??= 0;
-  }
-  if (next.fido) {
-    next.fido.lastInterest ??= 0;
-  }
+  migrateGameState(next);
   const cashBefore = next.company.cash;
   let monthRentCharged = 0;
   const lines: { label: string; amount: number }[] = [];
@@ -208,15 +173,12 @@ export const advanceMonth = (state: GameState): GameState => {
   }
 
   // 0. gestionale: versa F24 dovuti se cassa basta (prima delle sanzioni)
-  if (hasUpgrade(next.upgradeLevels, "gestionale_f24")) {
+  if (hasUpgrade(next.upgradeLevels, "gestionale_f24") && !f24BlockedByCollection(next)) {
+    const payable = dueF24Liabilities(next);
     let due = 0;
-    for (const l of next.liabilities) {
-      if (!l.paid && l.dueIdx <= idx) due = round2(due + l.amount);
-    }
+    for (const l of payable) due = round2(due + l.amount);
     if (due > 0 && next.company.cash >= due) {
-      for (const l of next.liabilities) {
-        if (!l.paid && l.dueIdx <= idx) l.paid = true;
-      }
+      for (const l of payable) l.paid = true;
       next.company.cash = round2(next.company.cash - due);
       const f24Lv = upgradeLevel(next.upgradeLevels, "gestionale_f24");
       if (f24Lv >= 3) {
@@ -284,11 +246,6 @@ export const advanceMonth = (state: GameState): GameState => {
   }
 
   // 1c. treasury interest + subsidiary portfolio drip
-  next.treasury ??= 0;
-  next.subsidiaries ??= [];
-  next.acquisitionBoard ??= [];
-  next.growthInvested ??= 0;
-  next.growthCapacityBonus ??= 0;
   if (next.treasury > 0) {
     const b = next.company.cash;
     const interest = round2((next.treasury * treasuryAnnualRate(next.monthsPlayed)) / 12);
@@ -561,7 +518,6 @@ export const advanceMonth = (state: GameState): GameState => {
       year2Reached: false,
     };
   }
-  next.career.year2Reached ??= false;
   const debtNow = round2(
     (next.loan?.outstanding ?? 0) +
       (next.fido?.drawn ?? 0) +
