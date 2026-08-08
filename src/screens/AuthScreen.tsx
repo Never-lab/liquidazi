@@ -101,6 +101,8 @@ export const AuthScreen = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
+              minLength={8}
+              required
             />
             <button
               type="button"

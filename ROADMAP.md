@@ -32,6 +32,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa Ã
 | Supply / scorte pass (#3) | [plan](docs/superpowers/plans/2026-08-08-supply-scorte.md) | [spec](docs/superpowers/specs/2026-08-08-supply-scorte-design.md) |
 | Demand boom/secca (#2) | [plan](docs/superpowers/plans/2026-08-08-demand-boom-secca.md) | [spec](docs/superpowers/specs/2026-08-08-demand-boom-secca-design.md) |
 | Rival pressure pass | [plan](docs/superpowers/plans/2026-08-08-rival-pressure.md) | [spec](docs/superpowers/specs/2026-08-08-rival-pressure-design.md) |
+| Security hardening (rate limit, run clamps) | â€” | audit session 2026-08-08 |
 
 ## Next (coda attiva)
 

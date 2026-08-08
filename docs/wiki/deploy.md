@@ -14,6 +14,8 @@ npm run build
 
 See root `README.md`: Node 22, `LIQUIDAZI_SECRET`, optional `LIQUIDAZI_ADMIN_USERNAMES`, volume mount **`/data`** (never `/app`). Health: `GET /api/health` → `"storage":"volume"`.
 
+Auth: password min **8** chars; in-memory rate limits on register/login (20 / 15 min per IP) and feedback (8 / hour per IP). Self-reported runs clamp money stats and reject forged early `won` (&lt; 24 mesi).
+
 ## Wiki maintenance
 
 | Command | Purpose |

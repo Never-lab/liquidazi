@@ -15,12 +15,18 @@ import {
 } from "node:fs";
 import { join, extname, sep } from "node:path";
 import { computeBalance } from "./balance.mjs";
+import { clientIp, createRateLimiter } from "./rateLimit.mjs";
 import { extractRunFromGame, syncRunsFromSaves, upsertRun } from "./runSync.mjs";
 
 const MAX_SAVE_BYTES = 1_000_000;
 const MAX_BODY_BYTES = 64_000;
 const MAX_FEEDBACK = 200;
 const MAX_FEEDBACK_MSG = 2_000;
+const MIN_PASSWORD = 8;
+/** Soft anti-cheat ceiling on self-reported money stats (€). */
+const MAX_RUN_MONEY = 100_000_000;
+const AUTH_RATE = { limit: 20, windowMs: 15 * 60 * 1000 };
+const FEEDBACK_RATE = { limit: 8, windowMs: 60 * 60 * 1000 };
 const FEEDBACK_KINDS = new Set(["bug", "idea", "postmortem"]);
 
 const MIME = {
@@ -45,7 +51,12 @@ const safeJoin = (root, reqPath) => {
 
 const sendFile = (res, filePath) => {
   const ext = extname(filePath);
-  res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+  res.writeHead(200, {
+    "Content-Type": MIME[ext] || "application/octet-stream",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY",
+  });
   createReadStream(filePath).pipe(res);
 };
 
@@ -83,6 +94,7 @@ export function createHandler({
     adminUsernames.map((u) => String(u).trim().toLowerCase()).filter(Boolean),
   );
   const isAdmin = (user) => Boolean(user && adminSet.has(user.username.toLowerCase()));
+  const rateLimit = createRateLimiter();
 
   const load = (name, fallback) => {
     const p = join(dataDir, name);
@@ -156,11 +168,13 @@ export function createHandler({
     if (!header?.startsWith("Bearer ")) return null;
     const token = header.slice(7);
     const [userId, expStr, sig] = token.split(".");
-    if (!userId || !expStr || !sig) return null;
+    if (!userId || !expStr || !sig || !/^[0-9a-f]+$/i.test(sig)) return null;
     const body = `${userId}.${expStr}`;
     const expect = createHmac("sha256", secret).update(body).digest("hex");
     try {
-      if (!timingSafeEqual(Buffer.from(sig), Buffer.from(expect))) return null;
+      const a = Buffer.from(sig, "hex");
+      const b = Buffer.from(expect, "hex");
+      if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
     } catch {
       return null;
     }
@@ -168,12 +182,20 @@ export function createHandler({
     return users.find((u) => u.id === userId) ?? null;
   };
 
-  const json = (res, status, data) => {
+  const SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY",
+  };
+
+  const json = (res, status, data, extraHeaders = {}) => {
     res.writeHead(status, {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      ...SECURITY_HEADERS,
+      ...extraHeaders,
     });
     res.end(JSON.stringify(data));
   };
@@ -227,6 +249,16 @@ export function createHandler({
       }
 
       if (req.method === "POST" && path === "/api/auth/register") {
+        const ip = clientIp(req);
+        const rl = rateLimit.check(`auth:${ip}`, AUTH_RATE.limit, AUTH_RATE.windowMs);
+        if (!rl.ok) {
+          return json(
+            res,
+            429,
+            { error: "Troppi tentativi. Riprova tra poco." },
+            { "Retry-After": String(rl.retryAfterSec) },
+          );
+        }
         let body;
         try {
           body = await readBodyLimited(req, MAX_BODY_BYTES);
@@ -242,8 +274,8 @@ export function createHandler({
         if (!USER_RE.test(username)) {
           return json(res, 400, { error: "Username: 3–20 caratteri, lettere/numeri/_" });
         }
-        if (password.length < 6) {
-          return json(res, 400, { error: "Password minimo 6 caratteri" });
+        if (password.length < MIN_PASSWORD) {
+          return json(res, 400, { error: `Password minimo ${MIN_PASSWORD} caratteri` });
         }
         if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
           return json(res, 409, { error: "Username già preso" });
@@ -260,6 +292,16 @@ export function createHandler({
       }
 
       if (req.method === "POST" && path === "/api/auth/login") {
+        const ip = clientIp(req);
+        const rl = rateLimit.check(`auth:${ip}`, AUTH_RATE.limit, AUTH_RATE.windowMs);
+        if (!rl.ok) {
+          return json(
+            res,
+            429,
+            { error: "Troppi tentativi. Riprova tra poco." },
+            { "Retry-After": String(rl.retryAfterSec) },
+          );
+        }
         let body;
         try {
           body = await readBodyLimited(req, MAX_BODY_BYTES);
@@ -380,6 +422,16 @@ export function createHandler({
       }
 
       if (req.method === "POST" && path === "/api/feedback") {
+        const ip = clientIp(req);
+        const rl = rateLimit.check(`feedback:${ip}`, FEEDBACK_RATE.limit, FEEDBACK_RATE.windowMs);
+        if (!rl.ok) {
+          return json(
+            res,
+            429,
+            { error: "Troppi feedback. Riprova più tardi." },
+            { "Retry-After": String(rl.retryAfterSec) },
+          );
+        }
         const user = parseToken(req.headers.authorization);
         let body;
         try {
@@ -503,7 +555,11 @@ export function createHandler({
           !Number.isFinite(peakCash) ||
           !Number.isFinite(peakDebt) ||
           !Number.isFinite(lifetimeRevenue) ||
-          !Number.isFinite(finalCash)
+          !Number.isFinite(finalCash) ||
+          Math.abs(peakCash) > MAX_RUN_MONEY ||
+          Math.abs(peakDebt) > MAX_RUN_MONEY ||
+          Math.abs(lifetimeRevenue) > MAX_RUN_MONEY ||
+          Math.abs(finalCash) > MAX_RUN_MONEY
         ) {
           return json(res, 400, { error: "Stats non valide" });
         }
@@ -511,7 +567,11 @@ export function createHandler({
         const difficultyRaw = String(body.difficulty || "").trim().toLowerCase();
         const difficulty = DIFFS.has(difficultyRaw) ? difficultyRaw : null;
         const outcomeRaw = String(body.outcome || "lost").trim().toLowerCase();
-        const outcome = outcomeRaw === "won" ? "won" : "lost";
+        // Soft-win is 24 months; reject forged early "won" submissions.
+        let outcome = outcomeRaw === "won" ? "won" : "lost";
+        if (outcome === "won" && monthsPlayed < 24) {
+          outcome = "lost";
+        }
         const slotRaw = Number(body.slotIndex);
         const slotIndex =
           Number.isInteger(slotRaw) && slotRaw >= 0 && slotRaw <= 2 ? slotRaw : null;

@@ -44,7 +44,7 @@ describe("cloud saves", () => {
   });
 
   it("rejects oversized auth and run request bodies", async () => {
-    const oversized = JSON.stringify({ username: "a".repeat(64_000), password: "secret1" });
+    const oversized = JSON.stringify({ username: "a".repeat(64_000), password: "secret12" });
     const register = await api("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -55,7 +55,7 @@ describe("cloud saves", () => {
     const auth = await api("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "run_user", password: "secret1" }),
+      body: JSON.stringify({ username: "run_user", password: "secret12" }),
     });
     const run = await api("/api/runs", {
       method: "POST",
@@ -69,7 +69,7 @@ describe("cloud saves", () => {
     const reg = await api("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "alice_srl", password: "secret1" }),
+      body: JSON.stringify({ username: "alice_srl", password: "secret12" }),
     });
     expect(reg.status).toBe(201);
     const token = (reg.data as { token: string }).token;
@@ -114,7 +114,7 @@ describe("cloud saves", () => {
     const bob = await api("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "bob_srl", password: "secret1" }),
+      body: JSON.stringify({ username: "bob_srl", password: "secret12" }),
     });
     const bobToken = (bob.data as { token: string }).token;
     const bobSaves = await api("/api/saves", {
@@ -127,7 +127,7 @@ describe("cloud saves", () => {
     const reg = await api("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "long_runner", password: "secret1" }),
+      body: JSON.stringify({ username: "long_runner", password: "secret12" }),
     });
     const token = (reg.data as { token: string }).token;
 
@@ -204,7 +204,7 @@ describe("cloud saves", () => {
     const reg = await api("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "fat_user", password: "secret1" }),
+      body: JSON.stringify({ username: "fat_user", password: "secret12" }),
     });
     const token = (reg.data as { token: string }).token;
     const huge = "x".repeat(1_000_001);
@@ -259,7 +259,7 @@ describe("admin stats", () => {
     const boss = await adminApi("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "boss", password: "secret1" }),
+      body: JSON.stringify({ username: "boss", password: "secret12" }),
     });
     expect(boss.status).toBe(201);
     expect((boss.data as { admin: boolean }).admin).toBe(true);
@@ -274,7 +274,7 @@ describe("admin stats", () => {
     const peon = await adminApi("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "peon", password: "secret1" }),
+      body: JSON.stringify({ username: "peon", password: "secret12" }),
     });
     const peonToken = (peon.data as { token: string }).token;
     expect((peon.data as { admin: boolean }).admin).toBe(false);
@@ -400,7 +400,7 @@ describe("in-app feedback", () => {
     const boss = await call("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: "boss", password: "secret1" }),
+      body: JSON.stringify({ username: "boss", password: "secret12" }),
     });
     const token = (boss.data as { token: string }).token;
     const stats = await call("/api/admin/stats", {
@@ -537,6 +537,97 @@ describe("runs realign from existing cloud saves on boot", () => {
     expect(data.entries.some((e) => e.username === "boot_long" && e.monthsPlayed === 90)).toBe(
       true,
     );
+    srv.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe("security hardening", () => {
+  it("rejects short passwords", async () => {
+    const { status, data } = await api("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "short_pw", password: "1234567" }),
+    });
+    expect(status).toBe(400);
+    expect(String((data as { error?: string }).error)).toMatch(/8/);
+  });
+
+  it("rejects absurd run money and downgrades early won", async () => {
+    const reg = await api("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "sec_runner", password: "secret12" }),
+    });
+    const token = (reg.data as { token: string }).token;
+
+    const huge = await api("/api/runs", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        monthsPlayed: 30,
+        peakCash: 999_999_999,
+        peakDebt: 0,
+        lifetimeRevenue: 0,
+        finalCash: 0,
+        outcome: "lost",
+      }),
+    });
+    expect(huge.status).toBe(400);
+
+    const earlyWin = await api("/api/runs", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        monthsPlayed: 10,
+        peakCash: 1000,
+        peakDebt: 0,
+        lifetimeRevenue: 500,
+        finalCash: 1000,
+        companyName: "Early",
+        city: "058091",
+        sector: "servizi",
+        outcome: "won",
+        slotIndex: 0,
+      }),
+    });
+    expect(earlyWin.status).toBeGreaterThanOrEqual(200);
+    expect(earlyWin.status).toBeLessThan(300);
+
+    const board = await api("/api/leaderboard?board=longest&limit=50");
+    const entries = (board.data as { entries: { companyName: string; monthsPlayed: number }[] })
+      .entries;
+    const mine = entries.find((e) => e.companyName === "Early");
+    // Outcome forced to lost does not remove the run; ensure it was accepted.
+    expect(mine?.monthsPlayed).toBe(10);
+  });
+
+  it("rate-limits auth after many attempts from same IP", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "liquidazi-rl-"));
+    const handler = createHandler({ dataDir: dir, secret: SECRET, distDir: null });
+    const srv = createServer(handler);
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    if (!addr || typeof addr === "string") throw new Error("no port");
+    const b = `http://127.0.0.1:${addr.port}`;
+    const call = async (i: number) => {
+      const res = await fetch(`${b}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: `rl_user_${i}`, password: "secret12" }),
+      });
+      return res.status;
+    };
+    const statuses: number[] = [];
+    for (let i = 0; i < 22; i++) statuses.push(await call(i));
+    expect(statuses.some((s) => s === 429)).toBe(true);
+    expect(statuses.filter((s) => s === 201).length).toBeLessThanOrEqual(20);
     srv.close();
     rmSync(dir, { recursive: true, force: true });
   });
