@@ -270,24 +270,18 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
   if (op.kind === "sale" && op.contractMonths && op.contractMonths >= 2) {
     if ((state.activeContracts ?? []).length >= 2) {
       const blocked = structuredClone(state);
-      blocked.log.unshift({
-        id: blocked.nextId++,
-        monthIdx: toMonthIndex(blocked.calendar),
-        tone: "bad",
+      blocked.lastUiHint = {
         text: "Hai già 2 contratti attivi: chiudine uno prima di firmarne un altro.",
-      });
-      blocked.log = blocked.log.slice(0, 12);
+        tone: "bad",
+      };
       return blocked;
     }
     if (salesAcceptedThisMonth(state) >= monthlyCapacity(state)) {
       const blocked = structuredClone(state);
-      blocked.log.unshift({
-        id: blocked.nextId++,
-        monthIdx: toMonthIndex(blocked.calendar),
-        tone: "bad",
+      blocked.lastUiHint = {
         text: `Capacità piena (${monthlyCapacity(state)} slot): non puoi bloccare un contratto.`,
-      });
-      blocked.log = blocked.log.slice(0, 12);
+        tone: "bad",
+      };
       return blocked;
     }
     const asContract = acceptAsContract(state, op);
@@ -297,16 +291,13 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
   if (op.kind === "sale" && salesAcceptedThisMonth(state) >= monthlyCapacity(state)) {
     const blocked = structuredClone(state);
     const cap = monthlyCapacity(state);
-    blocked.log.unshift({
-      id: blocked.nextId++,
-      monthIdx: toMonthIndex(blocked.calendar),
-      tone: "bad",
+    blocked.lastUiHint = {
       text:
         cap <= 0
           ? "Nessuno slot libero (contratti, pressione o scorte a zero). Libera capacità o ordina forniture."
           : `Capacità piena (${cap} commesse/mese). Assumi o chiudi un contratto.`,
-    });
-    blocked.log = blocked.log.slice(0, 12);
+      tone: "bad",
+    };
     return blocked;
   }
 
