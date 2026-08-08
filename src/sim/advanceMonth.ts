@@ -12,7 +12,7 @@ import {
   treasuryAnnualRate,
 } from "./actions";
 import { applySubsidiaryMonth, advanceHoldingSales, refreshAcquisitionBoard } from "./acquisitions";
-import { applyMonthlyMora, updateMonthsTaxOverdue } from "./collection";
+import { applyMonthlyMora, maybeOpenCartella, updateMonthsTaxOverdue } from "./collection";
 import { tickContracts } from "./contracts";
 import { runWorldEvents } from "./eventCatalog";
 import { refreshMarketBoard, rng, monthlyCapacity } from "./events";
@@ -326,6 +326,7 @@ export const advanceMonth = (state: GameState): GameState => {
 
   applyMonthlyMora(next);
   updateMonthsTaxOverdue(next);
+  maybeOpenCartella(next);
 
   // 2b. scatti anzianità (ogni SENIORITY_MONTHS mesi di servizio, cap MAX_SENIORITY_STEPS)
   for (const emp of next.employees) {

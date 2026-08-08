@@ -1,9 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
-import { MONTHLY_MORA_RATE } from "../config/collection";
+import {
+  CARTELLA_EVENT_ID,
+  maybeOpenCartella,
+  resolveCartellaChoice,
+} from "./collection";
+import {
+  MONTHLY_MORA_RATE,
+  RATEATION_FEE,
+  RATEATION_MONTHS,
+} from "../config/collection";
 import { advanceMonth } from "./advanceMonth";
 import { issueCustomerInvoice, payF24 } from "./actions";
-import { createInitialGameState, round2 } from "./types";
+import { createInitialGameState, round2, toMonthIndex } from "./types";
 
 describe("fiscal mora", () => {
   it("after one-shot penalty, amount grows each further month", () => {
@@ -32,5 +41,73 @@ describe("fiscal mora", () => {
     s = payF24(s);
     s = advanceMonth(s);
     expect(s.monthsTaxOverdue).toBe(0);
+  });
+});
+
+describe("fiscal cartella", () => {
+  const seedOverdue = (cash = 0) => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.company.cash = cash;
+    const idx = toMonthIndex(s.calendar);
+    s.liabilities.push({
+      id: s.nextId++,
+      kind: "IVA",
+      amount: 500,
+      dueIdx: idx - 1,
+      paid: false,
+      penalized: true,
+    });
+    s.monthsTaxOverdue = 6;
+    return s;
+  };
+
+  it("a 6 mesi di insoluto apre cartella pending", () => {
+    const s = seedOverdue();
+    maybeOpenCartella(s);
+    expect(s.pendingEvent?.id).toBe(CARTELLA_EVENT_ID);
+    expect(s.collectionCase?.stage).toBe("cartella");
+    expect(s.collectionCase?.principal).toBe(500);
+  });
+
+  it("advanceMonth apre cartella dopo 6 mesi continui di insoluto", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s = issueCustomerInvoice(s, 5000);
+    for (let i = 0; i < 8 && !s.pendingEvent; i++) s = advanceMonth(s);
+    expect(s.pendingEvent?.id).toBe(CARTELLA_EVENT_ID);
+    expect(s.collectionCase?.stage).toBe("cartella");
+  });
+
+  it("pay_all chiude caso se cassa basta", () => {
+    let s = seedOverdue(10000);
+    maybeOpenCartella(s);
+    s = resolveCartellaChoice(s, "pay_all");
+    expect(s.collectionCase).toBeNull();
+    expect(s.pendingEvent).toBeNull();
+    expect(s.liabilities.every((l) => l.paid)).toBe(true);
+    expect(s.company.cash).toBeCloseTo(9500);
+  });
+
+  it("rateize apre piano 12 mesi", () => {
+    let s = seedOverdue();
+    maybeOpenCartella(s);
+    s = resolveCartellaChoice(s, "rateize");
+    expect(s.collectionCase?.stage).toBe("rateazione");
+    expect(s.pendingEvent).toBeNull();
+    const total = round2(500 * (1 + RATEATION_FEE));
+    expect(s.collectionCase?.principal).toBe(total);
+    expect(s.collectionCase?.plan?.monthsLeft).toBe(RATEATION_MONTHS);
+    expect(s.collectionCase?.plan?.totalMonths).toBe(RATEATION_MONTHS);
+    expect(s.collectionCase?.plan?.installment).toBeCloseTo(round2(total / RATEATION_MONTHS));
+  });
+
+  it("ignore → enforcement", () => {
+    let s = seedOverdue();
+    maybeOpenCartella(s);
+    s = resolveCartellaChoice(s, "ignore");
+    expect(s.collectionCase?.stage).toBe("enforcement");
+    expect(s.collectionCase?.monthsInStage).toBe(0);
+    expect(s.pendingEvent).toBeNull();
   });
 });
