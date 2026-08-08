@@ -37,6 +37,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa Ã
 | Shock senza stock (#6) | [plan](docs/superpowers/plans/2026-08-08-shock-senza-stock.md) | [spec](docs/superpowers/specs/2026-08-08-shock-senza-stock-design.md) |
 | Compliance recovery + multi-mutuo credito | [plan](docs/superpowers/plans/2026-08-08-compliance-credito.md) | [spec](docs/superpowers/specs/2026-08-08-compliance-credito-design.md) |
 | Investimenti UX + light balance | â€” | [spec](docs/superpowers/specs/2026-08-08-investimenti-ux-design.md) |
+| UI clarity + hybrid tooltips (`Hint`) | [plan](docs/superpowers/plans/2026-08-08-ui-clarity-tooltips.md) | [spec](docs/superpowers/specs/2026-08-08-ui-clarity-tooltips-design.md) |
 
 ## Next (coda attiva)
 

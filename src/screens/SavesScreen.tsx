@@ -77,6 +77,13 @@ export const SavesScreen = () => {
                 <button
                   className={styles.primary}
                   type="button"
+                  title={
+                    running
+                      ? "Riprendi la partita su questo slot."
+                      : active
+                        ? "Avvia una nuova partita su questo slot (attivo)."
+                        : "Seleziona questo slot per una nuova partita."
+                  }
                   onClick={() => {
                     selectSlot(i);
                     if (running) setScreen("game");
@@ -89,6 +96,7 @@ export const SavesScreen = () => {
                   <button
                     className={styles.secondary}
                     type="button"
+                    title="Cancella il salvataggio di questo slot (chiede conferma)."
                     onClick={() => setPendingClear(i)}
                   >
                     Cancella
