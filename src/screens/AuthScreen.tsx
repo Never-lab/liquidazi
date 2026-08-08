@@ -143,6 +143,7 @@ export const AuthScreen = () => {
             type="button"
             className={styles.primary}
             disabled={busy}
+            title={busy ? "Attendi il completamento della richiesta…" : "Entra senza registrarti (salvataggi locali)."}
             onClick={() => continueAsGuest()}
           >
             <span className={styles.btnInner}>
@@ -150,7 +151,12 @@ export const AuthScreen = () => {
               Continua senza account
             </span>
           </button>
-          <button type="submit" className={styles.secondary} disabled={busy}>
+          <button
+            type="submit"
+            className={styles.secondary}
+            disabled={busy}
+            title={busy ? "Attendi il completamento della richiesta…" : undefined}
+          >
             <span className={styles.btnInner}>
               <Icon name={mode === "login" ? "login" : "user"} size={18} />
               {busy ? "Attendi…" : mode === "login" ? "Entra" : "Registrati"}
@@ -161,6 +167,7 @@ export const AuthScreen = () => {
               type="button"
               className={styles.secondary}
               disabled={busy}
+              title={busy ? "Attendi il completamento della richiesta…" : "Passa al login con questo username."}
               onClick={switchToLogin}
             >
               <span className={styles.btnInner}>
@@ -169,7 +176,13 @@ export const AuthScreen = () => {
               </span>
             </button>
           )}
-          <button type="button" className={styles.secondary} disabled={busy} onClick={switchMode}>
+          <button
+            type="button"
+            className={styles.secondary}
+            disabled={busy}
+            title={busy ? "Attendi il completamento della richiesta…" : undefined}
+            onClick={switchMode}
+          >
             <span className={styles.btnInner}>
               <Icon name="user" size={18} />
               {mode === "login" ? "Non hai un account? Registrati" : "Hai già un account? Accedi"}

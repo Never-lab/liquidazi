@@ -132,6 +132,11 @@ export const SetupScreen = () => {
           value={cityOptions.some((c) => c.id === city) ? city : (cityOptions[0]?.id ?? "")}
           onChange={(e) => setCity(e.target.value)}
           disabled={cityOptions.length === 0}
+          title={
+            cityOptions.length === 0
+              ? "Nessun comune per il filtro/regione attuale — allarga la ricerca."
+              : "Scegli il comune della sede."
+          }
         >
           {cityOptions.length === 0 ? (
             <option value="">Nessun comune trovato in questa regione</option>
@@ -191,6 +196,11 @@ export const SetupScreen = () => {
         <button
           className={styles.primary}
           disabled={cityOptions.length === 0}
+          title={
+            cityOptions.length === 0
+              ? "Nessun comune selezionabile — cambia filtro o regione."
+              : "Avvia una nuova partita con questi parametri."
+          }
           onClick={() => newGame({ name, city, sector, difficulty })}
         >
           Apri l&apos;azienda
