@@ -67,6 +67,7 @@ export const PayrollPanel = () => {
                 <button
                   type="button"
                   className={styles.buttonSecondary}
+                  title={`Assumi ${r.role}: costo aziendale ~${formatCash(employerCostMonthly(base))}/mese.`}
                   onClick={() => hire(r.role)}
                 >
                   Assumi
@@ -91,6 +92,11 @@ export const PayrollPanel = () => {
               <button
                 type="button"
                 className={styles.buttonDanger}
+                title={
+                  e.tfrAccrued > 0
+                    ? `Licenzia: paga subito il TFR maturato (${formatCash(e.tfrAccrued)}).`
+                    : "Licenzia questo dipendente (nessun TFR maturato)."
+                }
                 onClick={() => fire(e.id)}
               >
                 Licenzia

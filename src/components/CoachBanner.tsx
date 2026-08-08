@@ -17,7 +17,12 @@ export const CoachBanner = () => {
         <h3 className={styles.title}>{tip.title}</h3>
         <p className={styles.body}>{tip.body}</p>
       </div>
-      <button type="button" className={styles.dismiss} onClick={dismissCoach}>
+      <button
+        type="button"
+        className={styles.dismiss}
+        title="Nasconde i suggerimenti guida per questa partita."
+        onClick={dismissCoach}
+      >
         Nascondi guide
       </button>
     </aside>

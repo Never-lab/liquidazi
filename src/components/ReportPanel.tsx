@@ -37,6 +37,7 @@ export const ReportPanel = () => {
               className={
                 r.year === selected.year ? styles.button : styles.buttonSecondary
               }
+              title={`Mostra il bilancio semplificato dell'anno ${r.year}.`}
               onClick={() => setYear(r.year)}
             >
               {r.year}
