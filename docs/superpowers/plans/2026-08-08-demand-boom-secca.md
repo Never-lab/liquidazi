@@ -188,7 +188,9 @@ describe("generateOpportunities demand regimes", () => {
         id: 1000 + i,
         role: "Operaio",
         grossMonthly: 1500,
-        hiredMonthIdx: 0,
+        hireMonthIdx: 0,
+        tfrAccrued: 0,
+        senioritySteps: 0,
       });
     }
     const { ops, demandRegime } = generateOpportunities(s, { forceRegime: "secca" });
@@ -205,7 +207,9 @@ describe("generateOpportunities demand regimes", () => {
         id: 2000 + i,
         role: "Operaio",
         grossMonthly: 1500,
-        hiredMonthIdx: 0,
+        hireMonthIdx: 0,
+        tfrAccrued: 0,
+        senioritySteps: 0,
       });
     }
     s.company.reputation = 100;
