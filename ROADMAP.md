@@ -24,12 +24,13 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Holding flip / acquisizioni | [docs/superpowers/plans/2026-08-07-holding-flip-acq.md](docs/superpowers/plans/2026-08-07-holding-flip-acq.md) | [spec](docs/superpowers/specs/2026-08-07-holding-flip-acq-design.md) |
 | Leaderboard run lunghe + realign save | [PR #22](https://github.com/Never-lab/liquidazi/pull/22) | — |
 | Admin delete run da Controllo | [PR #23](https://github.com/Never-lab/liquidazi/pull/23) | — |
+| Balance pass (#5 shock timing + #1 oneri staff) | [docs/superpowers/plans/2026-08-08-balance-pass.md](docs/superpowers/plans/2026-08-08-balance-pass.md) | [spec](docs/superpowers/specs/2026-08-08-balance-pass-design.md) |
 
 ## Next (coda attiva)
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Balance pass Normale** — slice unico (o sotto-slice) che attacca il backlog sotto; usare monitor Controllo + feedback run lunghe.
+1. **Balance pass (resto: #2 domanda / #3 scorte / #4 rep / #6 shock senza stock)** — backlog sotto; monitor Controllo + feedback run lunghe.
 2. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
 3. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
 4. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
@@ -43,7 +44,7 @@ Idee da playtest (Normale / run lunghe). Stato codice al 2026-08. Priorità sugg
 
 Prima di implementare: uno spec corto `docs/superpowers/specs/YYYY-MM-DD-balance-pass-design.md` che fissi numeri e ordine di ship (non tutto in un PR).
 
-### 1. Assunzione di massa (Operaio) senza ripercussioni — **P0**
+### 1. ~~Assunzione di massa (Operaio) senza ripercussioni~~ — **P0** → shipped (#1 oneri staff, balance pass 2026-08-08)
 
 **Sintomo:** si assume un numero enorme di Operai per alzare le slot/mese; il costo non frena abbastanza il vantaggio sulle commesse.
 
@@ -96,7 +97,7 @@ Prima di implementare: uno spec corto `docs/superpowers/specs/YYYY-MM-DD-balance
 
 **File tipici:** `events.ts` (`monthlyCapacity`, `maxDealNet`), `contracts.ts`, accept/default logic.
 
-### 5. Exploit tesoreria vs shock % cassa (terremoto) — **P0**
+### 5. ~~Exploit tesoreria vs shock % cassa (terremoto)~~ — **P0** → shipped (#5 shock timing, balance pass 2026-08-08)
 
 **Sintomo:** deposito istantaneo in tesoreria → shock sul 20% della sola cassa liquida → ripreliево; si evita il danno.
 
@@ -126,8 +127,8 @@ Prima di implementare: uno spec corto `docs/superpowers/specs/YYYY-MM-DD-balance
 
 | Ordine | Item | Perché |
 |--------|------|--------|
-| 1 | **#5 tesoreria lag** | Exploit chiaro, fix piccolo, alto impatto fairness |
-| 2 | **#1 costo annuale staff** | Chiude il loop “100 operai” |
+| 1 | ~~**#5 tesoreria lag**~~ → shipped | Shock at month open; no treasury settlement in this slice |
+| 2 | ~~**#1 costo annuale staff**~~ → shipped | Oneri annuali personale in FY close |
 | 3 | **#2 domanda boom/secca** | Varianza run lunghe |
 | 4 | **#3 + #4 scorte/rep** | Sistemi già presenti ma spuntati |
 | 5 | **#6 shock senza stock** | Ritocco eventi, dopo che scorte hanno valore |
