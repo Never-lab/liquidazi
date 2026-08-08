@@ -119,12 +119,12 @@ describe("Staff board + upgrades lite", () => {
     let s = withDueF24();
     s.upgradeLevels = { gestionale_f24: 2 };
     s = advanceMonth(s);
-    expect(s.compliance).toBe(51);
+    expect(s.compliance).toBe(54); // +1 gestionale +3 in regola
 
     s = withDueF24();
     s.upgradeLevels = { gestionale_f24: 3 };
     s = advanceMonth(s);
-    expect(s.compliance).toBe(52);
+    expect(s.compliance).toBe(55); // +2 gestionale +3 in regola
   });
 
   it("sede riduce affitto; processi alza capacity", () => {

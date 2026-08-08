@@ -12,6 +12,7 @@ import {
   type UpgradeLevel,
 } from "../config/upgrades";
 import { f24BlockedByCollection } from "./collection";
+import { migrateLoansInPlace, MAX_OPEN_LOANS, openLoans } from "./loans";
 import { migrateUpgradeState } from "./migrateUpgrades";
 import { marketModifiersFromIndex } from "./market";
 import { hasPressure } from "./pressures";
@@ -21,6 +22,7 @@ import {
   type ClientType,
   type GameState,
   type InvoiceKind,
+  type Loan,
   type LoanGuarantee,
   type LoanOffer,
 } from "./types";
@@ -212,7 +214,8 @@ export const buildLoanSchedule = (
  */
 export const buildRescueOffer = (state: GameState): LoanOffer | null => {
   if (state.company.cash >= 0) return null;
-  if (state.loan && state.loan.outstanding > 0) return null;
+  migrateLoansInPlace(state);
+  if (openLoans(state).length >= MAX_OPEN_LOANS) return null;
   const hole = -state.company.cash;
   let principal = Math.max(5000, Math.ceil((hole + 4000) / 1000) * 1000);
   let guarantee: LoanGuarantee = "none";
@@ -240,13 +243,16 @@ export const canRequestLoan = (
   state: GameState,
   principal: number,
   guarantee: LoanGuarantee,
-): boolean => loanRefusalReason(state, principal, guarantee) === null;
+  refinanceLoanId?: number,
+): boolean => loanRefusalReason(state, principal, guarantee, refinanceLoanId) === null;
 
 export interface LoanRequest {
   principal: number;
   tenorMonths: number;
   rateType: "fixed" | "floating";
   guarantee: LoanGuarantee;
+  /** If set, extinguish this loan id (sostituzione); net cash = principal − residual. */
+  refinanceLoanId?: number;
 }
 
 /** Perché la banca rifiuterebbe questo mutuo, o null se approvabile. */
@@ -254,8 +260,19 @@ export const loanRefusalReason = (
   state: GameState,
   principal: number,
   guarantee: LoanGuarantee,
+  refinanceLoanId?: number,
 ): string | null => {
-  if (state.loan && state.loan.outstanding > 0) return "Hai già un mutuo attivo";
+  migrateLoansInPlace(state);
+  const open = openLoans(state);
+  if (refinanceLoanId != null) {
+    const target = open.find((l) => l.id === refinanceLoanId);
+    if (!target) return "Mutuo da rifinanziare non trovato";
+    if (principal < target.outstanding) {
+      return "Importo troppo basso per chiudere il mutuo precedente";
+    }
+  } else if (open.length >= MAX_OPEN_LOANS) {
+    return "Hai già 2 mutui aperti: rifinanzia o chiudi un piano";
+  }
   if (principal <= 0) return "Inserisci un importo positivo";
   const max =
     guarantee === "fondo_garanzia_pmi"
@@ -281,25 +298,26 @@ const LOAN_OFFER_TEMPLATES: ReadonlyArray<{
   guarantee: LoanGuarantee;
 }> = [
   { id: "small", label: "Piccolo", principal: 10000, tenorMonths: 12, guarantee: "none" },
-  { id: "medium", label: "Medio", principal: 25000, tenorMonths: 24, guarantee: "none" },
+  { id: "medium", label: "Medio", principal: 30000, tenorMonths: 24, guarantee: "none" },
   {
     id: "fondo",
     label: "Fondo PMI",
-    principal: 40000,
+    principal: 60000,
     tenorMonths: 36,
     guarantee: "fondo_garanzia_pmi",
   },
 ];
 
 /** Le 3 offerte precalcolate mostrate in Credito, con rata e motivo di rifiuto. */
-export const buildLoanOffers = (state: GameState): LoanOfferCard[] =>
+export const buildLoanOffers = (
+  state: GameState,
+  refinanceLoanId?: number,
+): LoanOfferCard[] =>
   LOAN_OFFER_TEMPLATES.map((tpl) => {
-    // Il template "medio" prova prima senza garanzia; se il tetto lo blocca,
-    // ripiega su fideiussione (stesso tetto oggi, ma a prova di futuri snapshot).
     const guarantee =
       tpl.guarantee === "none" &&
-      loanRefusalReason(state, tpl.principal, "none") !== null &&
-      loanRefusalReason(state, tpl.principal, "fideiussione") === null
+      loanRefusalReason(state, tpl.principal, "none", refinanceLoanId) !== null &&
+      loanRefusalReason(state, tpl.principal, "fideiussione", refinanceLoanId) === null
         ? "fideiussione"
         : tpl.guarantee;
     const spreadBps =
@@ -311,24 +329,33 @@ export const buildLoanOffers = (state: GameState): LoanOfferCard[] =>
       label: tpl.label,
       principal: tpl.principal,
       tenorMonths: tpl.tenorMonths,
-      rateType: "fixed",
+      rateType: "fixed" as const,
       guarantee,
       annualRate,
       monthlyPayment,
-      disabledReason: loanRefusalReason(state, tpl.principal, guarantee),
+      disabledReason: loanRefusalReason(state, tpl.principal, guarantee, refinanceLoanId),
     };
   });
 
 export const requestLoan = (state: GameState, req: LoanRequest): GameState => {
-  if (!canRequestLoan(state, req.principal, req.guarantee)) return state;
+  if (!canRequestLoan(state, req.principal, req.guarantee, req.refinanceLoanId)) return state;
   const next = structuredClone(state);
+  migrateLoansInPlace(next);
   const wasDistressed = next.company.cash < 0 || next.loanOffer !== null;
   const spreadBps =
     spreadForGuarantee(req.guarantee) + complianceSpreadPenaltyBps(next.compliance);
-  // rata francese fissa alla firma: per il variabile usiamo il tasso corrente
-  // come stima attesa; il rimborso capitale si adatta mese per mese al tasso reale.
   const originationAnnualRate = euriborAt(next.monthsPlayed) + spreadBps / 10000;
-  next.loan = {
+
+  let residualClosed = 0;
+  if (req.refinanceLoanId != null) {
+    const idx = next.loans.findIndex((l) => l.id === req.refinanceLoanId);
+    if (idx < 0) return state;
+    residualClosed = next.loans[idx]!.outstanding;
+    next.loans.splice(idx, 1);
+  }
+
+  const loan: Loan = {
+    id: next.nextId++,
     principal: req.principal,
     outstanding: req.principal,
     tenorMonths: req.tenorMonths,
@@ -340,13 +367,28 @@ export const requestLoan = (state: GameState, req: LoanRequest): GameState => {
     monthlyPayment: frenchPayment(req.principal, originationAnnualRate, req.tenorMonths),
     lastInstallment: null,
   };
-  next.company.cash = round2(next.company.cash + req.principal);
+  next.loans.push(loan);
+  next.loan = next.loans[0] ?? null;
+
+  // Full principal disbursed, then residual of refinanced loan paid off → net to cash.
+  next.company.cash = round2(next.company.cash + req.principal - residualClosed);
   next.loanOffer = null;
   if (wasDistressed) next.distressLoanTaken = true;
+
+  const idx = toMonthIndex(next.calendar);
+  if (residualClosed > 0) {
+    next.log.unshift({
+      id: next.nextId++,
+      monthIdx: idx,
+      tone: "neutral",
+      text: `Rifinanziamento: chiuso residuo ${residualClosed.toLocaleString("it-IT")} € · netto in cassa +${round2(req.principal - residualClosed).toLocaleString("it-IT")} €.`,
+    });
+    next.log = next.log.slice(0, 12);
+  }
   if (complianceSpreadPenaltyBps(next.compliance) > 0) {
     next.log.unshift({
       id: next.nextId++,
-      monthIdx: toMonthIndex(next.calendar),
+      monthIdx: idx,
       tone: "bad",
       text: `Compliance bassa (${Math.round(next.compliance)}): la banca applica +${complianceSpreadPenaltyBps(next.compliance)} bps di spread.`,
     });
@@ -375,8 +417,9 @@ export const declineLoanOffer = (state: GameState): GameState => {
   return next;
 };
 
-const FIDO_MAX = 15000;
-const FIDO_SPREAD_BPS = 450;
+export const FIDO_MAX = 25_000;
+export const FIDO_SPREAD_BPS = 450;
+const FIDO_HARD_CAP = 40_000;
 
 /** Extra spread (bps) when tax compliance is weak — banks price the risk. */
 export const complianceSpreadPenaltyBps = (compliance: number): number => {
@@ -385,11 +428,15 @@ export const complianceSpreadPenaltyBps = (compliance: number): number => {
   return 0;
 };
 
-/** Fido ceiling shrinks with poor compliance. */
+/** Fido ceiling: scales with cash when compliance ≥70, then × compliance band. */
 export const fidoMaxFor = (state: GameState): number => {
-  if (state.compliance < 40) return Math.round(FIDO_MAX * 0.5);
-  if (state.compliance < 70) return Math.round(FIDO_MAX * 0.75);
-  return FIDO_MAX;
+  const raw =
+    state.compliance >= 70
+      ? Math.min(FIDO_HARD_CAP, Math.round(Math.max(0, state.company.cash) * 0.5 + 10_000))
+      : FIDO_MAX;
+  if (state.compliance < 40) return Math.round(raw * 0.5);
+  if (state.compliance < 70) return Math.round(raw * 0.75);
+  return raw;
 };
 
 /** Attiva un fido di cassa (può coesistere col mutuo). */
@@ -419,8 +466,6 @@ export const drawFido = (state: GameState, amount: number): GameState => {
   next.company.cash = round2(next.company.cash + take);
   return next;
 };
-
-export { FIDO_MAX, FIDO_SPREAD_BPS };
 
 /** Paga in batch tutte le liability F24 dovute (IVA + IRPEF + INPS + IRES/IRAP). */
 export const payF24 = (state: GameState): GameState => {

@@ -107,6 +107,8 @@ export interface PayrollRun {
 export type LoanGuarantee = "none" | "fondo_garanzia_pmi" | "fideiussione";
 
 export interface Loan {
+  /** Stable id for refinance targeting (assigned on create / migrate). */
+  id: number;
   principal: number;
   outstanding: number;
   tenorMonths: number;
@@ -338,7 +340,10 @@ export interface GameState {
   upgradeLevels?: Partial<Record<UpgradeId, 0 | 1 | 2 | 3>>;
   /** @deprecated legacy saves — migrated to upgradeLevels */
   upgrades?: UpgradeId[];
+  /** @deprecated Prefer `loans`; migrate mirrors first open loan. */
   loan: Loan | null;
+  /** Mutui aperti (max 2). Source of truth for credit. */
+  loans: Loan[];
   /** Offerta di salvataggio quando sei in rosso (null se non attiva). */
   loanOffer: LoanOffer | null;
   /** Fido di cassa; può coesistere con un mutuo. */
@@ -504,9 +509,11 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     accontiCharged: { ires: 0, irap: 0 },
     lastYearReport: null,
     yearReports: [],
-    upgradeLevels: {},
-    loan: null,
-    loanOffer: null,
+  upgradeLevels: {},
+  /** @deprecated Prefer `loans`; kept as mirror of first open loan for older UI/tests. */
+  loan: null,
+  loans: [],
+  loanOffer: null,
     fido: null,
     distressLoanTaken: false,
     career: {

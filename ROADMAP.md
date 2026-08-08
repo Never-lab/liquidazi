@@ -35,6 +35,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Security hardening (rate limit, run clamps) | — | audit session 2026-08-08 |
 | Audit integrity UX (F24/collection) | — | [spec](docs/superpowers/specs/2026-08-08-audit-integrity-ux-design.md) |
 | Shock senza stock (#6) | [plan](docs/superpowers/plans/2026-08-08-shock-senza-stock.md) | [spec](docs/superpowers/specs/2026-08-08-shock-senza-stock-design.md) |
+| Compliance recovery + multi-mutuo credito | [plan](docs/superpowers/plans/2026-08-08-compliance-credito.md) | [spec](docs/superpowers/specs/2026-08-08-compliance-credito-design.md) |
 
 ## Next (coda attiva)
 

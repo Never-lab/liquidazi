@@ -1,4 +1,5 @@
 import { euriborAt, frenchPayment } from "./actions";
+import { migrateLoansInPlace } from "./loans";
 import { migrateUpgradeState } from "./migrateUpgrades";
 import { seedRival } from "./rival";
 import type { GameState } from "./types";
@@ -33,15 +34,16 @@ export const migrateGameState = (state: GameState): GameState => {
   next.growthInvested ??= 0;
   next.growthCapacityBonus ??= 0;
   if (!next.rival) next.rival = seedRival(next);
-  if (next.loan) {
+  migrateLoansInPlace(next);
+  for (const loan of next.loans) {
     const loanAnnualRate =
-      next.loan.rateType === "fixed"
-        ? (next.loan.fixedAnnualRate ?? euriborAt(next.monthsPlayed) + next.loan.spreadBps / 10000)
-        : euriborAt(next.monthsPlayed) + next.loan.spreadBps / 10000;
-    next.loan.monthlyPayment ??= frenchPayment(
-      next.loan.outstanding,
+      loan.rateType === "fixed"
+        ? (loan.fixedAnnualRate ?? euriborAt(next.monthsPlayed) + loan.spreadBps / 10000)
+        : euriborAt(next.monthsPlayed) + loan.spreadBps / 10000;
+    loan.monthlyPayment ??= frenchPayment(
+      loan.outstanding,
       loanAnnualRate,
-      Math.max(1, next.loan.tenorMonths - next.loan.monthsPaid),
+      Math.max(1, loan.tenorMonths - loan.monthsPaid),
     );
   }
   for (const emp of next.employees) {
