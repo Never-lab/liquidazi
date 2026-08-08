@@ -274,6 +274,28 @@ export interface Subsidiary {
   capexCooldownMonths: number;
 }
 
+export type CollectionStage =
+  | "overdue"
+  | "cartella"
+  | "rateazione"
+  | "enforcement"
+  | "terminal";
+
+export interface CollectionPlan {
+  installment: number;
+  monthsLeft: number;
+  totalMonths: number;
+}
+
+export interface CollectionCase {
+  stage: CollectionStage;
+  /** Debito in gestione dal fisco (include mora/fee già capitalizzate nel caso). */
+  principal: number;
+  monthsInStage: number;
+  firstOverdueIdx: number;
+  plan?: CollectionPlan;
+}
+
 export type ActiveProject = {
   id: ProjectId;
   monthsLeft: number;
@@ -372,6 +394,12 @@ export interface GameState {
   projectOfferYear: number | null;
   /** Company climate 0–100; scales staff capacity and drives turnover */
   staffMorale?: number;
+  /** Active fiscal collection case (cartella / rateazione / enforcement). */
+  collectionCase: CollectionCase | null;
+  /** Consecutive months with unpaid overdue F24 liabilities. */
+  monthsTaxOverdue: number;
+  /** Distinct game-over cause when status === "lost". */
+  loseReason: "cash" | "fiscal" | null;
 }
 
 export type MilestoneId =
@@ -513,5 +541,8 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     projectOffer: null,
     projectOfferYear: null,
     staffMorale: 70,
+    collectionCase: null,
+    monthsTaxOverdue: 0,
+    loseReason: null,
   };
 };
