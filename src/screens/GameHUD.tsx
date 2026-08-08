@@ -218,6 +218,33 @@ export const GameHUD = () => {
           </div>
         )}
 
+        {game.collectionCase &&
+          (game.collectionCase.stage === "cartella" ||
+            game.collectionCase.stage === "enforcement" ||
+            game.collectionCase.stage === "terminal") && (
+            <div className={styles.rescue} role="alert">
+              <div className={styles.alertCopy}>
+                <Icon name="tax" size={20} className={styles.alertIcon} />
+                <p>
+                  <strong>
+                    {game.collectionCase.stage === "cartella"
+                      ? "Cartella di pagamento"
+                      : game.collectionCase.stage === "terminal"
+                        ? "Rischio chiusura fiscale"
+                        : "Pignoramento in corso"}
+                    :
+                  </strong>{" "}
+                  {formatCash(game.collectionCase.principal)}
+                  {game.collectionCase.stage === "terminal"
+                    ? " — pochi mesi alla chiusura per insolvenza fiscale."
+                    : game.collectionCase.stage === "cartella"
+                      ? " — scegli se pagare, rateizzare o ignorare."
+                      : " — prelievo forzato su cassa e tesoreria."}
+                </p>
+              </div>
+            </div>
+          )}
+
         {f24Due > 0 && (
           <div className={styles.f24Due} role="alert">
             <div className={styles.alertCopy}>
