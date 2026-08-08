@@ -54,3 +54,31 @@ export const employerCostMonthly = (gross: number): number =>
   round2(
     gross * (1 + snap.inps_employer_rate) + gross * snap.tfr_accrual_factor,
   );
+
+export const ANNUAL_STAFF_ONERI_RATE = 0.035;
+
+export const ANNUAL_STAFF_ONERI_FLOOR: Record<StaffRole, number> = {
+  Operaio: 400,
+  Impiegato: 550,
+  Responsabile: 700,
+};
+
+export const annualOneriForEmployee = (
+  role: string,
+  grossMonthly: number,
+): number => {
+  const floor =
+    ANNUAL_STAFF_ONERI_FLOOR[role as StaffRole] ?? ANNUAL_STAFF_ONERI_FLOOR.Operaio;
+  const ral = round2(grossMonthly * 13);
+  return round2(Math.max(floor, ral * ANNUAL_STAFF_ONERI_RATE));
+};
+
+export const totalAnnualStaffOneri = (
+  employees: ReadonlyArray<{ role: string; grossMonthly: number }>,
+): number =>
+  round2(
+    employees.reduce(
+      (sum, e) => sum + annualOneriForEmployee(e.role, e.grossMonthly),
+      0,
+    ),
+  );
