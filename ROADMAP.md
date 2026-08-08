@@ -30,12 +30,13 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Wiki + Guida in-game + graphify refresh | [plan](docs/superpowers/plans/2026-08-08-wiki-guida.md) | [spec](docs/superpowers/specs/2026-08-08-wiki-guida-design.md) |
 | Reputation market levers (#4) | — | [spec](docs/superpowers/specs/2026-08-08-reputation-market-design.md) |
 | Supply / scorte pass (#3) | [plan](docs/superpowers/plans/2026-08-08-supply-scorte.md) | [spec](docs/superpowers/specs/2026-08-08-supply-scorte-design.md) |
+| Demand boom/secca (#2) | [plan](docs/superpowers/plans/2026-08-08-demand-boom-secca.md) | [spec](docs/superpowers/specs/2026-08-08-demand-boom-secca-design.md) |
 
 ## Next (coda attiva)
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Balance pass (resto: #2 domanda / #6 shock senza stock)** — backlog sotto; monitor Controllo + feedback run lunghe.
+1. **Balance pass (resto: #6 shock senza stock)** — backlog sotto; monitor Controllo + feedback run lunghe.
 2. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
 3. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
 4. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
@@ -62,19 +63,11 @@ Prima di implementare: uno spec corto `docs/superpowers/specs/YYYY-MM-DD-balance
 
 **File tipici:** `config/staffPay.ts`, `advanceMonth.ts` (FY), `PayrollPanel` / `ReportPanel`.
 
-### 2. Commesse sempre 5–8, mai boom/carestia — **P1**
+### 2. ~~Commesse sempre 5–8, mai boom/carestia~~ — **P1** → shipped (demand boom/secca, 2026-08-08)
 
 **Sintomo:** tabellone stabile (raramente &lt;5, mai ~12, mai 0–2). Manca tensione domanda.
 
-**Oggi:** `saleTarget ≈ capacity + jitter`; soft cap `BOARD_MAX_OPS = 10`; floor anti soft-lock. Con staff alto il board satura in alto e non scende.
-
-**Direzione consigliata:**
-- Separare **capacità** (quanto puoi accettare) da **domanda** (quante offerte nascono): `demandMult` mensile (es. 0.0–1.4) con mesi “boom / normal / secca”, indipendente dallo staff.
-- Boom: fino a 12 righe vendita *se* capacity lo permette (alza temporaneamente `BOARD_MAX_OPS` o un cap domanda).
-- Secca: 0–2 offerte vendita anche con capacity alta; i **contratti** (multi-mese) restano generati a parte con RNG proprio (come chiesto).
-- Coach/HUD: hint “mese di secca / picco domanda”.
-
-**File tipici:** `events.ts` (`refreshMarketBoard`, `monthlyCapacity`), `contracts.ts`, pressioni trimestre.
+**Ora:** ogni refresh board fa roll `demandRegime` (20% secca / 60% normale / 20% boom); secca 0–2 vendite; boom `boardCap` 12; × `repDemandMult`; popup animato su estremi. Spec: [demand-boom-secca-design](docs/superpowers/specs/2026-08-08-demand-boom-secca-design.md).
 
 ### 3. ~~Scorte da tabellone inutili vs emergenza flat~~ — **P1** → shipped (supply-scorte, 2026-08-08)
 
@@ -124,7 +117,7 @@ Il settlement +1 non è stato rilasciato: l'exploit è stato corretto applicando
 |--------|------|--------|
 | 1 | ~~**#5 tesoreria lag**~~ → shipped | Shock at month open; no treasury settlement in this slice |
 | 2 | ~~**#1 costo annuale staff**~~ → shipped | Oneri annuali personale in FY close |
-| 3 | **#2 domanda boom/secca** | Varianza run lunghe |
+| 3 | ~~**#2 domanda boom/secca**~~ → shipped | Regimi 20/60/20; boardCap boom 12; popup |
 | 4 | ~~**#3 scorte**~~ → shipped | Emergenza 10% cassa; contratti +8%; UI mesi |
 | 5 | **#6 shock senza stock** | Ritocco eventi, dopo che scorte hanno valore |
 
