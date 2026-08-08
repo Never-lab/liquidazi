@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AdSlot } from "../components/AdSlot";
 import { CashSparkline, ChartsPanel } from "../components/Charts";
 import { CoachBanner } from "../components/CoachBanner";
 import { EventChoiceBanner } from "../components/EventChoiceBanner";
@@ -101,7 +102,11 @@ export const GameHUD = () => {
   };
 
   return (
-    <div className={styles.desk}>
+    <div className={styles.deskWithAds}>
+      <div className={styles.adRail}>
+        <AdSlot placement="rail-left" />
+      </div>
+      <div className={styles.desk}>
       <header className={styles.sticky}>
         <div className={styles.stickyMeta}>
           <p className={styles.kicker}>
@@ -376,6 +381,10 @@ export const GameHUD = () => {
           {opsTab === "altro" && <ReportPanel />}
         </div>
       </Sheet>
+      </div>
+      <div className={styles.adRail}>
+        <AdSlot placement="rail-right" />
+      </div>
     </div>
   );
 };

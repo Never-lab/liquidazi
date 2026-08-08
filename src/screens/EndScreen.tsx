@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, submitFeedback, submitRun } from "../api/client";
+import { AdSlot } from "../components/AdSlot";
 import { formatCash } from "../components/formatCash";
 import { DIFFICULTIES } from "../config/difficulty";
 import { CAMPAIGN_WIN_MONTHS, LOSE_MONTHS_BELOW_ZERO } from "../sim/types";
@@ -124,6 +125,7 @@ export const EndScreen = () => {
         </p>
         {status === "ok" && <p className={styles.ok}>{msg}</p>}
         {status === "err" && <p className={styles.error}>{msg}</p>}
+        <AdSlot placement="end-banner" />
         <div className={styles.ctaRow}>
           <button type="button" className={styles.primary} onClick={continueAfterWin}>
             Continua
@@ -171,6 +173,8 @@ export const EndScreen = () => {
       {status === "ok" && <p className={styles.ok}>{msg}</p>}
       {status === "err" && <p className={styles.error}>{msg}</p>}
       {status === "sending" && <p className={styles.lede}>Pubblicazione in corso…</p>}
+
+      <AdSlot placement="end-banner" />
 
       {showPostmortem ? (
         <form className={styles.postmortem} onSubmit={(e) => void sendPostmortem(e)}>
