@@ -837,9 +837,11 @@ const tryQueueShock = (state: GameState, rand: () => number): boolean => {
   if (rand() > chance) return false;
 
   const def = SHOCK_POOL[Math.floor(rand() * SHOCK_POOL.length)]!;
-  state.pendingEvent = toPending(def);
+  const opt = def.options[0];
+  if (!opt) return false;
+  opt.apply(state);
+  coverNegativeCashFromTreasury(state);
   state.lastShockAt = state.monthsPlayed;
-  pushLog(state, "bad", `Imprevisto grave: ${def.title}`);
   return true;
 };
 
@@ -1097,6 +1099,7 @@ export const resolveEventOption = (state: GameState, optionId: string): GameStat
   const next = structuredClone(state);
   next.tempCapacityMonths ??= 0;
   opt.apply(next);
+  coverNegativeCashFromTreasury(next);
   next.pendingEvent = null;
   return next;
 };

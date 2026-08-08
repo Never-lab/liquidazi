@@ -294,6 +294,13 @@ export const useGameStore = create<GameStore>()(
         } else if (game.status === "won") {
           get().flashToast("Traguardo: 24 mesi di attività", "good");
           sfxGood();
+        } else if (
+          game.lastShockAt != null &&
+          game.lastShockAt === game.monthsPlayed &&
+          game.log[0]
+        ) {
+          get().flashToast(game.log[0].text, game.log[0].tone === "good" ? "good" : "bad");
+          sfxMonthClose();
         } else if (game.pendingEvent) {
           get().flashToast(`Decisione: ${game.pendingEvent.title}`, "neutral");
           sfxMonthClose();
