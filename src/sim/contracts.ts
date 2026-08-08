@@ -6,6 +6,7 @@ import {
   type GameState,
   type Opportunity,
 } from "./types";
+import { repContractMult } from "./reputation";
 
 export const contractSlotsUsed = (state: GameState): number =>
   (state.activeContracts ?? []).reduce((s, c) => s + c.slotCost, 0);
@@ -13,9 +14,11 @@ export const contractSlotsUsed = (state: GameState): number =>
 export const maybeMakeContract = (
   op: Opportunity,
   rand: () => number,
+  reputation: number,
 ): Opportunity => {
   if (op.kind !== "sale") return op;
-  if (op.clientType === "pa" && rand() < 0.35) {
+  const mult = repContractMult(reputation);
+  if (op.clientType === "pa" && rand() < 0.35 * mult) {
     return {
       ...op,
       contractMonths: 3,
@@ -23,7 +26,7 @@ export const maybeMakeContract = (
       termMonths: 1,
     };
   }
-  if (rand() < 0.22) {
+  if (rand() < 0.22 * mult) {
     return {
       ...op,
       contractMonths: 3,

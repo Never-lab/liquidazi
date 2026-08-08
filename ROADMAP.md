@@ -28,12 +28,13 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Fiscal collection (cartella / rateazione / pignoramento) | [docs/superpowers/plans/2026-08-08-fiscal-collection.md](docs/superpowers/plans/2026-08-08-fiscal-collection.md) | [spec](docs/superpowers/specs/2026-08-08-fiscal-collection-design.md) |
 | Notification inbox (mail, replace EventFeed) | — | [spec](docs/superpowers/specs/2026-08-08-notification-inbox-design.md) |
 | Wiki + Guida in-game + graphify refresh | [plan](docs/superpowers/plans/2026-08-08-wiki-guida.md) | [spec](docs/superpowers/specs/2026-08-08-wiki-guida-design.md) |
+| Reputation market levers (#4) | — | [spec](docs/superpowers/specs/2026-08-08-reputation-market-design.md) |
 
 ## Next (coda attiva)
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Balance pass (resto: #2 domanda / #3 scorte / #4 rep / #6 shock senza stock)** — backlog sotto; monitor Controllo + feedback run lunghe.
+1. **Balance pass (resto: #2 domanda / #3 scorte / #6 shock senza stock)** — backlog sotto; monitor Controllo + feedback run lunghe.
 2. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
 3. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
 4. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
@@ -87,18 +88,13 @@ Prima di implementare: uno spec corto `docs/superpowers/specs/YYYY-MM-DD-balance
 
 **File tipici:** `events.ts` (`orderEmergencySupply`, accept paths), `contracts.ts`, `advanceMonth.ts`.
 
-### 4. Reputazione 80→100 senza effetto percepito — **P1**
+### 4. ~~Reputazione 80→100 senza effetto percepito~~ — **P1** → shipped (reputation market, 2026-08-08)
 
 **Sintomo:** da 80 a 100 non cambia nulla di visibile su quantità offerte.
 
-**Oggi (confermato):** `repBonus = floor(reputation / 40)` → solo **+0 / +1 / +2** slot (soglie 0 / 40 / 80). Tra 80 e 100 il bonus slot è **identico**. Il ticket usa la rep in continuo (`0.85 + rep/100 × 0.35`), effetto sottile sul prezzo, non sul count.
+**Prima:** `repBonus = floor(reputation / 40)` → solo **+0 / +1 / +2** slot (soglie 0 / 40 / 80). Tra 80 e 100 il bonus slot era **identico**.
 
-**Direzione consigliata:**
-- Slot: curva più fine (es. ogni 15–20 punti, o `round(rep/25)`) **oppure** `demandMult × (0.7 + rep/200)`.
-- Rischio: bassa rep → più default / più “commessa fallita” / meno contratti; alta rep → più contratti e meno fallimenti.
-- UI: tooltip Capacità/Rep che spiega i breakpoint (oggi opachi).
-
-**File tipici:** `events.ts` (`monthlyCapacity`, `maxDealNet`), `contracts.ts`, accept/default logic.
+**Ora:** `repSlotBonus = round(rep/20)` (0…5), demand mult sul board, contract odds e default AR scalano con la rep (`src/sim/reputation.ts`). Tooltip Rep sul tabellone. Spec: [reputation-market-design](docs/superpowers/specs/2026-08-08-reputation-market-design.md).
 
 ### 5. ~~Exploit tesoreria vs shock % cassa (terremoto)~~ — **P0** → shipped (#5 shock timing, balance pass 2026-08-08)
 
@@ -135,7 +131,7 @@ Il settlement +1 non è stato rilasciato: l'exploit è stato corretto applicando
 | 1 | ~~**#5 tesoreria lag**~~ → shipped | Shock at month open; no treasury settlement in this slice |
 | 2 | ~~**#1 costo annuale staff**~~ → shipped | Oneri annuali personale in FY close |
 | 3 | **#2 domanda boom/secca** | Varianza run lunghe |
-| 4 | **#3 + #4 scorte/rep** | Sistemi già presenti ma spuntati |
+| 4 | **#3 scorte** | Sistemi già presenti ma spuntati |
 | 5 | **#6 shock senza stock** | Ritocco eventi, dopo che scorte hanno valore |
 
 ---

@@ -4,6 +4,7 @@ import {
   monthlyCapacity,
   salesAcceptedThisMonth,
 } from "../sim/events";
+import { repDefaultMult, repSlotBonus } from "../sim/reputation";
 import { formatCash } from "./formatCash";
 import { useGameStore } from "../store/gameStore";
 import styles from "./panels.module.css";
@@ -18,6 +19,9 @@ export const OpportunitiesPanel = () => {
   const taken = salesAcceptedThisMonth(game);
   const emptyStock = (game.supplyMonths ?? 0) <= 0;
   const boardHasSupply = game.opportunities.some((o) => o.kind === "supply");
+  const rep = Math.round(game.company.reputation);
+  const repSlots = repSlotBonus(game.company.reputation);
+  const insolutiMult = repDefaultMult(game.company.reputation);
 
   return (
     <section className={styles.panelWide}>
@@ -45,9 +49,9 @@ export const OpportunitiesPanel = () => {
           </span>
           <span
             className={styles.statChip}
-            title="Quanto ti cercano i clienti (0–100)"
+            title={`Rep ${rep} → +${repSlots} slot · insoluti ×${insolutiMult.toFixed(2)} · più rep = più offerte e meno insoluti`}
           >
-            Reputazione {Math.round(game.company.reputation)}
+            Reputazione {rep}
           </span>
           {(game.activeContracts?.length ?? 0) > 0 ? (
             <span
