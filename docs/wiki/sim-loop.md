@@ -50,4 +50,8 @@ Capacity still limits **accepts**. Contracts use separate RNG. Extreme months sh
 - Contracts tick; projects/morale/rival heat/pressures as wired in `advanceMonth`.
 - December: annual staff oneri (see [staff-ops.md](staff-ops.md)).
 
-Primary code: `src/sim/advanceMonth.ts`, `src/sim/events.ts`, `src/sim/eventCatalog.ts`.
+## Rival / pressione
+
+`rival.heat` (0–100) is shown as **Pressione rivale** with bands Calma / Tesa / Guerra. Steal: none in Calma or months 0–5; up to 1 in Tesa; up to 2 in Guerra. Choice events from heat ≥ 40; campaign costs `max(800, 4% cash)`. After month 18: **contenuto** if pressure stays low, or **ancorato** (floor 55) until two campaign/undercut responses.
+
+Primary code: `src/sim/advanceMonth.ts`, `src/sim/events.ts`, `src/sim/eventCatalog.ts`, `src/sim/rival.ts`.

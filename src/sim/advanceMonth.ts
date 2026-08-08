@@ -32,7 +32,7 @@ import {
   supplyConsumeExtra,
   tickPressure,
 } from "./pressures";
-import { seedRival, tickRivalHeat } from "./rival";
+import { seedRival, tickRivalHeat, tickRivalPayoff } from "./rival";
 import {
   CAMPAIGN_WIN_MONTHS,
   LOSE_MONTHS_BELOW_ZERO,
@@ -655,7 +655,18 @@ export const advanceMonth = (state: GameState): GameState => {
 
   // Responsabile: tiene a bada il rivale (−heat), applicato dopo la deriva mensile.
   if (nResp > 0 && next.rival) {
-    next.rival = { ...next.rival, heat: Math.max(0, next.rival.heat - nResp) };
+    let heat = Math.max(0, next.rival.heat - nResp);
+    if (next.rival.floor != null && !next.rival.contained) {
+      heat = Math.max(next.rival.floor, heat);
+    }
+    next.rival = { ...next.rival, heat };
+  }
+
+  {
+    const paid = tickRivalPayoff(next);
+    next.rival = paid.rival;
+    next.log = paid.log;
+    next.nextId = paid.nextId;
   }
 
   next.lastCloseSummary = {

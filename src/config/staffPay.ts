@@ -34,7 +34,7 @@ export const STAFF_ROLES: ReadonlyArray<{
   },
   {
     role: "Responsabile",
-    blurb: "+0.5 slot, +compliance/mese, −heat rivale",
+    blurb: "+0.5 slot, +compliance/mese, −pressione rivale",
   },
 ];
 

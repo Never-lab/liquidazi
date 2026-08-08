@@ -402,7 +402,7 @@ export const declineOpportunity = (state: GameState, opportunityId: number): Gam
     tone: "neutral",
     text:
       op.kind === "sale" && next.rival
-        ? `Lasciata scadere: ${op.title}. ${next.rival.name} guadagna spazio (heat ${Math.round(next.rival.heat)}).`
+        ? `Lasciata scadere: ${op.title}. ${next.rival.name} guadagna spazio (pressione ${Math.round(next.rival.heat)}).`
         : `Lasciata scadere: ${op.title}.`,
   });
   next.log = next.log.slice(0, 12);
