@@ -143,15 +143,30 @@ export const EndScreen = () => {
 
   const diffLabel = DIFFICULTIES[game.difficulty ?? "normal"].label;
   const showPostmortem = !pmDone && !pmSkipped;
+  const fiscalLose = game.loseReason === "fiscal";
 
   return (
     <div className={`${styles.shell} ${styles.ko}`}>
       <p className={styles.brandMark}>Liquidazi</p>
-      <h2 className={styles.headline}>Liquidità esaurita.</h2>
+      <h2 className={styles.headline}>
+        {fiscalLose ? "Chiusura per insolvenza fiscale." : "Liquidità esaurita."}
+      </h2>
       <p className={styles.outcome}>
-        {LOSE_MONTHS_BELOW_ZERO} mesi in rosso dopo {game.monthsPlayed} mesi. Cassa finale:{" "}
-        {formatCash(game.company.cash)}.
-        {game.distressLoanTaken ? " Hai già usato il prestito di emergenza." : ""}
+        {fiscalLose ? (
+          <>
+            La riscossione non è riuscita a chiudere il debito dopo {game.monthsPlayed} mesi.
+            Cassa finale: {formatCash(game.company.cash)}.
+            {game.collectionCase
+              ? ` Residuo in cartella: ${formatCash(game.collectionCase.principal)}.`
+              : ""}
+          </>
+        ) : (
+          <>
+            {LOSE_MONTHS_BELOW_ZERO} mesi in rosso dopo {game.monthsPlayed} mesi. Cassa finale:{" "}
+            {formatCash(game.company.cash)}.
+            {game.distressLoanTaken ? " Hai già usato il prestito di emergenza." : ""}
+          </>
+        )}
       </p>
       {status === "ok" && <p className={styles.ok}>{msg}</p>}
       {status === "err" && <p className={styles.error}>{msg}</p>}

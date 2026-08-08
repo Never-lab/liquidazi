@@ -157,6 +157,7 @@ describe("Phase 6 — lose / soft win", () => {
     }
     expect(s.status).toBe("lost");
     expect(s.monthsBelowZero).toBeGreaterThanOrEqual(12);
+    expect(s.loseReason).toBe("cash");
   });
 
   it("la cassa che risale azzera il contatore", () => {

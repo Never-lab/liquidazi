@@ -40,6 +40,7 @@ import {
   rejectSaleOffer,
 } from "../sim/acquisitions";
 import { migrateHoldingState } from "../sim/migrateHolding";
+import { CARTELLA_EVENT_ID, resolveCartellaChoice } from "../sim/collection";
 import { resolveEventOption } from "../sim/eventCatalog";
 import { acceptOpportunity, declineOpportunity, seedNewGame, orderEmergencySupply } from "../sim/events";
 import { formatCloseToast, unlockMilestones } from "../sim/milestones";
@@ -450,8 +451,12 @@ export const useGameStore = create<GameStore>()(
         }
       },
       resolveEvent: (optionId) => {
-        if (!get().game.pendingEvent) return;
-        const game = resolveEventOption(get().game, optionId);
+        const pending = get().game.pendingEvent;
+        if (!pending) return;
+        const game =
+          pending.id === CARTELLA_EVENT_ID
+            ? resolveCartellaChoice(get().game, optionId)
+            : resolveEventOption(get().game, optionId);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
         get().flashToast("Decisione presa", "neutral");
         sfxGood();
