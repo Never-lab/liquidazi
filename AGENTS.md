@@ -1,5 +1,11 @@
 # Agent notes — Liquidazi
 
+## Codebase orientation
+
+1. Read [`docs/wiki/INDEX.md`](docs/wiki/INDEX.md) first.
+2. For code relationships, use `graphify-out/` (regenerate with graphify if missing).
+3. Historical slice specs/plans: `docs/superpowers/` — not the live handbook.
+
 ## Before opening or merging a PR
 
 1. Run locally: `npm run lint && npm test && npm run build`
