@@ -191,7 +191,7 @@ export const advanceMonth = (state: GameState): GameState => {
   const rand = rng(idx * 7919 + next.monthsPlayed * 31);
   const supplyEmpty = (next.supplyMonths ?? 0) <= 0;
   const defaultBoost =
-    (supplyEmpty ? 1.45 : 1) * defaultFactorFromPressure(next);
+    (supplyEmpty ? 1.45 : 0.85) * defaultFactorFromPressure(next);
 
   // 0a. multi-month contract tranches (issued this closing month)
   {

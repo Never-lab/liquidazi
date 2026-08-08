@@ -47,7 +47,9 @@ export const acceptAsContract = (
 
   const next = structuredClone(state);
   const months = op.contractMonths;
-  const netPerMonth = round2(op.net / months);
+  const baseNet = round2(op.net / months);
+  const netPerMonth =
+    (state.supplyMonths ?? 0) > 0 ? round2(baseNet * 1.08) : baseNet;
   const contract: ActiveContract = {
     id: next.nextId++,
     title: op.title,

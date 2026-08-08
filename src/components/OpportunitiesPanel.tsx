@@ -1,8 +1,9 @@
 import {
-  EMERGENCY_SUPPLY_NET,
+  emergencySupplyNet,
   maxDealNet,
   monthlyCapacity,
   salesAcceptedThisMonth,
+  supplyMonthsFromNet,
 } from "../sim/events";
 import { repDefaultMult, repSlotBonus } from "../sim/reputation";
 import { formatCash } from "./formatCash";
@@ -17,11 +18,13 @@ export const OpportunitiesPanel = () => {
   const cap = maxDealNet(game);
   const capacity = monthlyCapacity(game);
   const taken = salesAcceptedThisMonth(game);
-  const emptyStock = (game.supplyMonths ?? 0) <= 0;
+  const stockMonths = game.supplyMonths ?? 0;
+  const emptyStock = stockMonths <= 0;
   const boardHasSupply = game.opportunities.some((o) => o.kind === "supply");
   const rep = Math.round(game.company.reputation);
   const repSlots = repSlotBonus(game.company.reputation);
   const insolutiMult = repDefaultMult(game.company.reputation);
+  const emergencyCost = emergencySupplyNet(game);
 
   return (
     <section className={styles.panelWide}>
@@ -42,10 +45,13 @@ export const OpportunitiesPanel = () => {
           </span>
           <span
             className={styles.statChip}
-            title="Mesi di magazzino; a zero ticket più bassi e più insoluti"
+            title={
+              emptyStock
+                ? "Scorte a zero: ticket −28% e più insoluti. Ordina forniture o emergenza (10% cassa, min 1.500 €)."
+                : `Scorte ${stockMonths} mesi: contratti +8% netto · meno insoluti. Forniture board: ≥1.200 € → +2 mesi, altrimenti +1.`
+            }
           >
-            Scorte {game.supplyMonths ?? 0}{" "}
-            {(game.supplyMonths ?? 0) === 1 ? "mese" : "mesi"}
+            Scorte {stockMonths} {stockMonths === 1 ? "mese" : "mesi"}
           </span>
           <span
             className={styles.statChip}
@@ -65,13 +71,13 @@ export const OpportunitiesPanel = () => {
       </div>
       <p className={styles.muted}>
         {emptyStock
-          ? "Scorte a zero: ticket −28% e più insoluti. C'è sempre almeno una fornitura sul tabellone; in alternativa usa l'ordine d'emergenza."
-          : "Forniture = scorte (mesi). Contratti bloccano 1 slot per 3 mesi. PA paga tardi; i privati a volte non pagano."}
+          ? "Scorte a zero: ticket −28% e più insoluti. C'è sempre almeno una fornitura sul tabellone; in alternativa usa l'ordine d'emergenza (cara se hai tanta cassa)."
+          : "Forniture = scorte (mesi). Con scorte i contratti pagano +8%. PA paga tardi; i privati a volte non pagano."}
       </p>
       {emptyStock && (
         <p className={styles.row}>
           <button type="button" className={styles.buttonSecondary} onClick={emergency}>
-            Ordina fornitura d&apos;emergenza ({formatCash(EMERGENCY_SUPPLY_NET)} + IVA → +2 mesi)
+            Ordina fornitura d&apos;emergenza ({formatCash(emergencyCost)} + IVA → +2 mesi)
           </button>
           {!boardHasSupply && (
             <span className={styles.warning}>Nessuna fornitura in lista — usa l&apos;emergenza.</span>
@@ -88,10 +94,13 @@ export const OpportunitiesPanel = () => {
                 <h3 className={styles.dealTitle}>{op.title}</h3>
                 <p className={styles.dealMeta}>
                   {op.kind === "sale" ? "Entrata" : "Uscita"} · {formatCash(op.net)} + IVA
+                  {op.kind === "supply"
+                    ? ` · +${supplyMonthsFromNet(op.net)} mesi scorte`
+                    : ""}
                   {op.kind === "sale" && op.clientType === "pa" ? " · PA" : ""}
                   {op.contractMonths
                     ? ` · Contratto ${op.contractMonths} mesi (−1 slot)`
-                    : op.termMonths > 1
+                    : op.kind === "sale" && op.termMonths > 1
                       ? ` · ${op.termMonths} mesi`
                       : ""}
                 </p>
