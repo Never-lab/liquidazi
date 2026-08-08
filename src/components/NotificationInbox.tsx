@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { formatMonthIdx } from "../sim/types";
-import { markLogRead, unreadLogCount } from "../sim/notifications";
+import { unreadLogCount } from "../sim/notifications";
 import { useGameStore } from "../store/gameStore";
 import { Icon } from "../ui/icons";
 import styles from "./NotificationInbox.module.css";
