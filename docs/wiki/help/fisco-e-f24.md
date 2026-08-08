@@ -16,6 +16,8 @@ Dopo **sei mesi** continui di tasse non pagate arriva la **cartella**. Puoi:
 - **Rateizza** — piano a rate (con maggiorazione)
 - **Ignora** — rischi pignoramento e, a lungo andare, **sconfitta fiscale**
 
+Mentre la cartella (o pignoramento) è aperta, il **Paga F24** del mese è **bloccato**: gestisci il debito dalla cartella. In **rateazione** puoi ancora versare i nuovi F24 del mese; il debito della cartella resta sul piano a rate.
+
 ## Disclaimer
 
 Modello **educativo** semplificato. Non è consulenza fiscale né software da commercialista.

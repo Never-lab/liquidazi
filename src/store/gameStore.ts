@@ -45,6 +45,7 @@ import { CARTELLA_EVENT_ID, f24BlockedByCollection, resolveCartellaChoice } from
 import { resolveEventOption } from "../sim/eventCatalog";
 import { acceptOpportunity, declineOpportunity, demandPopupForAdvance, seedNewGame, orderEmergencySupply } from "../sim/events";
 import { migrateGameState } from "../sim/migrateGameState";
+import { createTesterGameState } from "../sim/testerSave";
 import { formatCloseToast, unlockMilestones } from "../sim/milestones";
 import {
   createInitialGameState,
@@ -141,6 +142,8 @@ interface GameStore {
   skipProjectOffer: () => void;
   markRunSubmitted: () => void;
   markInboxRead: () => void;
+  /** Admin only: overwrite slot 1 with mid-game tester save and enter game. */
+  installTesterSave: () => void;
   submitRunProgressIfNeeded: () => Promise<void>;
   selectSlot: (index: number) => void;
   renameSlot: (index: number, label: string) => void;
@@ -613,6 +616,33 @@ export const useGameStore = create<GameStore>()(
       markInboxRead: () => {
         const game = markLogRead(get().game);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+      },
+      installTesterSave: () => {
+        if (!get().auth?.admin) {
+          get().flashToast("Solo admin", "bad");
+          sfxBad();
+          return;
+        }
+        const game = createTesterGameState();
+        const slots = get().slots.map((s, i) =>
+          i === 0
+            ? {
+                label: "Tester mid",
+                game,
+                updatedAt: new Date().toISOString(),
+              }
+            : s,
+        );
+        set({
+          slots,
+          activeSlot: 0,
+          game,
+          screen: "game",
+          coachOn: false,
+          demandPopup: null,
+        });
+        get().flashToast("Slot 1: save tester midgame installato", "good");
+        sfxGood();
       },
       selectSlot: (index) => {
         const slots = get().slots;

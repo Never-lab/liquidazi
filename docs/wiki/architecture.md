@@ -23,17 +23,20 @@ Routing is a switch in `src/App.tsx` on `useGameStore.screen`.
 ## Key folders
 
 - `src/sim/advanceMonth.ts` — month close pipeline
-- `src/sim/events.ts` — market board, accept ops, capacity
+- `src/sim/events.ts` — market board, accept ops, capacity, demand regimes
 - `src/sim/collection.ts` — fiscal collection after F24
+- `src/sim/migrateGameState.ts` — defaults for older saves on load
+- `src/sim/rival.ts` — rival heat / steal / contain-anchor
 - `src/sim/acquisitions.ts` — holding subsidiaries
 - `src/screens/GameHUD.tsx` — in-run UI
+- `server/` — auth, saves, runs, feedback (rate limits + run clamps)
 - `docs/wiki/` — living handbook (this tree)
 - `docs/superpowers/` — historical specs/plans
-- `graphify-out/` — generated code graph (optional regenerate)
+- `graphify-out/` — generated code graph (optional regenerate; `graph.json` often gitignored if huge)
 
 ## Persistence
 
-Local slots in the store + optional cloud saves via API when authenticated. Volume-backed storage on Railway (`/data`).
+Local slots in the store + optional cloud saves via API when authenticated. Volume-backed storage on Railway (`/data`). Loads run through `migrateGameState`.
 
 ## Disclaimer
 
