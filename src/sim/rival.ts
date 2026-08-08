@@ -42,33 +42,54 @@ export const tickRivalHeat = (state: GameState, salesTaken: number, capacity: nu
   } else {
     rival.heat = Math.min(100, rival.heat + 1);
   }
+  if (rival.floor != null && !rival.contained) {
+    rival.heat = Math.min(100, Math.max(rival.floor, rival.heat));
+  }
   next.rival = rival;
   return next;
 };
 
-/** Steal one sale from board if heat high. */
+/** Steal sales from board by pressure band (skip Arrivo / contained / quiet). */
 export const applyRivalSteal = (state: GameState): GameState => {
-  if (state.quietMode || !state.rival) return state;
-  if (state.rival.heat < 45) return state;
-  const rand = rng(toMonthIndex(state.calendar) * 9091 + state.monthsPlayed * 7);
-  const chance = 0.15 + (state.rival.heat - 45) / 200;
-  if (rand() > chance) return state;
+  if (state.quietMode || !state.rival || state.rival.contained) return state;
+  if (rivalPhase(state.monthsPlayed) === "arrivo") return state;
 
-  const next = structuredClone(state);
-  const saleIdx = next.opportunities.findIndex((o) => o.kind === "sale" && !o.contractMonths);
-  if (saleIdx < 0) return state;
-  const stolen = next.opportunities[saleIdx]!;
-  next.opportunities.splice(saleIdx, 1);
-  next.rival = {
-    ...next.rival!,
-    heat: Math.min(100, next.rival!.heat + 2),
-  };
-  next.log.unshift({
-    id: next.nextId++,
-    monthIdx: toMonthIndex(next.calendar),
-    tone: "bad",
-    text: `${next.rival.name} ha preso «${stolen.title}» (heat ${Math.round(next.rival.heat)}).`,
-  });
-  next.log = next.log.slice(0, 12);
-  return next;
+  const band = pressureBand(state.rival.heat);
+  if (band === "calma") return state;
+
+  const maxSteals = band === "guerra" ? 2 : 1;
+  const chance =
+    band === "guerra"
+      ? Math.min(0.7, 0.45 + (state.rival.heat - 70) / 100)
+      : 0.25 + (state.rival.heat - 40) / 150;
+
+  let next = structuredClone(state);
+  let stolen = 0;
+  for (let attempt = 0; attempt < maxSteals; attempt++) {
+    const rand = rng(
+      toMonthIndex(next.calendar) * 9091 + next.monthsPlayed * 7 + attempt * 17 + stolen * 31,
+    );
+    if (rand() > chance) continue;
+    const saleIdx = next.opportunities.findIndex((o) => o.kind === "sale" && !o.contractMonths);
+    if (saleIdx < 0) break;
+    const taken = next.opportunities[saleIdx]!;
+    next.opportunities.splice(saleIdx, 1);
+    stolen += 1;
+    const heat = Math.min(100, (next.rival?.heat ?? 0) + 2);
+    const floor = next.rival?.floor;
+    const clamped =
+      floor != null && !next.rival?.contained ? Math.max(floor, heat) : heat;
+    next.rival = {
+      ...next.rival!,
+      heat: clamped,
+    };
+    next.log.unshift({
+      id: next.nextId++,
+      monthIdx: toMonthIndex(next.calendar),
+      tone: "bad",
+      text: `${next.rival.name} ha preso «${taken.title}» (pressione ${Math.round(next.rival.heat)}).`,
+    });
+    next.log = next.log.slice(0, 12);
+  }
+  return stolen > 0 ? next : state;
 };
