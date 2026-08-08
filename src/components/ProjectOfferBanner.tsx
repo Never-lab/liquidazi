@@ -17,10 +17,12 @@ export const ProjectOfferBanner = () => {
       <div className={styles.projectOfferHead}>
         <p className={styles.eventKicker}>Piano investimenti {offer.year}</p>
         <h3 id="project-offer-title" className={styles.eventTitle}>
-          Scegli un progetto per l&apos;anno
+          Investimento strutturale dell&apos;anno
         </h3>
         <p className={styles.eventBody}>
-          Un solo progetto attivo alla volta. Effetti per 6–12 mesi; puoi anche saltare.
+          Ogni gennaio puoi avviare un progetto (digitalizzazione, magazzino, formazione,
+          espansione): costa cassa ora e dà effetti per 6–12 mesi. Ne resta attivo solo uno;
+          puoi anche saltare e ripensarci l&apos;anno dopo.
         </p>
       </div>
       <div className={styles.projectOfferGrid}>

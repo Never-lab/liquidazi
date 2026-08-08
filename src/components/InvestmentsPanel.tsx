@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getProjectDef } from "../config/projects";
 import {
   GROWTH_CAPACITY_CAP,
   GROWTH_PER_SLOT,
@@ -24,10 +25,12 @@ export const InvestmentsPanel = () => {
   const invested = game.growthInvested ?? 0;
   const growthSlots = game.growthCapacityBonus ?? 0;
   const nextSlotAt = (growthSlots + 1) * GROWTH_PER_SLOT;
+  const active = game.activeProject;
+  const activeDef = active ? getProjectDef(active.id) : null;
   const profitHint =
     (game.lastYearReport?.profit ?? 0) > 0
       ? "Utile dell'anno scorso positivo: ha senso parcheggiare o reinvestire."
-      : "Puoi usare la cassa anche senza utile chiuso (modello educativo).";
+      : "Tre strumenti: tesoreria (parcheggio), crescita (+slot), progetto annuale (a gennaio).";
 
   return (
     <section className={styles.panelWide}>
@@ -35,8 +38,12 @@ export const InvestmentsPanel = () => {
       <p className={styles.muted}>{profitHint}</p>
 
       <h3 className={styles.panelTitle} style={{ marginTop: 12 }}>
-        Tesoreria
+        1 · Tesoreria
       </h3>
+      <p className={styles.muted}>
+        Parcheggio liquido: rende interessi ma non conta come cassa “comoda” per comfort/shock.
+        Se la cassa va sotto zero, può coprire l’emergenza.
+      </p>
       <ul className={styles.list}>
         <li>
           <span>Saldo deposito</span>
@@ -44,7 +51,7 @@ export const InvestmentsPanel = () => {
         </li>
         <li>
           <span>Tasso indicativo</span>
-          <span>{ratePct}% annuo</span>
+          <span>{ratePct}% annuo (~0,55× Euribor)</span>
         </li>
       </ul>
       <div className={styles.row}>
@@ -83,10 +90,11 @@ export const InvestmentsPanel = () => {
       </div>
 
       <h3 className={styles.panelTitle} style={{ marginTop: 16 }}>
-        Reinvestimento crescita
+        2 · Reinvestimento crescita
       </h3>
       <p className={styles.muted}>
-        Ogni {formatCash(GROWTH_PER_SLOT)} → +1 slot (max {GROWTH_CAPACITY_CAP}). Investito{" "}
+        Spendi cassa per capacità permanente sul tabellone. Ogni{" "}
+        {formatCash(GROWTH_PER_SLOT)} → +1 slot (max {GROWTH_CAPACITY_CAP}). Investito{" "}
         {formatCash(invested)} · slot {growthSlots}/{GROWTH_CAPACITY_CAP}
         {growthSlots < GROWTH_CAPACITY_CAP
           ? ` · prossimo a ${formatCash(nextSlotAt)}`
@@ -113,6 +121,41 @@ export const InvestmentsPanel = () => {
           Investi
         </button>
       </div>
+
+      <h3 className={styles.panelTitle} style={{ marginTop: 16 }}>
+        3 · Progetto annuale
+      </h3>
+      {active && activeDef ? (
+        <ul className={styles.list}>
+          <li>
+            <span>In corso</span>
+            <span>{activeDef.label}</span>
+          </li>
+          <li>
+            <span>Mesi residui</span>
+            <span>{active.monthsLeft}</span>
+          </li>
+          <li>
+            <span>Effetto</span>
+            <span>{activeDef.blurb}</span>
+          </li>
+          {active.frozenCash > 0 && (
+            <li>
+              <span>Vincolati</span>
+              <span>{formatCash(active.frozenCash)} (tornano a fine progetto)</span>
+            </li>
+          )}
+        </ul>
+      ) : (
+        <p className={styles.muted}>
+          Nessun progetto attivo. A <strong>gennaio</strong> (dopo la chiusura di dicembre)
+          compare un’offerta obbligatoria: scegli un piano 6–12 mesi oppure salta. Un solo
+          progetto alla volta.
+          {game.projectOfferYear != null
+            ? ` Ultima offerta gestita: ${game.projectOfferYear}.`
+            : ""}
+        </p>
+      )}
     </section>
   );
 };
