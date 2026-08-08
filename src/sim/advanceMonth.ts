@@ -12,6 +12,7 @@ import {
   treasuryAnnualRate,
 } from "./actions";
 import { applySubsidiaryMonth, advanceHoldingSales, refreshAcquisitionBoard } from "./acquisitions";
+import { applyMonthlyMora, updateMonthsTaxOverdue } from "./collection";
 import { tickContracts } from "./contracts";
 import { runWorldEvents } from "./eventCatalog";
 import { refreshMarketBoard, rng, monthlyCapacity } from "./events";
@@ -145,6 +146,8 @@ export const advanceMonth = (state: GameState): GameState => {
   next.yearReports ??= next.lastYearReport ? [next.lastYearReport] : [];
   next.tempCapacityMonths ??= 0;
   next.pendingEvent ??= null;
+  next.collectionCase ??= null;
+  next.monthsTaxOverdue ??= 0;
   next.activeProject ??= null;
   next.projectOffer ??= null;
   next.projectOfferYear ??= null;
@@ -320,6 +323,9 @@ export const advanceMonth = (state: GameState): GameState => {
   if (f24MoraleHit) {
     next.staffMorale = clampMorale((next.staffMorale ?? 70) - 3);
   }
+
+  applyMonthlyMora(next);
+  updateMonthsTaxOverdue(next);
 
   // 2b. scatti anzianità (ogni SENIORITY_MONTHS mesi di servizio, cap MAX_SENIORITY_STEPS)
   for (const emp of next.employees) {

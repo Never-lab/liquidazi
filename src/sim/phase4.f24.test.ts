@@ -37,15 +37,20 @@ describe("Phase 4 — F24 e sanzioni soft", () => {
     expect(s.compliance).toBe(100 - snap.compliance_malus_late);
   });
 
-  it("la sanzione viene applicata una volta sola", () => {
+  it("la sanzione one-shot non si ripete; la mora può crescere dopo", () => {
     let s = createInitialGameState();
     s = issueCustomerInvoice(s, 1000);
     s = advanceMonth(s);
     s = advanceMonth(s);
-    const amountAfterOnePenalty = s.liabilities.find((l) => l.kind === "IVA")?.amount;
+    const liability = s.liabilities.find((l) => l.kind === "IVA");
+    const amountAfterOnePenalty = liability?.amount;
+    expect(liability?.penalized).toBe(true);
+    const c = s.compliance;
     s = advanceMonth(s);
-    expect(s.liabilities.find((l) => l.kind === "IVA")?.amount).toBe(amountAfterOnePenalty);
-    expect(s.compliance).toBe(100 - snap.compliance_malus_late);
+    expect(s.compliance).toBe(c);
+    expect(s.liabilities.find((l) => l.kind === "IVA")!.amount).toBeGreaterThan(
+      amountAfterOnePenalty!,
+    );
   });
 
   it("payF24 non paga liability con scadenza futura", () => {
