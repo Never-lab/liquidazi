@@ -376,6 +376,8 @@ export interface GameState {
   acquisitionBoard: AcquisitionTarget[];
   /** Remaining months of supply coverage (0 = ticket/default penalty) */
   supplyMonths: number;
+  /** Monthly board demand regime (sale offer count vs capacity). */
+  demandRegime: DemandRegime;
   /** Breakdown of last month close for UI */
   lastCloseSummary: MonthCloseSummary | null;
   /** Mid-game goals completed */
@@ -408,6 +410,9 @@ export interface GameState {
    */
   lastUiHint: { text: string; tone: "good" | "bad" | "neutral" } | null;
 }
+
+/** Board demand season for sale offer generation. */
+export type DemandRegime = "secca" | "normale" | "boom";
 
 export type MilestoneId =
   | "survive_12"
@@ -539,6 +544,7 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     saleOffers: [],
     acquisitionBoard: [],
     supplyMonths: 1,
+    demandRegime: "normale",
     lastCloseSummary: null,
     milestones: [],
     quarterPressure: null,

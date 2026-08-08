@@ -9,6 +9,7 @@ import {
   round2,
   toMonthIndex,
   type ClientType,
+  type DemandRegime,
   type GameState,
   type Opportunity,
 } from "./types";
@@ -41,8 +42,31 @@ const SUPPLIER_NAMES = [
 /** Soft cap on board rows so UI stays readable. */
 export const BOARD_MAX_OPS = 10;
 
+/** Raised board soft-cap during boom demand months. */
+export const BOARD_MAX_OPS_BOOM = 12;
+
 /** Full-value staff capacity points before diminishing returns. */
 export const STAFF_FULL_VALUE = 8;
+
+export const rollDemandRegime = (rand: () => number): DemandRegime => {
+  const u = rand();
+  if (u < 0.2) return "secca";
+  if (u < 0.8) return "normale";
+  return "boom";
+};
+
+export const regimeMult = (r: DemandRegime): number =>
+  r === "secca" ? 0.15 : r === "boom" ? 1.35 : 1;
+
+export const boardCapFor = (r: DemandRegime): number =>
+  r === "boom" ? BOARD_MAX_OPS_BOOM : BOARD_MAX_OPS;
+
+export const clampSaleTarget = (raw: number, r: DemandRegime): number => {
+  const n = Math.round(raw);
+  if (r === "secca") return Math.min(2, Math.max(0, n));
+  if (r === "boom") return Math.min(12, Math.max(1, n));
+  return Math.max(1, n);
+};
 
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
 
