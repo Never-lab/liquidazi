@@ -24,7 +24,8 @@ export type IconName =
   | "ledger"
   | "tax"
   | "home"
-  | "check";
+  | "check"
+  | "mail";
 
 type Props = {
   name: IconName;
@@ -188,6 +189,13 @@ const Glyph = ({ name }: { name: IconName }) => {
       );
     case "check":
       return <path d="M5 12l5 5 9-10" {...pathProps} />;
+    case "mail":
+      return (
+        <>
+          <path d="M4 7h16v11H4V7z" {...pathProps} />
+          <path d="M4 7l8 6 8-6" {...pathProps} />
+        </>
+      );
     default:
       return null;
   }

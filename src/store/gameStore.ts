@@ -16,6 +16,7 @@ import {
 } from "../api/cloudSaveQueue";
 import type { DifficultyId } from "../config/difficulty";
 import { advanceMonth } from "../sim/advanceMonth";
+import { markLogRead } from "../sim/notifications";
 import {
   acceptLoanOffer,
   buyUpgrade,
@@ -133,6 +134,7 @@ interface GameStore {
   acceptProject: (id: ProjectId) => void;
   skipProjectOffer: () => void;
   markRunSubmitted: () => void;
+  markInboxRead: () => void;
   submitRunProgressIfNeeded: () => Promise<void>;
   selectSlot: (index: number) => void;
   renameSlot: (index: number, label: string) => void;
@@ -577,6 +579,10 @@ export const useGameStore = create<GameStore>()(
         const game = structuredClone(get().game);
         game.career.submitted = true;
         game.career.submittedMonths = game.monthsPlayed;
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+      },
+      markInboxRead: () => {
+        const game = markLogRead(get().game);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
       },
       selectSlot: (index) => {
