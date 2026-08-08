@@ -402,6 +402,11 @@ export interface GameState {
   monthsTaxOverdue: number;
   /** Distinct game-over cause when status === "lost". */
   loseReason: "cash" | "fiscal" | null;
+  /**
+   * One-shot UI toast hint (not persisted to inbox). Store flashes then clears.
+   * Used for rejected clicks like “capacità piena”.
+   */
+  lastUiHint: { text: string; tone: "good" | "bad" | "neutral" } | null;
 }
 
 export type MilestoneId =
@@ -547,5 +552,6 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     collectionCase: null,
     monthsTaxOverdue: 0,
     loseReason: null,
+    lastUiHint: null,
   };
 };
