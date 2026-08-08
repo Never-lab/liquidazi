@@ -51,6 +51,7 @@ export const ReportPanel = () => {
         <li><span>Ricavi</span><span>{formatCash(selected.revenue)}</span></li>
         <li><span>Acquisti</span><span>−{formatCash(selected.purchases)}</span></li>
         <li><span>Costo del personale</span><span>−{formatCash(selected.payrollCost)}</span></li>
+        <li><span>Oneri annuali personale</span><span>−{formatCash(selected.staffAnnualOneri ?? 0)}</span></li>
         <li><span>Interessi passivi</span><span>−{formatCash(selected.interest)}</span></li>
         <li><span>Altri costi</span><span>−{formatCash(selected.otherCosts)}</span></li>
         <li><span>Plusvalenze partecipate</span><span>{formatCash(selected.capitalGains ?? 0)}</span></li>
