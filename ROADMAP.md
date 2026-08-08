@@ -29,12 +29,13 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Notification inbox (mail, replace EventFeed) | — | [spec](docs/superpowers/specs/2026-08-08-notification-inbox-design.md) |
 | Wiki + Guida in-game + graphify refresh | [plan](docs/superpowers/plans/2026-08-08-wiki-guida.md) | [spec](docs/superpowers/specs/2026-08-08-wiki-guida-design.md) |
 | Reputation market levers (#4) | — | [spec](docs/superpowers/specs/2026-08-08-reputation-market-design.md) |
+| Supply / scorte pass (#3) | [plan](docs/superpowers/plans/2026-08-08-supply-scorte.md) | [spec](docs/superpowers/specs/2026-08-08-supply-scorte-design.md) |
 
 ## Next (coda attiva)
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Balance pass (resto: #2 domanda / #3 scorte / #6 shock senza stock)** — backlog sotto; monitor Controllo + feedback run lunghe.
+1. **Balance pass (resto: #2 domanda / #6 shock senza stock)** — backlog sotto; monitor Controllo + feedback run lunghe.
 2. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
 3. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
 4. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
@@ -75,18 +76,11 @@ Prima di implementare: uno spec corto `docs/superpowers/specs/YYYY-MM-DD-balance
 
 **File tipici:** `events.ts` (`refreshMarketBoard`, `monthlyCapacity`), `contracts.ts`, pressioni trimestre.
 
-### 3. Scorte da tabellone inutili vs emergenza 750 € — **P1**
+### 3. ~~Scorte da tabellone inutili vs emergenza flat~~ — **P1** → shipped (supply-scorte, 2026-08-08)
 
-**Sintomo:** scorte board = soldi buttati; emergenza flat 750 € domina late-game.
+**Sintomo:** scorte board = soldi buttati; emergenza flat 750 € dominava late-game.
 
-**Oggi:** senza scorte `ticket × 0.72` e default più alti; emergenza `EMERGENCY_SUPPLY_NET = 750` fissa (+2 mesi). Il gap cresce con la cassa.
-
-**Direzione consigliata:**
-- **Emergenza scalata:** `max(750, cash × k)` o `max(750, ticketMedio × n)` così resta “uscita di emergenza” cara.
-- **Bonus solo contratti** se `supplyMonths > 0` (es. +% netto o −% rischio default / −mesi term) — non sulle commesse one-shot del board, così le scorte board hanno ROI mirato.
-- Opzionale: consumare 1 mese scorte anche all’accettazione contratto, non solo al close.
-
-**File tipici:** `events.ts` (`orderEmergencySupply`, accept paths), `contracts.ts`, `advanceMonth.ts`.
+**Ora:** emergenza `max(1500, round(cash × 0.10))`; contratti con scorte +8% netto; default ×0.85 se stocked; card forniture mostrano +1/+2 mesi. Spec: [supply-scorte-design](docs/superpowers/specs/2026-08-08-supply-scorte-design.md).
 
 ### 4. ~~Reputazione 80→100 senza effetto percepito~~ — **P1** → shipped (reputation market, 2026-08-08)
 
@@ -131,7 +125,7 @@ Il settlement +1 non è stato rilasciato: l'exploit è stato corretto applicando
 | 1 | ~~**#5 tesoreria lag**~~ → shipped | Shock at month open; no treasury settlement in this slice |
 | 2 | ~~**#1 costo annuale staff**~~ → shipped | Oneri annuali personale in FY close |
 | 3 | **#2 domanda boom/secca** | Varianza run lunghe |
-| 4 | **#3 scorte** | Sistemi già presenti ma spuntati |
+| 4 | ~~**#3 scorte**~~ → shipped | Emergenza 10% cassa; contratti +8%; UI mesi |
 | 5 | **#6 shock senza stock** | Ritocco eventi, dopo che scorte hanno valore |
 
 ---

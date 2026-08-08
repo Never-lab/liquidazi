@@ -8,9 +8,11 @@ La banca può proporti un finanziamento (Euribor + spread). Compliance fiscale b
 
 Puoi parcheggiare liquidità in **tesoreria**: rende un po’ di interessi ma non conta come cassa “comoda” per certi eventi. Se uno shock porta la cassa sotto zero, la tesoreria può coprire l’emergenza.
 
-## Scorte d’emergenza
+## Scorte e forniture
 
-Se resti a zero scorte, puoi ordinare una fornitura d’emergenza (costo fisso didattico): utile per non bloccare il mese, ma non è gratis.
+Le forniture del tabellone aggiungono **+1 o +2 mesi** di scorte (le card lo dicono: da 1.200 € netti in su → +2 mesi). Con scorte > 0 i **contratti** pagano **+8%** al mese e gli insoluti sono un po’ meno frequenti.
+
+Se resti a zero, puoi ordinare un’**emergenza**: costa il **10% della cassa** (minimo 1.500 €) e dà +2 mesi — utile ma cara in late-game.
 
 ## Comfort e shock
 

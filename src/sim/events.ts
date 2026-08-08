@@ -194,10 +194,11 @@ const pushSupply = (
 ): number => {
   const sizeFactor = 0.35 + rand() * 0.65;
   const net = round2(Math.max(300, Math.min(cap, cap * sizeFactor)));
+  const months = supplyMonthsFromNet(net);
   ops.push({
     id,
     kind: "supply",
-    title: `Fornitura · ${pick(SUPPLIER_NAMES, rand)}`,
+    title: `Fornitura · ${pick(SUPPLIER_NAMES, rand)} · +${months} mesi`,
     net,
     expiresInMonths: 1,
     termMonths: 1,
@@ -250,19 +251,27 @@ export const generateOpportunities = (
   return { ops, nextId: id };
 };
 
-/** Fixed emergency restock when board supply was skipped — always available at scorte 0. */
-export const EMERGENCY_SUPPLY_NET = 750;
+/** Floor for emergency restock net (early-game). */
+export const EMERGENCY_SUPPLY_FLOOR = 1500;
+
+/** Months of coverage gained from a board supply offer. */
+export const supplyMonthsFromNet = (net: number): number => (net >= 1200 ? 2 : 1);
+
+/** Emergency restock cost: 10% of cash, never below floor. */
+export const emergencySupplyNet = (state: GameState): number =>
+  Math.max(EMERGENCY_SUPPLY_FLOOR, Math.round(state.company.cash * 0.1));
 
 export const orderEmergencySupply = (state: GameState): GameState => {
   if ((state.supplyMonths ?? 0) > 0) return state;
-  let next = recordSupplierCost(state, EMERGENCY_SUPPLY_NET, 1);
+  const cost = emergencySupplyNet(state);
+  let next = recordSupplierCost(state, cost, 1);
   next = structuredClone(next);
   next.supplyMonths = Math.min(6, (next.supplyMonths ?? 0) + 2);
   next.log.unshift({
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),
     tone: "good",
-    text: `Fornitura d'emergenza ordinata · ${EMERGENCY_SUPPLY_NET.toLocaleString("it-IT")} € + IVA. Scorte ${next.supplyMonths} mesi.`,
+    text: `Fornitura d'emergenza ordinata · ${cost.toLocaleString("it-IT")} € + IVA. Scorte ${next.supplyMonths} mesi.`,
   });
   next.log = next.log.slice(0, 12);
   return next;
@@ -319,7 +328,10 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
     next.company.reputation = Math.min(100, next.company.reputation + 1);
   } else {
     // Supply builds coverage (cap 6 months)
-    next.supplyMonths = Math.min(6, (next.supplyMonths ?? 0) + (op.net >= 1200 ? 2 : 1));
+    next.supplyMonths = Math.min(
+      6,
+      (next.supplyMonths ?? 0) + supplyMonthsFromNet(op.net),
+    );
   }
   const termNote =
     op.kind === "sale"
