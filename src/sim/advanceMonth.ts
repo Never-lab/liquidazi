@@ -14,6 +14,7 @@ import {
 import { applySubsidiaryMonth, advanceHoldingSales, refreshAcquisitionBoard } from "./acquisitions";
 import { applyMonthlyMora, f24BlockedByCollection, maybeOpenCartella, tickCollectionCase, updateMonthsTaxOverdue } from "./collection";
 import { dueF24Liabilities } from "./selectors";
+import { migrateLoansInPlace, openLoans } from "./loans";
 import { tickContracts } from "./contracts";
 import { runWorldEvents } from "./eventCatalog";
 import { refreshMarketBoard, rng, monthlyCapacity } from "./events";
@@ -318,6 +319,16 @@ export const advanceMonth = (state: GameState): GameState => {
     next.compliance = Math.min(100, next.compliance + 2 * nResp);
   }
 
+  // 2c2. In regola → ripresa lenta compliance (non in cartella/pignoramento).
+  {
+    const stage = next.collectionCase?.stage;
+    const blocked =
+      stage === "cartella" || stage === "enforcement" || stage === "terminal";
+    if (!blocked && (next.monthsTaxOverdue ?? 0) === 0) {
+      next.compliance = Math.min(100, next.compliance + 3);
+    }
+  }
+
   // 2d. active annual project: compliance + duration tick
   const hadFormazione = next.activeProject?.id === "formazione";
   {
@@ -359,11 +370,11 @@ export const advanceMonth = (state: GameState): GameState => {
     next.ytd.purchases + issuedNow.filter((i) => i.kind === "AP").reduce((s2, i) => s2 + i.net, 0),
   );
 
-  // 5. loan installment (rata francese: rimborso costante, quota capitale
-  // cresce col tempo; l'ultima rata e i casi limite azzerano l'outstanding)
-  if (next.loan && next.loan.outstanding > 0) {
+  // 5. loan installments (each open mutuo — French amortization)
+  migrateLoansInPlace(next);
+  for (const loan of openLoans(next)) {
+    if (loan.outstanding <= 0) continue;
     const b = next.company.cash;
-    const loan = next.loan;
     const annualRate =
       loan.rateType === "fixed"
         ? loan.fixedAnnualRate!
@@ -383,6 +394,7 @@ export const advanceMonth = (state: GameState): GameState => {
     next.ytd.interest = round2(next.ytd.interest + interest);
     note("Mutuo", b);
   }
+  migrateLoansInPlace(next);
 
   // 5b. fido: interessi sullo scoperto + rimborso automatico se c'è cassa
   if (next.fido && next.fido.drawn > 0) {
@@ -483,9 +495,14 @@ export const advanceMonth = (state: GameState): GameState => {
     monthPurchases +
       (next.lastPayroll?.totalNet ?? 0) +
       monthRentCharged +
-      (next.loan?.lastInstallment
-        ? next.loan.lastInstallment.interest + next.loan.lastInstallment.principal
-        : 0),
+      openLoans(next).reduce(
+        (s, l) =>
+          s +
+          (l.lastInstallment
+            ? l.lastInstallment.interest + l.lastInstallment.principal
+            : 0),
+        0,
+      ),
   );
   const closedLabel = `${next.calendar.month}/${next.calendar.year}`;
   const closedIdx = idx;
@@ -519,7 +536,7 @@ export const advanceMonth = (state: GameState): GameState => {
     };
   }
   const debtNow = round2(
-    (next.loan?.outstanding ?? 0) +
+    openLoans(next).reduce((s, l) => s + l.outstanding, 0) +
       (next.fido?.drawn ?? 0) +
       Math.max(0, -next.company.cash),
   );

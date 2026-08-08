@@ -9,6 +9,7 @@ import {
   remainingSchedule,
   spreadForGuarantee,
 } from "../sim/actions";
+import { MAX_OPEN_LOANS, openLoans } from "../sim/loans";
 import type { LoanGuarantee } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
@@ -30,6 +31,7 @@ export const LoanPanel = () => {
   const doRequestFido = useGameStore((s) => s.requestFido);
   const doDrawFido = useGameStore((s) => s.drawFido);
 
+  const loans = openLoans(game);
   const [personalizza, setPersonalizza] = useState(false);
   const [principal, setPrincipal] = useState("10000");
   const [tenor, setTenor] = useState("12");
@@ -37,37 +39,41 @@ export const LoanPanel = () => {
   const [guarantee, setGuarantee] = useState<LoanGuarantee>("none");
   const [fidoLimit, setFidoLimit] = useState("8000");
   const [fidoDraw, setFidoDraw] = useState("2000");
+  const [refinanceId, setRefinanceId] = useState<number | "">("");
 
-  const loan = game.loan;
-  const active = loan !== null && loan.outstanding > 0;
   const fido = game.fido;
   const fidoCap = fidoMaxFor(game);
   const rescueOffer = game.loanOffer;
+  const spreadPen = complianceSpreadPenaltyBps(game.compliance);
+  const canAddLoan = loans.length < MAX_OPEN_LOANS;
+  const refiId = refinanceId === "" ? undefined : refinanceId;
 
   const customPrincipal = Number(principal);
   const customTenor = Number(tenor);
-  const customSpreadBps =
-    spreadForGuarantee(guarantee) + complianceSpreadPenaltyBps(game.compliance);
+  const customSpreadBps = spreadForGuarantee(guarantee) + spreadPen;
   const customAnnualRate = euriborAt(game.monthsPlayed) + customSpreadBps / 10000;
   const customPayment = frenchPayment(customPrincipal, customAnnualRate, customTenor);
-  const customRefusal = loanRefusalReason(game, customPrincipal, guarantee);
+  const customRefusal = loanRefusalReason(game, customPrincipal, guarantee, refiId);
 
-  const currentAnnualRate = loan
-    ? loan.rateType === "fixed"
-      ? (loan.fixedAnnualRate ?? 0)
-      : euriborAt(game.monthsPlayed) + loan.spreadBps / 10000
-    : 0;
-  const monthsLeft = loan ? loan.tenorMonths - loan.monthsPaid : 0;
-  const schedule =
-    active && loan ? remainingSchedule(loan.outstanding, currentAnnualRate, monthsLeft) : [];
+  const showOffers = canAddLoan || refiId != null;
 
   return (
     <section className={styles.panel}>
       <h2 className={styles.panelTitle}>Credito</h2>
 
+      <p className={styles.muted}>
+        Compliance {Math.round(game.compliance)}/100
+        {spreadPen > 0 ? ` · spread +${spreadPen} bps` : " · spread standard"}
+        {" · "}
+        tetto fido {formatCash(fidoCap)} · mutui {loans.length}/{MAX_OPEN_LOANS}
+        {game.compliance < 100 && (game.monthsTaxOverdue ?? 0) === 0
+          ? " · in regola: +3 compliance/mese"
+          : ""}
+      </p>
+
       {game.compliance < 70 && (
         <p className={styles.warning}>
-          Compliance {Math.round(game.compliance)}/100: spread banca maggiorato
+          Compliance sotto 70: condizioni banca peggiori
           {game.compliance < 40 ? " e tetto fido ridotto." : "."}
         </p>
       )}
@@ -94,77 +100,118 @@ export const LoanPanel = () => {
         </div>
       )}
 
-      {active && loan ? (
-        <>
-          <ul className={styles.list}>
-            <li>
-              <span>Debito residuo</span>
-              <span>{formatCash(loan.outstanding)}</span>
-            </li>
-            <li>
-              <span>Tasso</span>
-              <span>
-                {loan.rateType === "fixed" ? "Fisso" : "Variabile (Euribor 3M + spread)"} ·{" "}
-                {formatPct(currentAnnualRate)}
-              </span>
-            </li>
-            <li>
-              <span>Garanzia</span>
-              <span>{GUARANTEE_LABEL[loan.guarantee]}</span>
-            </li>
-            <li>
-              <span>Rata mensile</span>
-              <span>{formatCash(loan.monthlyPayment)}</span>
-            </li>
-            <li>
-              <span>Mesi residui</span>
-              <span>{Math.max(0, monthsLeft)} / {loan.tenorMonths}</span>
-            </li>
-            {loan.lastInstallment && (
+      {loans.map((loan) => {
+        const annual =
+          loan.rateType === "fixed"
+            ? (loan.fixedAnnualRate ?? 0)
+            : euriborAt(game.monthsPlayed) + loan.spreadBps / 10000;
+        const monthsLeft = loan.tenorMonths - loan.monthsPaid;
+        const schedule = remainingSchedule(loan.outstanding, annual, monthsLeft);
+        return (
+          <div key={loan.id} style={{ marginBottom: 16 }}>
+            <p className={styles.closePreviewTitle}>
+              Mutuo #{loan.id}
+              {refinanceId === loan.id ? " · in rifinanziamento" : ""}
+            </p>
+            <ul className={styles.list}>
               <li>
-                <span>Ultima rata</span>
+                <span>Debito residuo</span>
+                <span>{formatCash(loan.outstanding)}</span>
+              </li>
+              <li>
+                <span>Tasso</span>
                 <span>
-                  {formatCash(loan.lastInstallment.principal + loan.lastInstallment.interest)}{" "}
-                  (int. {formatCash(loan.lastInstallment.interest)})
+                  {loan.rateType === "fixed" ? "Fisso" : "Variabile"} · {formatPct(annual)}
                 </span>
               </li>
-            )}
-          </ul>
-
-          {schedule.length > 0 && (
-            <>
-              <p className={styles.scheduleSection}>Piano di ammortamento residuo</p>
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Rata</th>
-                      <th>Capitale</th>
-                      <th>Interessi</th>
-                      <th>Totale</th>
-                      <th>Residuo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {schedule.map((row) => (
-                      <tr key={row.monthIndex}>
-                        <td>{row.monthIndex}</td>
-                        <td>{formatCash(row.principal)}</td>
-                        <td>{formatCash(row.interest)}</td>
-                        <td>{formatCash(row.payment)}</td>
-                        <td>{formatCash(row.residual)}</td>
+              <li>
+                <span>Garanzia</span>
+                <span>{GUARANTEE_LABEL[loan.guarantee]}</span>
+              </li>
+              <li>
+                <span>Rata mensile</span>
+                <span>{formatCash(loan.monthlyPayment)}</span>
+              </li>
+              <li>
+                <span>Mesi residui</span>
+                <span>
+                  {Math.max(0, monthsLeft)} / {loan.tenorMonths}
+                </span>
+              </li>
+              {loan.lastInstallment && (
+                <li>
+                  <span>Ultima rata</span>
+                  <span>
+                    {formatCash(
+                      loan.lastInstallment.principal + loan.lastInstallment.interest,
+                    )}{" "}
+                    (int. {formatCash(loan.lastInstallment.interest)})
+                  </span>
+                </li>
+              )}
+            </ul>
+            {schedule.length > 0 && schedule.length <= 36 && (
+              <>
+                <p className={styles.scheduleSection}>Piano residuo</p>
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Rata</th>
+                        <th>Capitale</th>
+                        <th>Interessi</th>
+                        <th>Totale</th>
+                        <th>Residuo</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-        </>
-      ) : (
+                    </thead>
+                    <tbody>
+                      {schedule.slice(0, 12).map((row) => (
+                        <tr key={row.monthIndex}>
+                          <td>{row.monthIndex}</td>
+                          <td>{formatCash(row.principal)}</td>
+                          <td>{formatCash(row.interest)}</td>
+                          <td>{formatCash(row.payment)}</td>
+                          <td>{formatCash(row.residual)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {schedule.length > 12 && (
+                  <p className={styles.muted}>… altre {schedule.length - 12} rate</p>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })}
+
+      {showOffers && (
         <>
+          {loans.length > 0 && (
+            <div className={styles.row}>
+              <label className={styles.muted}>
+                Rifinanzia (chiude un mutuo col nuovo importo){" "}
+                <select
+                  className={styles.input}
+                  value={refinanceId === "" ? "" : String(refinanceId)}
+                  onChange={(e) =>
+                    setRefinanceId(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                >
+                  <option value="">No — nuovo mutuo (se c’è posto)</option>
+                  {loans.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      Mutuo #{l.id} · residuo {formatCash(l.outstanding)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+
           <div className={styles.cards}>
-            {buildLoanOffers(game).map((offer) => (
+            {buildLoanOffers(game, refiId).map((offer) => (
               <article key={offer.id} className={styles.deal}>
                 <div>
                   <h3 className={styles.dealTitle}>{offer.label}</h3>
@@ -190,10 +237,11 @@ export const LoanPanel = () => {
                         tenorMonths: offer.tenorMonths,
                         rateType: offer.rateType,
                         guarantee: offer.guarantee,
+                        refinanceLoanId: refiId,
                       })
                     }
                   >
-                    Richiedi
+                    {refiId != null ? "Rifinanzia" : "Richiedi"}
                   </button>
                 </div>
               </article>
@@ -227,6 +275,7 @@ export const LoanPanel = () => {
                   <option value="12">12 mesi</option>
                   <option value="24">24 mesi</option>
                   <option value="36">36 mesi</option>
+                  <option value="48">48 mesi</option>
                 </select>
               </div>
               <div className={styles.row}>
@@ -264,16 +313,24 @@ export const LoanPanel = () => {
                       tenorMonths: customTenor,
                       rateType,
                       guarantee,
+                      refinanceLoanId: refiId,
                     })
                   }
                 >
-                  Richiedi mutuo
+                  {refiId != null ? "Rifinanzia mutuo" : "Richiedi mutuo"}
                 </button>
                 {customRefusal && <span className={styles.warning}>{customRefusal}</span>}
               </div>
             </>
           )}
         </>
+      )}
+
+      {!showOffers && (
+        <p className={styles.muted}>
+          Hai 2 mutui aperti. Scegli “Rifinanzia” su uno di essi (menu sopra) oppure attendi la
+          chiusura di un piano.
+        </p>
       )}
 
       <h3 className={styles.panelTitle} style={{ marginTop: 16 }}>
@@ -346,8 +403,8 @@ export const LoanPanel = () => {
       )}
 
       <p className={styles.muted}>
-        Mutuo a piano rate e fido possono coesistere. Il Fondo PMI non è un contributo a fondo
-        perduto.
+        Fino a 2 mutui in parallelo, oppure rifinanzia (il nuovo chiude il residuo del vecchio e
+        accredita solo il netto). Il Fondo PMI non è un contributo a fondo perduto.
       </p>
     </section>
   );

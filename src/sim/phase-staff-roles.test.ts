@@ -109,7 +109,7 @@ describe("advanceMonth: scatti anzianità + tick Responsabile", () => {
     // No sales close this month, so the existing salesTaken===0 rival drift (+5)
     // still applies after our −1 tick: 40 − 1 + 5 = 44.
     s = advanceMonth(s);
-    expect(s.compliance).toBe(52);
+    expect(s.compliance).toBe(55); // +2 Responsabile +3 in regola
     expect(s.rival!.heat).toBe(44);
   });
 });

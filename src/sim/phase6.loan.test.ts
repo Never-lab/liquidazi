@@ -144,7 +144,8 @@ describe("Phase 6 — prestito", () => {
       guarantee: "none",
     });
     for (let i = 0; i < 4; i++) s = advanceMonth(s);
-    expect(s.loan?.outstanding).toBe(0);
+    expect(s.loan).toBeNull();
+    expect(s.loans ?? []).toHaveLength(0);
   });
 });
 

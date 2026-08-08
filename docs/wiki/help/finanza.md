@@ -2,7 +2,15 @@
 
 ## Prestiti
 
-La banca può proporti un finanziamento (Euribor + spread). Compliance fiscale bassa = condizioni peggiori. In difficoltà esiste anche il prestito di salvataggio se sei in crisi di cassa.
+Puoi avere **fino a 2 mutui** aperti (Euribor + spread). Oppure **rifinanzia**: un mutuo nuovo chiude il residuo del precedente e accredita solo la differenza in cassa.
+
+Compliance fiscale bassa = spread più alto e fido più basso. In difficoltà esiste il prestito di salvataggio (se hai ancora uno slot mutuo libero).
+
+Tetti didattici: senza garanzia fino a **35k**, con Fondo PMI fino a **75k**. Fido fino a **25k** (o di più con compliance alta e cassa solida, max 40k).
+
+## Compliance
+
+Se paghi le tasse in tempo (niente cartella/pignoramento), la compliance **sale di +3 al mese**. I ritardi la fanno scendere.
 
 ## Tesoreria
 

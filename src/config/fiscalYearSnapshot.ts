@@ -72,7 +72,7 @@ export const fiscalYearSnapshot: FiscalYearSnapshot = {
   loan_base_spread_bps: 300,
   fondo_garanzia_spread_discount_bps: 100,
   fideiussione_spread_discount_bps: 50,
-  loan_max_principal_base: 25000,
-  loan_max_principal_fondo: 50000,
+  loan_max_principal_base: 35000,
+  loan_max_principal_fondo: 75000,
   disclaimer: "Modello educativo semplificato. Non costituisce consulenza fiscale.",
 };

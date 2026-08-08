@@ -100,6 +100,12 @@ export const TaxPanel = () => {
       </p>
       <p className={styles.muted}>
         Compliance: {game.compliance}/100
+        {(game.monthsTaxOverdue ?? 0) === 0 &&
+        game.collectionCase?.stage !== "cartella" &&
+        game.collectionCase?.stage !== "enforcement" &&
+        game.collectionCase?.stage !== "terminal"
+          ? " — in regola: +3/mese"
+          : ""}
         {game.compliance < 70
           ? " — sotto 70 la banca alza lo spread; sotto 40 anche il tetto fido."
           : ""}
