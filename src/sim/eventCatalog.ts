@@ -358,7 +358,7 @@ const CHOICE_POOL: ChoiceDef[] = [
   },
 ];
 
-/** Forced mid/late-game shocks — single option, blocks Chiudi mese until acknowledged. */
+/** Forced mid/late-game shocks — single option applied immediately. */
 const shockCash = (s: GameState, pct: number, floor: number): number => {
   const hit = round2(Math.max(floor, Math.max(0, s.company.cash) * pct));
   s.company.cash = round2(s.company.cash - hit);
@@ -1031,7 +1031,7 @@ export const runWorldEvents = (state: GameState): GameState => {
   // Don't stack a new choice if one is somehow still pending
   if (next.pendingEvent) return next;
 
-  // Comfort shocks first — non-skippable, block Chiudi mese
+  // Comfort shocks first — applied immediately
   if (!next.quietMode && tryQueueShock(next, rand)) {
     return next;
   }
