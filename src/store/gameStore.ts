@@ -546,7 +546,7 @@ export const useGameStore = create<GameStore>()(
         const game = investSubsidiaryCapex(migrated, id);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
         if (game.company.cash < before) {
-          get().flashToast("CAPEX investito: EBITDA in crescita", "good");
+          get().flashToast("CAPEX ok (+16% EBITDA). Prossimo tra 6 mesi.", "good");
           sfxGood();
         } else {
           get().flashToast("CAPEX non disponibile", "bad");

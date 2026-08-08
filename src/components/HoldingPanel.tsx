@@ -65,6 +65,9 @@ export const HoldingPanel = () => {
       <h3 className={styles.panelTitle} style={{ marginTop: 16 }}>
         Partecipate
       </h3>
+      <p className={styles.muted}>
+        CAPEX: +16% EBITDA, costo ≈ 6× EBITDA mensile. Dopo ogni investimento serve attendere 6 mesi.
+      </p>
       {subs.length === 0 ? (
         <p className={styles.muted}>Nessuna partecipata: acquisisci dal tabellone qui sotto.</p>
       ) : (
@@ -74,6 +77,22 @@ export const HoldingPanel = () => {
             const capexCost = s.monthlyEbitda * CAPEX_EBITDA_MULT;
             const listed = s.listedUntilMonthIdx != null;
             const onCooldown = s.capexCooldownMonths > 0;
+            const shortCash = game.company.cash < capexCost;
+            const capexBlocked = listed || onCooldown || shortCash;
+            const capexReason = listed
+              ? "Non disponibile mentre è in vendita"
+              : onCooldown
+                ? `Prossimo CAPEX tra ${s.capexCooldownMonths} mesi (avanza il calendario)`
+                : shortCash
+                  ? `Cassa insufficiente (servono ${formatCash(capexCost)})`
+                  : `Investi ${formatCash(capexCost)} → +16% EBITDA; poi 6 mesi di attesa`;
+            const capexLabel = listed
+              ? "CAPEX · in vendita"
+              : onCooldown
+                ? `CAPEX · tra ${s.capexCooldownMonths}m`
+                : shortCash
+                  ? `CAPEX · cassa insufficiente`
+                  : `CAPEX · ${formatCash(capexCost)}`;
             return (
               <li key={s.id} style={{ flexDirection: "column", alignItems: "stretch", gap: 6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
@@ -83,16 +102,16 @@ export const HoldingPanel = () => {
                 <span className={styles.muted}>
                   rischio {RISK_LABEL[s.risk]} · pagata {formatCash(s.purchasePrice)} · stima{" "}
                   {formatCash(estimate)}
-                  {listed ? " · in vendita" : onCooldown ? ` · CAPEX in cooldown (${s.capexCooldownMonths}m)` : ""}
+                  {listed ? " · in vendita" : onCooldown ? ` · CAPEX tra ${s.capexCooldownMonths} mesi` : ""}
                 </span>
                 <div className={styles.dealActions}>
                   <button
                     className={styles.buttonSecondary}
-                    disabled={listed || onCooldown || game.company.cash < capexCost}
-                    title={listed ? "Non disponibile mentre è in vendita" : undefined}
+                    disabled={capexBlocked}
+                    title={capexReason}
                     onClick={() => capex(s.id)}
                   >
-                    CAPEX · {formatCash(capexCost)}
+                    {capexLabel}
                   </button>
                   <button
                     className={styles.buttonSecondary}
