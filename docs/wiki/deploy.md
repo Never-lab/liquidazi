@@ -34,6 +34,6 @@ python -m graphify extract . --code-only --out .
 python -m graphify cluster-only . --no-viz --no-label
 ```
 
-Then generate agent wiki articles under `graphify-out/wiki/` via `graphify.wiki.to_wiki` (see last refresh commit / agent session). Committed artifacts: `graphify-out/graph.json`, `GRAPH_REPORT.md`, `wiki/`.
+Then generate agent wiki articles under `graphify-out/wiki/` via `graphify.wiki.to_wiki` (see last refresh commit / agent session). Prefer committing `GRAPH_REPORT.md` and `wiki/`; **`graph.json` is gitignored** when large — regenerate locally for deep code queries.
 
 Agents: if `graphify-out/` is missing, regenerate locally before deep architecture questions.

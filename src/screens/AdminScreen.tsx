@@ -29,6 +29,7 @@ const OUTCOME_LABEL: Record<string, string> = {
 export const AdminScreen = () => {
   const setScreen = useGameStore((s) => s.setScreen);
   const auth = useGameStore((s) => s.auth);
+  const installTesterSave = useGameStore((s) => s.installTesterSave);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -273,6 +274,22 @@ export const AdminScreen = () => {
           )}
         </>
       ) : null}
+
+      {auth?.admin && (
+        <>
+          <p className={styles.boardLabel}>Save di prova</p>
+          <p className={styles.subtitle}>
+            Installa nello <strong>Slot 1</strong> una partita midgame (~14 mesi,
+            rivale Tesa, F24 aperto, scorte 2) e apri subito il tavolo. Sovrascrive
+            lo Slot 1 e si sincronizza col cloud.
+          </p>
+          <div className={styles.actions}>
+            <button type="button" className={styles.secondary} onClick={installTesterSave}>
+              Installa save tester → Slot 1
+            </button>
+          </div>
+        </>
+      )}
 
       <div className={styles.actions}>
         <button type="button" className={styles.secondary} onClick={() => setScreen("menu")}>

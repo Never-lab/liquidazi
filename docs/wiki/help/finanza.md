@@ -14,6 +14,8 @@ Le forniture del tabellone aggiungono **+1 o +2 mesi** di scorte (le card lo dic
 
 Se resti a zero, puoi ordinare un’**emergenza**: costa il **10% della cassa** (minimo 1.500 €) e dà +2 mesi — utile ma cara in late-game.
 
+Gli shock su magazzino (incendio, alluvione, furto, fornitore, mezzo…) senza scorte costano **di più** (riconversione urgente): conviene non restare a zero troppo a lungo.
+
 ## Comfort e shock
 
 Con cassa molto alta il gioco può tirare shock più spesso. Non è un bug: è tensione di mid/late game.

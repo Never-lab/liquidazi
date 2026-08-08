@@ -1,42 +1,42 @@
-# Liquidazi wiki
+# Liquidazi — guida
 
-**Start here** for agents and humans. Specs/plans under `docs/superpowers/` are history; this wiki describes **current** shipped behavior.
+Simulazione educativa di impresa (SRL semplificata). Questa wiki è il riferimento per i giocatori; nel gioco trovi la stessa Guida dal menu.
 
-## Edit rules
+## Capitoli
 
-1. Edit files in this folder in git (`docs/wiki/`).
-2. Run `npm run wiki:sync-help` after changing `help/`.
-3. Mirror to GitHub Wiki with `npm run wiki:sync-github` (do not treat the Wiki UI as source of truth).
+| Pagina | Argomento |
+|--------|-----------|
+| [Come si gioca](help/come-si-gioca.md) | Loop, cassa, domanda, rivale |
+| [Fisco e F24](help/fisco-e-f24.md) | Tasse, mora, cartella |
+| [Personale e capacità](help/personale-e-capacita.md) | Staff, slot, oneri |
+| [Finanza](help/finanza.md) | Prestiti, tesoreria, scorte, shock |
+| [FAQ](help/faq.md) | Blocchi frequenti |
 
-## Agent map
+## Novità recenti (agosto 2026)
 
-| Page | Topic |
-|------|--------|
-| [architecture.md](architecture.md) | Stack, folders, screens, store |
-| [sim-loop.md](sim-loop.md) | Month close, cash, shocks, comfort |
+- Tabellone **secca / boom**; popup solo al cambio regime
+- **Pressione rivale** Calma / Tesa / Guerra
+- Con **cartella** aperta l’F24 mensile è bloccato (in rateazione i nuovi F24 sì)
+- Shock magazzino **senza scorte** costano di più
+
+## Pagine tecniche (agent / sviluppo)
+
+| Pagina | Argomento |
+|--------|-----------|
+| [architecture.md](architecture.md) | Stack, cartelle, store |
+| [sim-loop.md](sim-loop.md) | Chiusura mese, shock, domanda, rivale |
 | [fiscal.md](fiscal.md) | F24, mora, cartella, enforcement |
-| [staff-ops.md](staff-ops.md) | Hiring, oneri, capacity, projects |
-| [holding.md](holding.md) | Flip / acquisitions |
-| [ui-feedback.md](ui-feedback.md) | HUD, inbox, toast vs log |
-| [deploy.md](deploy.md) | Railway / build |
+| [staff-ops.md](staff-ops.md) | Assunzioni, oneri, capacità |
+| [holding.md](holding.md) | Acquisizioni |
+| [ui-feedback.md](ui-feedback.md) | HUD, posta, toast |
+| [deploy.md](deploy.md) | Railway / build / sync wiki |
 
-## Player help (also in-game Guida)
+## Manutenzione
 
-| Page | Topic |
-|------|--------|
-| [help/come-si-gioca.md](help/come-si-gioca.md) | Core loop |
-| [help/fisco-e-f24.md](help/fisco-e-f24.md) | Taxes & collection |
-| [help/personale-e-capacita.md](help/personale-e-capacita.md) | Staff & capacity |
-| [help/finanza.md](help/finanza.md) | Loans & emergency cash |
-| [help/faq.md](help/faq.md) | Common blockers |
+1. Modifica i file in `docs/wiki/` (questa cartella è la fonte).
+2. Dopo `help/`: `npm run wiki:sync-help`.
+3. Specchio GitHub Wiki: `npm run wiki:sync-github`.
 
-## Graphify
+## Disclaimer
 
-After regenerate: see `graphify-out/GRAPH_REPORT.md` and `graphify-out/wiki/` (if present).  
-Regenerate: install `graphifyy`, then from repo root run the graphify full pipeline and `graphify . --wiki` (see [deploy.md](deploy.md)).
-
-## GitHub Wiki
-
-Public mirror: `https://github.com/Never-lab/liquidazi/wiki` (Home should match this INDEX).
-
-**One-time:** if `npm run wiki:sync-github` cannot clone `*.wiki.git`, open [Create the first page](https://github.com/Never-lab/liquidazi/wiki/_new), save a stub Home, then re-run the sync.
+Modello didattico. Non è consulenza fiscale né software da commercialista.
