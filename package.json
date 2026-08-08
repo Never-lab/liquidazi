@@ -14,7 +14,8 @@
     "lint": "oxlint",
     "test": "vitest run",
     "preview": "vite preview",
-    "wiki:sync-help": "node scripts/sync-guide-pages.mjs"
+    "wiki:sync-help": "node scripts/sync-guide-pages.mjs",
+    "wiki:sync-github": "node scripts/sync-github-wiki.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

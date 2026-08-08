@@ -38,3 +38,5 @@ Regenerate: install `graphifyy`, then from repo root run the graphify full pipel
 ## GitHub Wiki
 
 Public mirror: `https://github.com/Never-lab/liquidazi/wiki` (Home should match this INDEX).
+
+**One-time:** if `npm run wiki:sync-github` cannot clone `*.wiki.git`, open [Create the first page](https://github.com/Never-lab/liquidazi/wiki/_new), save a stub Home, then re-run the sync.
