@@ -543,7 +543,7 @@ export const buyUpgrade = (state: GameState, id: UpgradeId): GameState => {
 };
 
 export const TREASURY_MIN = 500;
-export const GROWTH_PER_SLOT = 4000;
+export const GROWTH_PER_SLOT = 3500;
 export const GROWTH_CAPACITY_CAP = 3;
 export { HOLDING_SLOT_BASE as MAX_SUBSIDIARIES } from "../config/holding";
 
@@ -609,4 +609,4 @@ export const investGrowth = (state: GameState, amount: number): GameState => {
 
 /** Indicative annual treasury yield (fraction of Euribor). */
 export const treasuryAnnualRate = (monthsPlayed: number): number =>
-  Math.max(0, euriborAt(monthsPlayed) * 0.4);
+  Math.max(0, euriborAt(monthsPlayed) * 0.55);

@@ -31,7 +31,7 @@ describe("Investimenti + acquisizioni lite", () => {
     expect(s.company.cash + s.treasury).toBe(total0);
   });
 
-  it("growth: 4000 € → +1 capacity", () => {
+  it("growth: GROWTH_PER_SLOT € → +1 capacity", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.company.cash = 20000;
     const cap0 = monthlyCapacity(s);

@@ -12,9 +12,15 @@ Tetti didattici: senza garanzia fino a **35k**, con Fondo PMI fino a **75k**. Fi
 
 Se paghi le tasse in tempo (niente cartella/pignoramento), la compliance **sale di +3 al mese**. I ritardi la fanno scendere.
 
-## Tesoreria
+## Investimenti (tab Crescita)
 
-Puoi parcheggiare liquidità in **tesoreria**: rende un po’ di interessi ma non conta come cassa “comoda” per certi eventi. Se uno shock porta la cassa sotto zero, la tesoreria può coprire l’emergenza.
+Tre strumenti diversi:
+
+1. **Tesoreria** — parcheggio: rende (~0,55× Euribor) ma non è cassa “comoda”; può salvare se vai in rosso.
+2. **Reinvestimento crescita** — ogni **3 500 €** → +1 slot permanente (max 3).
+3. **Progetto annuale** — offerta a **gennaio**: un piano 6–12 mesi (o salta). Stato e mesi residui li vedi nel tab Investimenti.
+
+Holding (partecipate) è un tab separato.
 
 ## Scorte e forniture
 
