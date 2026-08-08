@@ -395,22 +395,85 @@ const shockCash = (s: GameState, pct: number, floor: number): number => {
   return hit;
 };
 
+/** Stockout premium when a supply shock hits with no coverage left. */
+export const stockoutExtra = (cashBefore: number, lostMonths: number): number => {
+  if (lostMonths <= 0) return 0;
+  const cash = Math.max(0, cashBefore);
+  return Math.max(800 * lostMonths, Math.round(cash * 0.06 * lostMonths));
+};
+
+type SupplyShockOpts = {
+  lostMonths: number;
+  wipeSupply?: boolean;
+  /** Flat cash hit (mutually exclusive with pct in practice). */
+  baseFlat?: number;
+  basePct?: number;
+  baseFloor?: number;
+  label: string;
+};
+
+const applySupplyShock = (s: GameState, opts: SupplyShockOpts): void => {
+  const before = s.supplyMonths ?? 0;
+  const cashBefore = Math.max(0, s.company.cash);
+  if (opts.wipeSupply) {
+    s.supplyMonths = 0;
+  } else {
+    s.supplyMonths = Math.max(0, before - opts.lostMonths);
+  }
+
+  let baseHit = 0;
+  if (opts.baseFlat != null && opts.baseFlat > 0) {
+    baseHit = opts.baseFlat;
+    s.company.cash = round2(s.company.cash - baseHit);
+    s.ytd.otherCosts = round2(s.ytd.otherCosts + baseHit);
+  } else if (opts.basePct != null) {
+    baseHit = shockCash(s, opts.basePct, opts.baseFloor ?? 0);
+  }
+
+  let extra = 0;
+  if (before === 0) {
+    const lost = opts.wipeSupply ? 2 : opts.lostMonths;
+    extra = stockoutExtra(cashBefore, lost);
+    if (extra > 0) {
+      s.company.cash = round2(s.company.cash - extra);
+      s.ytd.otherCosts = round2(s.ytd.otherCosts + extra);
+    }
+  }
+
+  const total = round2(baseHit + extra);
+  if (extra > 0) {
+    pushLog(
+      s,
+      "bad",
+      `${opts.label}: scorte già a zero — riconversione −${total.toLocaleString("it-IT")} € (base + stockout).`,
+    );
+  } else if (opts.wipeSupply) {
+    pushLog(
+      s,
+      "bad",
+      `${opts.label}: scorte a zero, −${total.toLocaleString("it-IT")} € di riconversione.`,
+    );
+  } else {
+    pushLog(
+      s,
+      "bad",
+      `${opts.label}: scorte ${before}→${s.supplyMonths}, −${total.toLocaleString("it-IT")} €.`,
+    );
+  }
+};
+
 const SHOCK_POOL: ChoiceDef[] = [
   {
     kind: "choice",
     id: "shock_fire",
     title: "Incendio in magazzino",
-    body: "Un principio d'incendio rovina parte delle scorte. Paghi la messa in sicurezza e perdi copertura.",
+    body: "Un principio d'incendio rovina parte delle scorte. Paghi la messa in sicurezza e perdi copertura. Senza scorte il ripristino urgente costa di più.",
     options: [
       {
         id: "ok",
-        label: "Affronta (−2 scorte, −500 €)",
+        label: "Affronta (−2 scorte, −500 €+)",
         apply: (s) => {
-          const before = s.supplyMonths ?? 0;
-          s.supplyMonths = Math.max(0, before - 2);
-          s.company.cash = round2(s.company.cash - 500);
-          s.ytd.otherCosts = round2(s.ytd.otherCosts + 500);
-          pushLog(s, "bad", `Incendio: scorte ${before}→${s.supplyMonths}, −500 €.`);
+          applySupplyShock(s, { lostMonths: 2, baseFlat: 500, label: "Incendio" });
         },
       },
     ],
@@ -435,15 +498,18 @@ const SHOCK_POOL: ChoiceDef[] = [
     kind: "choice",
     id: "shock_flood",
     title: "Alluvione / infiltrazione",
-    body: "Acqua in deposito e uffici. Scorte danneggiate e costi di ripristino.",
+    body: "Acqua in deposito e uffici. Scorte danneggiate e costi di ripristino. Senza scorte paghi di più la ricostituzione urgente.",
     options: [
       {
         id: "ok",
-        label: "Ripristina (−1 scorta, −12% cassa)",
+        label: "Ripristina (−1 scorta, −12% cassa+)",
         apply: (s) => {
-          s.supplyMonths = Math.max(0, (s.supplyMonths ?? 0) - 1);
-          const hit = shockCash(s, 0.12, 800);
-          pushLog(s, "bad", `Alluvione: −1 scorta, −${hit.toLocaleString("it-IT")} €.`);
+          applySupplyShock(s, {
+            lostMonths: 1,
+            basePct: 0.12,
+            baseFloor: 800,
+            label: "Alluvione",
+          });
         },
       },
     ],
@@ -536,15 +602,18 @@ const SHOCK_POOL: ChoiceDef[] = [
     kind: "choice",
     id: "shock_van_theft",
     title: "Furto furgone / merce",
-    body: "Rubano un carico in transito. Scorte giù e franchigia assicurativa da pagare.",
+    body: "Rubano un carico in transito. Scorte giù e franchigia assicurativa da pagare. A magazzino vuoto la ricostituzione urgente costa di più.",
     options: [
       {
         id: "ok",
-        label: "Denuncia (−1 scorta, −5% cassa)",
+        label: "Denuncia (−1 scorta, −5% cassa+)",
         apply: (s) => {
-          s.supplyMonths = Math.max(0, (s.supplyMonths ?? 0) - 1);
-          const hit = shockCash(s, 0.05, 650);
-          pushLog(s, "bad", `Furto merce: −1 scorta, franchigia −${hit.toLocaleString("it-IT")} €.`);
+          applySupplyShock(s, {
+            lostMonths: 1,
+            basePct: 0.05,
+            baseFloor: 650,
+            label: "Furto merce",
+          });
         },
       },
     ],
@@ -594,16 +663,18 @@ const SHOCK_POOL: ChoiceDef[] = [
     kind: "choice",
     id: "shock_supplier_bust",
     title: "Fornitore fallisce",
-    body: "Il fornitore principale chiude. Scorte azzerate: dovrai riordinare da zero.",
+    body: "Il fornitore principale chiude. Scorte azzerate: dovrai riordinare da zero. Se eri già senza scorte, la riconversione urgente costa di più.",
     options: [
       {
         id: "ok",
-        label: "Prendi atto (scorte → 0, −700 €)",
+        label: "Prendi atto (scorte → 0, −700 €+)",
         apply: (s) => {
-          s.supplyMonths = 0;
-          s.company.cash = round2(s.company.cash - 700);
-          s.ytd.otherCosts = round2(s.ytd.otherCosts + 700);
-          pushLog(s, "bad", "Fornitore fallito: scorte a zero, −700 € di riconversione.");
+          applySupplyShock(s, {
+            lostMonths: 2,
+            wipeSupply: true,
+            baseFlat: 700,
+            label: "Fornitore fallito",
+          });
         },
       },
     ],
@@ -751,17 +822,13 @@ const SHOCK_POOL: ChoiceDef[] = [
     kind: "choice",
     id: "shock_truck",
     title: "Incidente mezzo aziendale",
-    body: "Sinistro con fermo mezzo. Scorte in ritardo e riparazione salata.",
+    body: "Sinistro con fermo mezzo. Scorte in ritardo e riparazione salata. Senza scorte il fermo costa di più.",
     options: [
       {
         id: "ok",
-        label: "Ripara (−2 scorte, −1 100 €)",
+        label: "Ripara (−2 scorte, −1 100 €+)",
         apply: (s) => {
-          const before = s.supplyMonths ?? 0;
-          s.supplyMonths = Math.max(0, before - 2);
-          s.company.cash = round2(s.company.cash - 1100);
-          s.ytd.otherCosts = round2(s.ytd.otherCosts + 1100);
-          pushLog(s, "bad", `Sinistro mezzo: scorte ${before}→${s.supplyMonths}, −1 100 €.`);
+          applySupplyShock(s, { lostMonths: 2, baseFlat: 1100, label: "Sinistro mezzo" });
         },
       },
     ],

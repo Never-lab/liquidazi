@@ -33,16 +33,17 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Demand boom/secca (#2) | [plan](docs/superpowers/plans/2026-08-08-demand-boom-secca.md) | [spec](docs/superpowers/specs/2026-08-08-demand-boom-secca-design.md) |
 | Rival pressure pass | [plan](docs/superpowers/plans/2026-08-08-rival-pressure.md) | [spec](docs/superpowers/specs/2026-08-08-rival-pressure-design.md) |
 | Security hardening (rate limit, run clamps) | — | audit session 2026-08-08 |
+| Audit integrity UX (F24/collection) | — | [spec](docs/superpowers/specs/2026-08-08-audit-integrity-ux-design.md) |
+| Shock senza stock (#6) | [plan](docs/superpowers/plans/2026-08-08-shock-senza-stock.md) | [spec](docs/superpowers/specs/2026-08-08-shock-senza-stock-design.md) |
 
 ## Next (coda attiva)
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Balance pass (resto: #6 shock senza stock)** — backlog sotto; monitor Controllo + feedback run lunghe.
-2. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
-3. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
-4. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
-5. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
+1. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
+2. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
+3. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
+4. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
 
 ---
 
@@ -100,18 +101,11 @@ Il settlement +1 non è stato rilasciato: l'exploit è stato corretto applicando
 
 **File tipici:** `actions.ts` (treasury), `advanceMonth.ts`, `eventCatalog.ts` (`shockCash`), `InvestmentsPanel`.
 
-### 6. Evento storage / perdita scorte senza stock — **P2**
+### 6. ~~Evento storage / perdita scorte senza stock~~ — **P2** → shipped (shock-senza-stock, 2026-08-08)
 
 **Sintomo:** se non hai scorte quando scatta incendio/fornitore/sinistro, la perdita monetaria resta bassa/fissa.
 
-**Oggi:** molti shock tolgono scorte + cash flat o %; a `supplyMonths = 0` il pezzo scorte è no-op e resta solo il cash fisso (es. −700).
-
-**Direzione consigliata:**
-- Se `supplyMonths === 0` al trigger: **malus cash extra** (floor più alto o `% cassa` aggiuntiva) e/o `ytd` “riconversione / stockout”.
-- Se hai scorte: comportamento attuale (consumi copertura).
-- Copia evento: spiegare perché senza scorte costi di più (acquisto urgente / fermo).
-
-**File tipici:** `eventCatalog.ts` (shock_fire, fornitore fallito, sinistro mezzo, ecc.).
+**Ora:** helper `stockoutExtra` / `applySupplyShock`: se `supplyMonths === 0` al trigger, `extra = max(800×lost, round(cash×0.06×lost))` oltre al danno base. Spec: [shock-senza-stock-design](docs/superpowers/specs/2026-08-08-shock-senza-stock-design.md).
 
 ### Ordine di attacco suggerito
 
@@ -121,7 +115,8 @@ Il settlement +1 non è stato rilasciato: l'exploit è stato corretto applicando
 | 2 | ~~**#1 costo annuale staff**~~ → shipped | Oneri annuali personale in FY close |
 | 3 | ~~**#2 domanda boom/secca**~~ → shipped | Regimi 20/60/20; boardCap boom 12; popup |
 | 4 | ~~**#3 scorte**~~ → shipped | Emergenza 10% cassa; contratti +8%; UI mesi |
-| 5 | **#6 shock senza stock** | Ritocco eventi, dopo che scorte hanno valore |
+| 5 | ~~**#6 shock senza stock**~~ → shipped | Premium stockout su shock-scorte (2026-08-08) |
+
 
 ---
 
