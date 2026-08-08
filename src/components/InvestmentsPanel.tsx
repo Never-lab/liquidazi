@@ -6,8 +6,14 @@ import {
   TREASURY_MIN,
   treasuryAnnualRate,
 } from "../sim/actions";
+import {
+  growthInvestHint,
+  treasuryDepositHint,
+  treasuryWithdrawHint,
+} from "../ui/controlHints";
 import { formatCash } from "./formatCash";
 import { useGameStore } from "../store/gameStore";
+import { Hint } from "./ui/Hint";
 import styles from "./panels.module.css";
 
 export const InvestmentsPanel = () => {
@@ -63,13 +69,21 @@ export const InvestmentsPanel = () => {
           onChange={(e) => setDep(e.target.value)}
           aria-label="Importo deposito"
         />
-        <button
-          className={styles.buttonSecondary}
-          disabled={Number(dep) < TREASURY_MIN || game.company.cash < Number(dep)}
-          onClick={() => deposit(Number(dep))}
+        <Hint
+          text={treasuryDepositHint({
+            belowMin: Number(dep) < TREASURY_MIN,
+            shortCash: game.company.cash < Number(dep),
+            minLabel: formatCash(TREASURY_MIN),
+          })}
         >
-          Deposita
-        </button>
+          <button
+            className={styles.buttonSecondary}
+            disabled={Number(dep) < TREASURY_MIN || game.company.cash < Number(dep)}
+            onClick={() => deposit(Number(dep))}
+          >
+            Deposita
+          </button>
+        </Hint>
       </div>
       <div className={styles.row}>
         <input
@@ -80,13 +94,20 @@ export const InvestmentsPanel = () => {
           onChange={(e) => setWd(e.target.value)}
           aria-label="Importo prelievo"
         />
-        <button
-          className={styles.buttonSecondary}
-          disabled={!(Number(wd) > 0) || Number(wd) > treasury}
-          onClick={() => withdraw(Number(wd))}
+        <Hint
+          text={treasuryWithdrawHint({
+            invalidAmount: !(Number(wd) > 0),
+            overBalance: Number(wd) > treasury,
+          })}
         >
-          Preleva
-        </button>
+          <button
+            className={styles.buttonSecondary}
+            disabled={!(Number(wd) > 0) || Number(wd) > treasury}
+            onClick={() => withdraw(Number(wd))}
+          >
+            Preleva
+          </button>
+        </Hint>
       </div>
 
       <h3 className={styles.panelTitle} style={{ marginTop: 16 }}>
@@ -109,17 +130,26 @@ export const InvestmentsPanel = () => {
           onChange={(e) => setGrowth(e.target.value)}
           aria-label="Importo crescita"
         />
-        <button
-          className={styles.button}
-          disabled={
-            Number(growth) < GROWTH_PER_SLOT ||
-            game.company.cash < Number(growth) ||
-            growthSlots >= GROWTH_CAPACITY_CAP
-          }
-          onClick={() => grow(Number(growth))}
+        <Hint
+          text={growthInvestHint({
+            belowMin: Number(growth) < GROWTH_PER_SLOT,
+            shortCash: game.company.cash < Number(growth),
+            atCap: growthSlots >= GROWTH_CAPACITY_CAP,
+            minLabel: formatCash(GROWTH_PER_SLOT),
+          })}
         >
-          Investi
-        </button>
+          <button
+            className={styles.button}
+            disabled={
+              Number(growth) < GROWTH_PER_SLOT ||
+              game.company.cash < Number(growth) ||
+              growthSlots >= GROWTH_CAPACITY_CAP
+            }
+            onClick={() => grow(Number(growth))}
+          >
+            Investi
+          </button>
+        </Hint>
       </div>
 
       <h3 className={styles.panelTitle} style={{ marginTop: 16 }}>

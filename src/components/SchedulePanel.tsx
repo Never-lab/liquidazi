@@ -37,7 +37,10 @@ export const SchedulePanel = ({ compact }: Props) => {
     <section className={compact ? styles.panelWide : styles.panel}>
       <div className={styles.panelHead}>
         <h2 className={styles.panelTitle}>Scadenziario fatture</h2>
-        <span className={styles.badge}>
+        <span
+          className={styles.badge}
+          title="Fatture aperte e stock di incassi/pagamenti ancora da chiudere."
+        >
           aperte {openTot.count} · stock {formatCash(openTot.inflow)} in /{" "}
           {formatCash(Math.abs(openTot.outflow))} out
         </span>

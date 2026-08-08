@@ -5,6 +5,7 @@ import {
   type AdminStats,
 } from "../api/client";
 import { formatCash } from "../components/formatCash";
+import { Hint } from "../components/ui/Hint";
 import { useGameStore } from "../store/gameStore";
 import styles from "./MenuScreen.module.css";
 
@@ -260,6 +261,11 @@ export const AdminScreen = () => {
                         type="button"
                         className={styles.navLink}
                         disabled={deletingId === r.id || loading}
+                        title={
+                          deletingId === r.id || loading
+                            ? "Eliminazione in corso…"
+                            : "Elimina questa run dalla classifica. Irreversibile."
+                        }
                         onClick={() =>
                           void onDeleteRun(r.id, `${r.username} (${r.monthsPlayed} mesi)`)
                         }
@@ -284,9 +290,11 @@ export const AdminScreen = () => {
             lo Slot 1 e si sincronizza col cloud.
           </p>
           <div className={styles.actions}>
-            <button type="button" className={styles.secondary} onClick={installTesterSave}>
-              Installa save tester → Slot 1
-            </button>
+            <Hint text="Sovrascrive lo Slot 1 con una partita midgame di test (~14 mesi).">
+              <button type="button" className={styles.secondary} onClick={installTesterSave}>
+                Installa save tester → Slot 1
+              </button>
+            </Hint>
           </div>
         </>
       )}

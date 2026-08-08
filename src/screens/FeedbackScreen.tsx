@@ -96,7 +96,12 @@ export const FeedbackScreen = () => {
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <button type="submit" className={styles.primary} disabled={busy}>
+        <button
+          type="submit"
+          className={styles.primary}
+          disabled={busy}
+          title={busy ? "Invio in corso…" : "Invia il messaggio di feedback."}
+        >
           {busy ? "Invio…" : "Invia"}
         </button>
       </form>

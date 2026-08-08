@@ -7,8 +7,10 @@ import {
 } from "../config/upgrades";
 import { upgradeCost } from "../sim/actions";
 import { migrateUpgradeState } from "../sim/migrateUpgrades";
+import { upgradeBuyHint } from "../ui/controlHints";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
+import { Hint } from "./ui/Hint";
 import styles from "./panels.module.css";
 
 export const UpgradesPanel = () => {
@@ -52,16 +54,25 @@ export const UpgradesPanel = () => {
               </div>
               <span className={styles.muted}>{blurbText}</span>
               {atMax ? (
-                <span className={styles.muted}>Max Lv3</span>
+                <span className={styles.muted} title={upgradeBuyHint({ atMax: true, shortCash: false, costLabel: formatCash(cost) })}>
+                  Max Lv3
+                </span>
               ) : (
-                <button
-                  className={styles.buttonSecondary}
-                  disabled={!canBuy}
-                  title={!canBuy ? "Cassa insufficiente" : undefined}
-                  onClick={() => buy(u.id as UpgradeId)}
+                <Hint
+                  text={upgradeBuyHint({
+                    atMax: false,
+                    shortCash: !canBuy,
+                    costLabel: formatCash(cost),
+                  })}
                 >
-                  {`${action} · ${formatCash(cost)}`}
-                </button>
+                  <button
+                    className={styles.buttonSecondary}
+                    disabled={!canBuy}
+                    onClick={() => buy(u.id as UpgradeId)}
+                  >
+                    {`${action} · ${formatCash(cost)}`}
+                  </button>
+                </Hint>
               )}
             </li>
           );

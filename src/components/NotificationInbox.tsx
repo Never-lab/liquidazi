@@ -61,6 +61,8 @@ export const NotificationInbox = () => {
             <button
               type="button"
               className={styles.close}
+              aria-label="Chiudi notifiche"
+              title="Chiudi l'elenco notifiche."
               onClick={() => setOpen(false)}
             >
               Chiudi

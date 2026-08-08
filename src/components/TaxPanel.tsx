@@ -1,7 +1,9 @@
 import { dueF24Total } from "../sim/selectors";
 import { f24BlockedByCollection } from "../sim/collection";
+import { f24PayHint } from "../ui/controlHints";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
+import { Hint } from "./ui/Hint";
 import styles from "./panels.module.css";
 
 const KIND_LABEL: Record<string, string> = {
@@ -81,13 +83,15 @@ export const TaxPanel = () => {
       )}
 
       <div className={styles.row}>
-        <button
-          className={styles.button}
-          disabled={dueNow <= 0 || f24Blocked}
-          onClick={doPayF24}
-        >
-          Paga F24 ({formatCash(dueNow)})
-        </button>
+        <Hint text={f24PayHint({ dueNow, blocked: f24Blocked })}>
+          <button
+            className={styles.button}
+            disabled={dueNow <= 0 || f24Blocked}
+            onClick={doPayF24}
+          >
+            Paga F24 ({formatCash(dueNow)})
+          </button>
+        </Hint>
       </div>
       {f24Blocked && (
         <p className={styles.muted}>

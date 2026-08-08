@@ -270,3 +270,42 @@
     opacity: 1;
   }
 }
+
+.hintWrap {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+/* Let taps reach the wrap when the child button is disabled. */
+.hintWrap :disabled {
+  pointer-events: none;
+}
+
+.hintBubble {
+  position: absolute;
+  z-index: 40;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(280px, 80vw);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
+
+.hintTop {
+  bottom: calc(100% + 6px);
+}
+
+.hintBottom {
+  top: calc(100% + 6px);
+}

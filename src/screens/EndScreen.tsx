@@ -223,7 +223,12 @@ export const EndScreen = () => {
           {pmError && <p className={styles.error}>{pmError}</p>}
 
           <div className={styles.ctaRow}>
-            <button type="submit" className={styles.primary} disabled={pmBusy}>
+            <button
+              type="submit"
+              className={styles.primary}
+              disabled={pmBusy}
+              title={pmBusy ? "Invio in corso…" : "Invia il post-mortem."}
+            >
               {pmBusy ? "Invio…" : "Invia feedback"}
             </button>
             <button
@@ -231,6 +236,7 @@ export const EndScreen = () => {
               className={styles.secondary}
               onClick={() => setPmSkipped(true)}
               disabled={pmBusy}
+              title={pmBusy ? "Invio in corso…" : "Salta il feedback e continua."}
             >
               Non ora
             </button>

@@ -1,7 +1,9 @@
 import { getProjectDef } from "../config/projects";
+import { projectOfferAcceptHint } from "../ui/controlHints";
 import { useGameStore } from "../store/gameStore";
 import { formatCash } from "./formatCash";
 import { Button } from "./ui/Button";
+import { Hint } from "./ui/Hint";
 import styles from "../screens/GameHUD.module.css";
 
 export const ProjectOfferBanner = () => {
@@ -40,13 +42,15 @@ export const ProjectOfferBanner = () => {
                 {def.durationMonths} mesi
               </p>
               <p className={styles.projectOptionBlurb}>{def.blurb}</p>
-              <Button
-                disabled={!canAfford}
-                title={!canAfford ? "Cassa insufficiente" : undefined}
-                onClick={() => accept(id)}
-              >
-                Avvia
-              </Button>
+              {(() => {
+                const acceptHint = projectOfferAcceptHint(canAfford);
+                const btn = (
+                  <Button disabled={!canAfford} onClick={() => accept(id)}>
+                    Avvia
+                  </Button>
+                );
+                return acceptHint ? <Hint text={acceptHint}>{btn}</Hint> : btn;
+              })()}
             </article>
           );
         })}
