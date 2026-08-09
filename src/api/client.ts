@@ -146,7 +146,17 @@ export const login = (username: string, password: string) =>
   });
 
 export const fetchMe = (token: string) =>
-  api<{ username: string; admin: boolean }>("/api/auth/me", { token });
+  api<{ username: string; admin: boolean; achievements?: string[] }>(
+    "/api/auth/me",
+    { token },
+  );
+
+export const postAchievements = (token: string, ids: string[]) =>
+  api<{ achievements: string[] }>("/api/auth/achievements", {
+    method: "POST",
+    token,
+    body: JSON.stringify({ ids }),
+  });
 
 export const fetchAdminStats = (token: string) =>
   api<AdminStats>("/api/admin/stats", { token });

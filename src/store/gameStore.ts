@@ -5,6 +5,7 @@ import {
   fetchMe,
   fetchSaves,
   login as apiLogin,
+  postAchievements,
   putSaves,
   register as apiRegister,
   submitRun,
@@ -47,6 +48,7 @@ import { acceptOpportunity, declineOpportunity, demandPopupForAdvance, seedNewGa
 import { migrateGameState } from "../sim/migrateGameState";
 import { createTesterGameState } from "../sim/testerSave";
 import { formatCloseToast, unlockMilestones } from "../sim/milestones";
+import type { MilestoneId } from "../sim/types";
 import {
   createInitialGameState,
   type DemandRegime,
@@ -79,6 +81,8 @@ export type Screen =
   | "game"
   | "tutorial"
   | "guide"
+  | "objectives"
+  | "trophies"
   | "gameover"
   | "leaderboard"
   | "saves"
@@ -107,6 +111,10 @@ interface GameStore {
   toast: { text: string; tone: ToastTone } | null;
   /** One-shot secca/boom popup after month close; null when hidden. */
   demandPopup: DemandRegime | null;
+  /** FIFO achievement celebration popups. */
+  achievementQueue: MilestoneId[];
+  /** Account trophies (logged-in only). */
+  accountAchievements: MilestoneId[];
   preferredDifficulty: DifficultyId;
   slots: SaveSlot[];
   activeSlot: number;
@@ -123,6 +131,8 @@ interface GameStore {
   setPreferredDifficulty: (d: DifficultyId) => void;
   flashToast: (text: string, tone?: ToastTone) => void;
   dismissDemandPopup: () => void;
+  dismissAchievementPopup: () => void;
+  noteMilestoneUnlocks: (unlocked: MilestoneId[]) => void;
   newGame: (opts: NewGameOptions) => void;
   advanceMonth: () => void;
   continueAfterWin: () => void;
@@ -187,6 +197,8 @@ export const useGameStore = create<GameStore>()(
       coachOn: true,
       toast: null,
       demandPopup: null,
+      achievementQueue: [],
+      accountAchievements: [],
       preferredDifficulty: "normal",
       slots: emptySlots(),
       activeSlot: 0,
@@ -211,6 +223,14 @@ export const useGameStore = create<GameStore>()(
         const game = active?.game
           ? migrateGameState(structuredClone(active.game))
           : createInitialGameState();
+        let accountAchievements: MilestoneId[] = [];
+        try {
+          const me = await fetchMe(session.token);
+          accountAchievements = (me.achievements ?? []) as MilestoneId[];
+          session.admin = me.admin;
+        } catch {
+          /* ignore */
+        }
         set({
           auth: session,
           slots,
@@ -218,6 +238,7 @@ export const useGameStore = create<GameStore>()(
           preferredDifficulty: saves.preferredDifficulty ?? get().preferredDifficulty,
           coachOn: saves.coachOn ?? get().coachOn,
           game,
+          accountAchievements,
           screen: screenAfterAuth(),
         });
       },
@@ -241,10 +262,17 @@ export const useGameStore = create<GameStore>()(
           game: active?.game
             ? migrateGameState(structuredClone(active.game))
             : createInitialGameState(),
+          accountAchievements: [],
           screen: screenAfterAuth(),
         });
       },
-      continueAsGuest: () => set({ auth: null, screen: screenAfterAuth() }),
+      continueAsGuest: () =>
+        set({
+          auth: null,
+          accountAchievements: [],
+          achievementQueue: [],
+          screen: screenAfterAuth(),
+        }),
       skipIntro: () => {
         markIntroSeen();
         set({ screen: "menu" });
@@ -263,6 +291,8 @@ export const useGameStore = create<GameStore>()(
           cloudQueue.clear();
           set({
             auth: null,
+            accountAchievements: [],
+            achievementQueue: [],
             screen: SIGNED_OUT_DOOR,
             slots: emptySlots(),
             activeSlot: 0,
@@ -279,6 +309,27 @@ export const useGameStore = create<GameStore>()(
         toastTimer = setTimeout(() => set({ toast: null }), 2400);
       },
       dismissDemandPopup: () => set({ demandPopup: null }),
+      dismissAchievementPopup: () =>
+        set((s) => ({ achievementQueue: s.achievementQueue.slice(1) })),
+      noteMilestoneUnlocks: (unlocked) => {
+        if (unlocked.length === 0) return;
+        set((s) => ({
+          achievementQueue: [...s.achievementQueue, ...unlocked],
+        }));
+        const token = get().auth?.token;
+        if (!token) return;
+        void postAchievements(token, unlocked)
+          .then((res) => {
+            const current = get();
+            if (current.auth?.token !== token) return;
+            set({
+              accountAchievements: res.achievements as MilestoneId[],
+            });
+          })
+          .catch(() => {
+            /* offline / transient — run popup still shown */
+          });
+      },
       persistActiveSlot: () => {
         const { slots, activeSlot, game } = get();
         set({ slots: syncSlot(slots, activeSlot, game) });
@@ -319,6 +370,10 @@ export const useGameStore = create<GameStore>()(
           regime,
         );
         set({ game, screen, slots, demandPopup });
+        const newly = (game.milestones ?? []).filter(
+          (id) => !(before.milestones ?? []).includes(id),
+        );
+        get().noteMilestoneUnlocks(newly);
         if (game.status === "lost") {
           get().flashToast(
             game.loseReason === "fiscal"
@@ -404,6 +459,8 @@ export const useGameStore = create<GameStore>()(
         if (hint) {
           game = { ...game, lastUiHint: null };
         }
+        const mil = unlockMilestones(game);
+        game = mil.state;
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
         const tookDeal = game.opportunities.every((o) => o.id !== id);
         if (tookDeal) {
@@ -411,6 +468,7 @@ export const useGameStore = create<GameStore>()(
           if (isFirstArAccept(before, game)) {
             get().flashToast(FIRST_WIN_TOAST_AR, "good");
           }
+          get().noteMilestoneUnlocks(mil.unlocked);
         } else {
           get().flashToast(hint?.text ?? "Commessa non accettata", hint?.tone ?? "bad");
           sfxBad();
@@ -452,14 +510,19 @@ export const useGameStore = create<GameStore>()(
         }
         let game = payF24(before);
         const paid = before.company.cash - game.company.cash;
-        if (shouldCelebrateFirstWin(before, game, paid)) {
+        const celebrate = shouldCelebrateFirstWin(before, game, paid);
+        if (celebrate) {
           game = markFirstWinCelebrated(game);
-          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        }
+        const mil = unlockMilestones(game);
+        game = mil.state;
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        get().noteMilestoneUnlocks(mil.unlocked);
+        if (celebrate) {
           get().flashToast(FIRST_WIN_TOAST_DONE, "good");
           sfxPay();
           return;
         }
-        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
         get().flashToast(
           paid > 0 ? `F24 versato: −${formatCash(paid)}` : "Niente da versare",
           paid > 0 ? "good" : "neutral",
@@ -553,11 +616,13 @@ export const useGameStore = create<GameStore>()(
           game = mil.state;
           get().flashToast("Azienda acquisita", "good");
           sfxGood();
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+          get().noteMilestoneUnlocks(mil.unlocked);
         } else {
           get().flashToast("Acquisizione non riuscita", "bad");
           sfxBad();
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
         }
-        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
       },
       investSubsidiaryCapex: (id) => {
         const migrated = migrateHoldingState(get().game);
@@ -743,6 +808,7 @@ export const useGameStore = create<GameStore>()(
                 username: me.username,
                 admin: me.admin,
               },
+              accountAchievements: (me.achievements ?? []) as MilestoneId[],
             });
           })
           .catch((error: unknown) => {

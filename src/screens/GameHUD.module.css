@@ -301,6 +301,19 @@
   font-weight: 600;
 }
 
+.goalLink {
+  border: 1px dashed var(--color-border-strong);
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  min-height: var(--touch);
+}
+
 .goalCheck {
   flex-shrink: 0;
 }

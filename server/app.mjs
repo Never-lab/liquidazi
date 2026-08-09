@@ -28,6 +28,16 @@ const MAX_RUN_MONEY = 100_000_000;
 const AUTH_RATE = { limit: 20, windowMs: 15 * 60 * 1000 };
 const FEEDBACK_RATE = { limit: 8, windowMs: 60 * 60 * 1000 };
 const FEEDBACK_KINDS = new Set(["bug", "idea", "postmortem"]);
+const MILESTONE_IDS = new Set([
+  "first_invoice",
+  "first_f24",
+  "first_month_profit",
+  "survive_12",
+  "year1_profit",
+  "first_acquisition",
+  "compliance_80",
+  "survive_24",
+]);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -328,7 +338,35 @@ export function createHandler({
       if (req.method === "GET" && path === "/api/auth/me") {
         const user = parseToken(req.headers.authorization);
         if (!user) return json(res, 401, { error: "Non autenticato" });
-        return json(res, 200, { username: user.username, admin: isAdmin(user) });
+        return json(res, 200, {
+          username: user.username,
+          admin: isAdmin(user),
+          achievements: Array.isArray(user.achievements) ? user.achievements : [],
+        });
+      }
+
+      if (req.method === "POST" && path === "/api/auth/achievements") {
+        const user = parseToken(req.headers.authorization);
+        if (!user) return json(res, 401, { error: "Non autenticato" });
+        let body;
+        try {
+          body = await readBodyLimited(req, MAX_BODY_BYTES);
+        } catch (e) {
+          return json(
+            res,
+            e && e.code === "ENTITY_TOO_LARGE" ? 413 : 400,
+            { error: e && e.code === "ENTITY_TOO_LARGE" ? "Richiesta troppo grande" : "JSON non valido" },
+          );
+        }
+        const ids = Array.isArray(body.ids) ? body.ids.map(String) : [];
+        const filtered = ids.filter((id) => MILESTONE_IDS.has(id));
+        const prev = Array.isArray(user.achievements) ? user.achievements : [];
+        const merged = [...new Set([...prev, ...filtered])];
+        user.achievements = merged;
+        const idx = users.findIndex((u) => u.id === user.id);
+        if (idx >= 0) users[idx] = user;
+        save("users.json", users);
+        return json(res, 200, { achievements: merged });
       }
 
       if (req.method === "GET" && path === "/api/admin/stats") {

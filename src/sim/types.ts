@@ -429,10 +429,14 @@ export interface GameState {
 export type DemandRegime = "secca" | "normale" | "boom";
 
 export type MilestoneId =
+  | "first_invoice"
+  | "first_f24"
+  | "first_month_profit"
   | "survive_12"
   | "year1_profit"
   | "first_acquisition"
-  | "compliance_80";
+  | "compliance_80"
+  | "survive_24";
 
 export interface MonthCloseSummary {
   cashBefore: number;
