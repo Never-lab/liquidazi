@@ -19,7 +19,13 @@ export const siteOrigin = (opts = {}) => {
  * @param {string | null} origin
  */
 export const robotsTxt = (origin) => {
-  const lines = ["User-agent: *", "Allow: /", ""];
+  const lines = [
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /ops",
+    "Disallow: /ops.html",
+    "",
+  ];
   if (origin) lines.push(`Sitemap: ${origin}/sitemap.xml`, "");
   return lines.join("\n");
 };

@@ -756,6 +756,20 @@ export function createHandler({
       }
 
       if (distDir && (req.method === "GET" || req.method === "HEAD")) {
+        if (path === "/ops" || path === "/ops/") {
+          const opsPath = join(distDir, "ops.html");
+          try {
+            if (statSync(opsPath).isFile()) {
+              if (req.method === "HEAD") {
+                res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+                return res.end();
+              }
+              return sendFile(res, opsPath);
+            }
+          } catch {
+            /* fall through */
+          }
+        }
         let filePath = safeJoin(distDir, path);
         const trySend = (p) => {
           try {

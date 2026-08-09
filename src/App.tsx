@@ -1,4 +1,4 @@
-import { AdminScreen } from "./screens/AdminScreen";
+import { useEffect } from "react";
 import { AdsConsentBanner } from "./components/AdsConsentBanner";
 import { CloudSavePill } from "./components/CloudSavePill";
 import { DisclaimerFooter } from "./components/DisclaimerFooter";
@@ -34,6 +34,16 @@ function App() {
     screen === "gameover" ||
     screen === "intro";
 
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("opsInstallTester") !== "1") return;
+    const { auth: session, installTesterSave } = useGameStore.getState();
+    if (session?.admin) installTesterSave();
+    q.delete("opsInstallTester");
+    const next = q.toString();
+    window.history.replaceState({}, "", next ? `/?${next}` : "/");
+  }, []);
+
   return (
     <div className={styles.app}>
       {!bareShell && (
@@ -58,7 +68,6 @@ function App() {
         {screen === "leaderboard" && <LeaderboardScreen />}
         {screen === "saves" && <SavesScreen />}
         {screen === "feedback" && <FeedbackScreen />}
-        {screen === "admin" && <AdminScreen />}
       </main>
 
       <ToastHost />

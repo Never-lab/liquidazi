@@ -86,8 +86,7 @@ export type Screen =
   | "gameover"
   | "leaderboard"
   | "saves"
-  | "feedback"
-  | "admin";
+  | "feedback";
 
 export type ToastTone = "good" | "bad" | "neutral";
 
@@ -819,6 +818,7 @@ export const useGameStore = create<GameStore>()(
           }
         }
         if (state) {
+          if ((state.screen as string) === "admin") state.screen = "menu";
           state.screen = coerceScreenIfSignedOut(
             state.screen,
             Boolean(state.auth),
