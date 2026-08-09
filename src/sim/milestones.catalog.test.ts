@@ -17,7 +17,10 @@ describe("milestones catalog v2", () => {
     expect(ids).toContain("survive_24");
     expect(ids).toContain("survive_36");
     expect(ids).toContain("holding_6");
-    expect(MILESTONE_DEFS.length).toBeGreaterThanOrEqual(20);
+    expect(ids).toContain("project_formazione");
+    expect(ids).toContain("upgrade_gestionale");
+    expect(MILESTONE_DEFS.length).toBeGreaterThanOrEqual(50);
+    expect(MILESTONE_DEFS.length).toBeLessThanOrEqual(60);
   });
 
   it("nextObjectives returns up to 3 incomplete in catalog order", () => {
