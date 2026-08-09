@@ -98,7 +98,7 @@ for (const f of helpPages) {
 }
 
 const sidebarLines = [
-  "**Liquidazi**",
+  "**Floatdesk**",
   "",
   "- [Home](Home)",
   "",
