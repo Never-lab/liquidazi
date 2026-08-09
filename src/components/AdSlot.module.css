@@ -37,3 +37,9 @@
   min-height: 50px;
   margin: 12px auto;
 }
+
+.landing {
+  width: 100%;
+  min-height: 90px;
+  margin: 8px 0;
+}

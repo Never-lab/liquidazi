@@ -62,6 +62,13 @@ import { sfxBad, sfxGood, sfxMonthClose, sfxPay } from "../ui/sfx";
 import { formatCash } from "../components/formatCash";
 import { coerceScreenIfSignedOut, SIGNED_OUT_DOOR } from "../ui/entryScreen";
 import { markIntroSeen, screenAfterAuth } from "../ui/introGate";
+import {
+  FIRST_WIN_TOAST_AR,
+  FIRST_WIN_TOAST_DONE,
+  isFirstArAccept,
+  markFirstWinCelebrated,
+  shouldCelebrateFirstWin,
+} from "../ui/firstWin";
 
 export type Screen =
   | "landing"
@@ -401,6 +408,9 @@ export const useGameStore = create<GameStore>()(
         const tookDeal = game.opportunities.every((o) => o.id !== id);
         if (tookDeal) {
           sfxGood();
+          if (isFirstArAccept(before, game)) {
+            get().flashToast(FIRST_WIN_TOAST_AR, "good");
+          }
         } else {
           get().flashToast(hint?.text ?? "Commessa non accettata", hint?.tone ?? "bad");
           sfxBad();
@@ -440,9 +450,16 @@ export const useGameStore = create<GameStore>()(
           sfxBad();
           return;
         }
-        const game = payF24(before);
-        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        let game = payF24(before);
         const paid = before.company.cash - game.company.cash;
+        if (shouldCelebrateFirstWin(before, game, paid)) {
+          game = markFirstWinCelebrated(game);
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+          get().flashToast(FIRST_WIN_TOAST_DONE, "good");
+          sfxPay();
+          return;
+        }
+        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
         get().flashToast(
           paid > 0 ? `F24 versato: −${formatCash(paid)}` : "Niente da versare",
           paid > 0 ? "good" : "neutral",

@@ -1,4 +1,4 @@
-import { adsStubEnabled, type AdPlacement } from "../ui/adsStub";
+import { shouldRenderAdSlot, type AdPlacement } from "../ui/adsStub";
 import styles from "./AdSlot.module.css";
 
 type Props = { placement: AdPlacement };
@@ -7,10 +7,12 @@ const sizeClass: Record<AdPlacement, string> = {
   "rail-left": styles.rail,
   "rail-right": styles.rail,
   "end-banner": styles.banner,
+  "landing-mid": styles.landing,
+  "landing-footer": styles.landing,
 };
 
 export const AdSlot = ({ placement }: Props) => {
-  if (!adsStubEnabled()) return null;
+  if (!shouldRenderAdSlot(placement)) return null;
 
   const sponsor = import.meta.env.VITE_ADS_SPONSOR_URL as string | undefined;
   const href = typeof sponsor === "string" && sponsor.trim() ? sponsor.trim() : null;

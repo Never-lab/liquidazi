@@ -48,12 +48,14 @@ Respect product frontend rules: one job in hero; no stat strip *in* the first vi
 ## Below fold
 
 1. **Three points** (one section): F24 / cartella · loop mese (rosso / sopravvivenza) · geo Italia (comuni ISTAT).  
-2. **Stats stub row** (not hero): three labeled slots  
+2. **Ad stub mid** (`landing-mid`) — blank “Spazio advertiser” via shared `AdSlot` (layout reserve; no network).  
+3. **Stats stub row** (not hero): three labeled slots  
    - Run (periodo)  
    - Mesi medi al KO  
    - Record sopravvivenza  
    Values: em dash or honest static placeholder copy (“Presto live”); structure ready for `GET /api/public/stats` later.  
-3. Disclaimer one-liner (educational model).
+4. Disclaimer one-liner (educational model).  
+5. **Ad stub footer** (`landing-footer`) — second blank slot above secondary links.
 
 ## Store / persist
 

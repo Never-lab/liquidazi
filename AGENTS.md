@@ -17,7 +17,7 @@ Canonical brief: [`CLAUDE.md`](./CLAUDE.md). Keep this file aligned when changin
 
 ## Creative / multi-step work
 
-Brainstorm → spec in `docs/superpowers/specs/` → plan in `docs/superpowers/plans/` → implement. Do not code ambiguous large features without that gate.
+Brainstorm → approved design in **claude-mem** (not `docs/superpowers/specs|plans` unless the user asks) → implement. Do not code ambiguous large features without that gate.
 
 ## Before opening or merging a PR
 

@@ -235,6 +235,8 @@ export interface CareerStats {
   submittedMonths?: number;
   /** soft win: 24 mesi raggiunti (una volta) */
   year2Reached: boolean;
+  /** B2: toast “primo ciclo” già mostrato */
+  firstWinCelebrated?: boolean;
 }
 
 export interface PendingEventOption {
