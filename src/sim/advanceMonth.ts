@@ -19,7 +19,7 @@ import { tickContracts } from "./contracts";
 import { runWorldEvents } from "./eventCatalog";
 import { refreshMarketBoard, rng, monthlyCapacity } from "./events";
 import { applyMoraleDrift, clampMorale, rollStaffResignation } from "./morale";
-import { unlockMilestones } from "./milestones";
+import { milestoneLabel, unlockMilestones } from "./milestones";
 import { drawProjectOptions } from "../config/projects";
 import {
   effectiveMonthlyRent,
@@ -656,19 +656,11 @@ export const advanceMonth = (state: GameState): GameState => {
   next.milestones = mil.state.milestones;
   next.holdingSlotCap = mil.state.holdingSlotCap;
   for (const id of mil.unlocked) {
-    const label =
-      id === "survive_12"
-        ? "12 mesi in piedi"
-        : id === "year1_profit"
-          ? "Utile Y1"
-          : id === "first_acquisition"
-            ? "Prima acquisizione"
-            : "Compliance ≥ 80";
     next.log.unshift({
       id: next.nextId++,
       monthIdx: closedIdx,
       tone: "good",
-      text: `Obiettivo raggiunto: ${label}`,
+      text: `Obiettivo raggiunto: ${milestoneLabel(id)}`,
     });
   }
   next.log = next.log.slice(0, 12);

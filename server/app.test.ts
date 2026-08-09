@@ -74,6 +74,34 @@ describe("cloud saves", () => {
     expect(reg.status).toBe(201);
     const token = (reg.data as { token: string }).token;
 
+    const me0 = await api("/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(me0.status).toBe(200);
+    expect((me0.data as { achievements: string[] }).achievements).toEqual([]);
+
+    const unlock = await api("/api/auth/achievements", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ids: ["first_invoice", "nope", "first_f24"] }),
+    });
+    expect(unlock.status).toBe(200);
+    expect((unlock.data as { achievements: string[] }).achievements.sort()).toEqual([
+      "first_f24",
+      "first_invoice",
+    ]);
+
+    const me1 = await api("/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect((me1.data as { achievements: string[] }).achievements.sort()).toEqual([
+      "first_f24",
+      "first_invoice",
+    ]);
+
     const empty = await api("/api/saves", {
       headers: { Authorization: `Bearer ${token}` },
     });

@@ -20,7 +20,7 @@ import { Sheet } from "../components/ui/Sheet";
 import { formatCash } from "../components/formatCash";
 import { DIFFICULTIES } from "../config/difficulty";
 import { cityById } from "../config/market";
-import { MILESTONE_DEFS } from "../sim/milestones";
+import { MILESTONE_DEFS, nextObjectives } from "../sim/milestones";
 import { pressureEffectBlurb } from "../sim/pressures";
 import {
   pressureBand,
@@ -87,7 +87,8 @@ export const GameHUD = () => {
     pendingProjectOffer: Boolean(pendingProjectOffer),
   });
   const summary = game.lastCloseSummary;
-  const done = new Set(game.milestones ?? []);
+  const nextGoals = nextObjectives(game, 3);
+  const doneCount = (game.milestones ?? []).length;
   const diffLabel = DIFFICULTIES[game.difficulty ?? "normal"].label;
   const seasonHint =
     game.calendar.month === 8
@@ -204,16 +205,25 @@ export const GameHUD = () => {
       </header>
 
       <div className={styles.goals}>
-        {MILESTONE_DEFS.map((m) => (
-          <span
-            key={m.id}
-            className={done.has(m.id) ? styles.goalDone : styles.goalTodo}
-            title={m.blurb}
-          >
-            {done.has(m.id) ? <Icon name="check" size={12} className={styles.goalCheck} /> : null}
-            {m.label}
+        {nextGoals.map((m) => (
+          <span key={m.id} className={styles.goalTodo} title={m.blurb}>
+            ○ {m.label}
           </span>
         ))}
+        {nextGoals.length === 0 ? (
+          <span className={styles.goalDone} title="Tutti gli obiettivi run">
+            <Icon name="check" size={12} className={styles.goalCheck} />
+            Run completata ({doneCount}/{MILESTONE_DEFS.length})
+          </span>
+        ) : (
+          <button
+            type="button"
+            className={styles.goalLink}
+            onClick={() => setScreen("objectives")}
+          >
+            Tutti ({doneCount}/{MILESTONE_DEFS.length})
+          </button>
+        )}
       </div>
 
       <div className={styles.alerts}>

@@ -3,6 +3,7 @@ import { CloudSavePill } from "./components/CloudSavePill";
 import { DisclaimerFooter } from "./components/DisclaimerFooter";
 import { ToastHost } from "./components/Toast";
 import { DemandPopupHost } from "./components/DemandPopup";
+import { AchievementPopupHost } from "./components/AchievementPopup";
 import { AuthScreen } from "./screens/AuthScreen";
 import { FeedbackScreen } from "./screens/FeedbackScreen";
 import { EndScreen } from "./screens/EndScreen";
@@ -11,8 +12,10 @@ import { IntroScreen } from "./screens/IntroScreen";
 import { LandingScreen } from "./screens/LandingScreen";
 import { LeaderboardScreen } from "./screens/LeaderboardScreen";
 import { MenuScreen } from "./screens/MenuScreen";
+import { ObjectivesScreen } from "./screens/ObjectivesScreen";
 import { SavesScreen } from "./screens/SavesScreen";
 import { SetupScreen } from "./screens/SetupScreen";
+import { TrophiesScreen } from "./screens/TrophiesScreen";
 import { TutorialScreen } from "./screens/TutorialScreen";
 import { GuideScreen } from "./screens/GuideScreen";
 import { useGameStore } from "./store/gameStore";
@@ -46,6 +49,8 @@ function App() {
         {screen === "setup" && <SetupScreen />}
         {screen === "tutorial" && <TutorialScreen />}
         {screen === "guide" && <GuideScreen />}
+        {screen === "objectives" && <ObjectivesScreen />}
+        {screen === "trophies" && <TrophiesScreen />}
         {screen === "game" && <GameHUD />}
         {screen === "gameover" && <EndScreen />}
         {screen === "leaderboard" && <LeaderboardScreen />}
@@ -56,6 +61,7 @@ function App() {
 
       <ToastHost />
       <DemandPopupHost />
+      <AchievementPopupHost />
       <CloudSavePill />
       <DisclaimerFooter />
     </div>
