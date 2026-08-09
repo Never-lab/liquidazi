@@ -4,6 +4,7 @@ import {
   DEFAULT_ADSENSE_SLOT,
   adsenseConfig,
   adsenseFullWidth,
+  ensureAdSenseScript,
 } from "./adsense";
 
 describe("adsenseConfig", () => {
@@ -36,6 +37,50 @@ describe("adsenseConfig", () => {
         VITE_ADSENSE_SLOT: "abc",
       }),
     ).toBe(null);
+  });
+});
+
+describe("ensureAdSenseScript", () => {
+  it("does not stamp a custom data attribute on the Google script element", async () => {
+    class FakeScriptElement {
+      async = true;
+      src = "";
+      crossOrigin = "";
+      attributes: Record<string, string> = {};
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+
+      setAttribute(name: string, value: string) {
+        this.attributes[name] = value;
+      }
+
+      getAttribute(name: string) {
+        return this.attributes[name] ?? null;
+      }
+    }
+
+    const injected: FakeScriptElement[] = [];
+    const fakeDocument = {
+      head: {
+        appendChild: (node: FakeScriptElement) => injected.push(node),
+      },
+      createElement: () => new FakeScriptElement(),
+      scripts: [] as FakeScriptElement[],
+      querySelector: () => null,
+    };
+
+    Object.defineProperty(globalThis, "document", {
+      value: fakeDocument,
+      configurable: true,
+    });
+
+    const promise = ensureAdSenseScript(DEFAULT_ADSENSE_CLIENT);
+    const inserted = injected[0];
+    inserted.onload?.();
+
+    await expect(promise).resolves.toBeUndefined();
+    expect(inserted.getAttribute("data-liquidazi-adsense")).toBeNull();
+    expect(inserted.src).toContain("pagead2.googlesyndication.com/pagead/js/adsbygoogle.js");
   });
 });
 
