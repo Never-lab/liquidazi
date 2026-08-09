@@ -32,19 +32,21 @@ export const adsenseFullWidth = (placement: AdPlacement): boolean =>
   placement === "landing-footer" ||
   placement === "end-banner";
 
-const SCRIPT_ATTR = "data-liquidazi-adsense";
+const ADSENSE_SCRIPT_URL = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
 
 export const ensureAdSenseScript = (client: string): Promise<void> => {
   if (typeof document === "undefined") return Promise.resolve();
-  const existing = document.querySelector(`script[${SCRIPT_ATTR}]`);
+
+  const existing = document.querySelector<HTMLScriptElement>(
+    `script[src^="${ADSENSE_SCRIPT_URL}"]`,
+  );
   if (existing) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
     s.async = true;
-    s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}`;
+    s.src = `${ADSENSE_SCRIPT_URL}?client=${encodeURIComponent(client)}`;
     s.crossOrigin = "anonymous";
-    s.setAttribute(SCRIPT_ATTR, "1");
     s.onload = () => resolve();
     s.onerror = () => reject(new Error("AdSense script failed to load"));
     document.head.appendChild(s);
