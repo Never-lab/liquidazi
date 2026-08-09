@@ -43,9 +43,9 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **AdSense + CMP minimo** — fill `AdSlot` con unit `AppLiquidazi` + banner Accetta/Rifiuta; in PR
+1. **SEO + Plausible** — meta/OG, `/robots.txt` + `/sitemap.xml`, checklist Controllo + script Plausible opzionale; in PR
 2. **Competitive bets — B3 share card** — vedi [competitive-bets](docs/superpowers/specs/2026-08-08-competitive-bets-design.md)
-3. **Ads stub (rails + end banner)** — [plan](docs/superpowers/plans/2026-08-08-ads-stub.md) · [spec](docs/superpowers/specs/2026-08-08-ads-stub-design.md) (stub shipped; AdSense sopra).
+3. **Ops Controllo separato** — app/path isolato (slice 3, dopo SEO/analytics).
 4. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
 5. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
 6. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).

@@ -17,6 +17,7 @@ import { join, extname, sep } from "node:path";
 import { computeBalance } from "./balance.mjs";
 import { clientIp, createRateLimiter } from "./rateLimit.mjs";
 import { extractRunFromGame, syncRunsFromSaves, upsertRun } from "./runSync.mjs";
+import { robotsTxt, siteOrigin, sitemapXml } from "./seo.mjs";
 
 const MAX_SAVE_BYTES = 1_000_000;
 const MAX_BODY_BYTES = 64_000;
@@ -727,6 +728,31 @@ export function createHandler({
 
       if (path.startsWith("/api")) {
         return json(res, 404, { error: "Not found" });
+      }
+
+      if (req.method === "GET" || req.method === "HEAD") {
+        if (path === "/robots.txt" || path === "/sitemap.xml") {
+          const host = req.headers["x-forwarded-host"] || req.headers.host;
+          const forwardedProto = req.headers["x-forwarded-proto"];
+          const origin = siteOrigin({
+            host: typeof host === "string" ? host : undefined,
+            forwardedProto:
+              typeof forwardedProto === "string" ? forwardedProto : undefined,
+          });
+          const body =
+            path === "/robots.txt" ? robotsTxt(origin) : sitemapXml(origin);
+          const type =
+            path === "/robots.txt"
+              ? "text/plain; charset=utf-8"
+              : "application/xml; charset=utf-8";
+          res.writeHead(200, {
+            "Content-Type": type,
+            "Cache-Control": "public, max-age=3600",
+            "X-Content-Type-Options": "nosniff",
+          });
+          if (req.method === "HEAD") return res.end();
+          return res.end(body);
+        }
       }
 
       if (distDir && (req.method === "GET" || req.method === "HEAD")) {

@@ -37,6 +37,7 @@ npm test
 5. After deploy, `GET /api/health` must return `"storage":"volume"`. If the service fails to start with a FATAL about the volume, the mount is missing.
 6. Generate domain → open URL → register → play → reload on another browser: same slots.
 7. **AdSense (opzionale override):** default client/slot sono in codice; puoi sovrascrivere con `VITE_ADSENSE_CLIENT` / `VITE_ADSENSE_SLOT` al build. Kill switch: `VITE_ADS_STUB=0`. Lascia **Auto ads spente** in AdSense: gli annunci escono solo dagli `AdSlot`.
+8. **SEO / analytics:** `PUBLIC_SITE_URL=https://tuo-dominio` (sitemap assoluto). Build client: `VITE_SITE_URL` (canonical/OG), `VITE_PLAUSIBLE_DOMAIN` (attiva script), opz. `VITE_PLAUSIBLE_DASHBOARD_URL` + `VITE_GSC_URL` (link in Controllo). Checklist anche in Controllo → Traffico / SEO.
 
 Se hai già un volume montato altrove (es. `/app/server/data`), va bene: l’app usa `RAILWAY_VOLUME_MOUNT_PATH`. In alternativa imposta `DATA_DIR` al path del mount.
 
