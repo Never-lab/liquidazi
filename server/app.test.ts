@@ -459,7 +459,7 @@ describe("in-app feedback", () => {
       body: JSON.stringify({
         kind: "postmortem",
         message:
-          "Post-mortem Liquidazi\nMese KO: 8\nDifficoltà: Normale\nSeconda run: Forse",
+          "Post-mortem Floatdesk\nMese KO: 8\nDifficoltà: Normale\nSeconda run: Forse",
       }),
     });
     expect(pm.status).toBe(201);

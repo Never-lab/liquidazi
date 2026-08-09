@@ -1,3 +1,4 @@
+import { BRAND_NAME } from "../config/brand";
 import { AdSlot } from "../components/AdSlot";
 import { Button } from "../components/ui/Button";
 import { useGameStore } from "../store/gameStore";
@@ -10,7 +11,7 @@ export const LandingScreen = () => {
     <div className={styles.root}>
       <div className={styles.atmosphere} aria-hidden />
       <section className={styles.hero}>
-        <p className={styles.brand}>Liquidazi</p>
+        <p className={styles.brand}>{BRAND_NAME}</p>
         <h1 className={styles.headline}>L&apos;unico sim che ti fa sentire l&apos;F24.</h1>
         <p className={styles.support}>
           Gestisci una SRL italiana semplificata: cassa, fatture, personale e adempimenti — modello

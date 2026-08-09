@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, submitFeedback, submitRun } from "../api/client";
 import { AdSlot } from "../components/AdSlot";
 import { formatCash } from "../components/formatCash";
+import { BRAND_NAME } from "../config/brand";
 import { DIFFICULTIES } from "../config/difficulty";
 import { CAMPAIGN_WIN_MONTHS, LOSE_MONTHS_BELOW_ZERO } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
@@ -82,7 +83,7 @@ export const EndScreen = () => {
     setPmBusy(true);
     const diff = DIFFICULTIES[game.difficulty ?? "normal"];
     const message = [
-      "Post-mortem Liquidazi",
+      `Post-mortem ${BRAND_NAME}`,
       `Mese KO: ${game.monthsPlayed}`,
       `Difficoltà: ${diff.label}`,
       `Settore: ${game.company.sector}`,
@@ -113,7 +114,7 @@ export const EndScreen = () => {
   if (won) {
     return (
       <div className={styles.shell}>
-        <p className={styles.brandMark}>Liquidazi</p>
+        <p className={styles.brandMark}>{BRAND_NAME}</p>
         <h2 className={styles.headline}>Anno 2 raggiunto.</h2>
         <p className={styles.outcome}>
           {CAMPAIGN_WIN_MONTHS} mesi in piedi. Cassa {formatCash(game.company.cash)}. Puoi
@@ -149,7 +150,7 @@ export const EndScreen = () => {
 
   return (
     <div className={`${styles.shell} ${styles.ko}`}>
-      <p className={styles.brandMark}>Liquidazi</p>
+      <p className={styles.brandMark}>{BRAND_NAME}</p>
       <h2 className={styles.headline}>
         {fiscalLose ? "Chiusura per insolvenza fiscale." : "Liquidità esaurita."}
       </h2>

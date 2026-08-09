@@ -1,4 +1,4 @@
-# Liquidazi — agent brief (CLAUDE.md)
+# Floatdesk — agent brief (CLAUDE.md)
 
 Concise rules for agents working in this repo. Cursor also reads [`AGENTS.md`](./AGENTS.md) (keep them in sync).
 

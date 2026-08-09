@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BRAND_NAME } from "../config/brand";
 import { useGameStore } from "../store/gameStore";
 import styles from "./MenuScreen.module.css";
 
@@ -34,7 +35,7 @@ export const IntroScreen = () => {
 
   return (
     <div className={styles.shell}>
-      <p className={styles.brandMark}>Liquidazi</p>
+      <p className={styles.brandMark}>{BRAND_NAME}</p>
       <h2 className={styles.headline}>Prima di aprire l&apos;azienda</h2>
       <p className={styles.lede}>
         Passo {step + 1} di {STEPS.length}. Puoi saltare quando vuoi.

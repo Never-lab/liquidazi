@@ -1,6 +1,6 @@
 # Architecture
 
-Liquidazi is an educational Italian SRL-like business sim: React client + Node API + pure TypeScript simulation.
+Floatdesk is an educational Italian SRL-like business sim: React client + Node API + pure TypeScript simulation.
 
 ## Stack
 

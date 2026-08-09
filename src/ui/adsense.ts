@@ -2,7 +2,7 @@ import type { AdPlacement } from "./adsStub";
 
 /** Public publisher id — overridable via VITE_ADSENSE_CLIENT. */
 export const DEFAULT_ADSENSE_CLIENT = "ca-pub-9163410629777799";
-/** AppLiquidazi responsive unit — overridable via VITE_ADSENSE_SLOT. */
+/** AppLiquidazi AdSense unit id — overridable via VITE_ADSENSE_SLOT. */
 export const DEFAULT_ADSENSE_SLOT = "4293531391";
 
 type AdSenseEnv = {

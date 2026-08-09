@@ -1,4 +1,4 @@
-# Agent notes — Liquidazi
+# Agent notes — Floatdesk
 
 Canonical brief: [`CLAUDE.md`](./CLAUDE.md). Keep this file aligned when changing agent rules (Cursor loads `AGENTS.md`).
 

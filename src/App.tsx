@@ -20,6 +20,7 @@ import { SetupScreen } from "./screens/SetupScreen";
 import { TrophiesScreen } from "./screens/TrophiesScreen";
 import { TutorialScreen } from "./screens/TutorialScreen";
 import { GuideScreen } from "./screens/GuideScreen";
+import { BRAND_NAME } from "./config/brand";
 import { useGameStore } from "./store/gameStore";
 import styles from "./App.module.css";
 
@@ -48,7 +49,7 @@ function App() {
     <div className={styles.app}>
       {!bareShell && (
         <header className={`${styles.header} ${inGame ? styles.headerGame : ""}`}>
-          <h1 className={styles.brand}>Liquidazi</h1>
+          <h1 className={styles.brand}>{BRAND_NAME}</h1>
           <p className={styles.userBadge}>{auth?.username ?? "Ospite"}</p>
         </header>
       )}
