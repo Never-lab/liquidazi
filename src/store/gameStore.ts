@@ -488,8 +488,11 @@ export const useGameStore = create<GameStore>()(
         }
       },
       hireEmployee: (role) => {
-        const game = hireEmployee(get().game, role);
+        let game = hireEmployee(get().game, role);
+        const mil = unlockMilestones(game);
+        game = mil.state;
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        get().noteMilestoneUnlocks(mil.unlocked);
         get().flashToast(`Assunto: ${role}`, "good");
       },
       fireEmployee: (id) => {
@@ -530,14 +533,20 @@ export const useGameStore = create<GameStore>()(
         if (paid > 0) sfxPay();
       },
       requestLoan: (req) => {
-        const game = requestLoan(get().game, req);
+        let game = requestLoan(get().game, req);
+        const mil = unlockMilestones(game);
+        game = mil.state;
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        get().noteMilestoneUnlocks(mil.unlocked);
         get().flashToast("Mutuo erogato", "good");
         sfxGood();
       },
       acceptLoanOffer: () => {
-        const game = acceptLoanOffer(get().game);
+        let game = acceptLoanOffer(get().game);
+        const mil = unlockMilestones(game);
+        game = mil.state;
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        get().noteMilestoneUnlocks(mil.unlocked);
         get().flashToast("Prestito di salvataggio accettato", "good");
         sfxGood();
       },
@@ -548,8 +557,11 @@ export const useGameStore = create<GameStore>()(
         sfxBad();
       },
       requestFido: (limit) => {
-        const game = requestFido(get().game, limit);
+        let game = requestFido(get().game, limit);
+        const mil = unlockMilestones(game);
+        game = mil.state;
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        get().noteMilestoneUnlocks(mil.unlocked);
       },
       drawFido: (amount) => {
         const game = drawFido(get().game, amount);
@@ -557,12 +569,16 @@ export const useGameStore = create<GameStore>()(
       },
       buyUpgrade: (id) => {
         const before = upgradeLevel(migrateUpgradeState(get().game), id);
-        const game = buyUpgrade(get().game, id);
-        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        let game = buyUpgrade(get().game, id);
         if (upgradeLevel(migrateUpgradeState(game), id) > before) {
+          const mil = unlockMilestones(game);
+          game = mil.state;
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+          get().noteMilestoneUnlocks(mil.unlocked);
           get().flashToast("Upgrade acquistato", "good");
           sfxGood();
         } else {
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
           get().flashToast("Upgrade non disponibile", "bad");
         }
       },
@@ -579,12 +595,16 @@ export const useGameStore = create<GameStore>()(
       },
       depositTreasury: (amount) => {
         const before = get().game.treasury ?? 0;
-        const game = depositTreasury(get().game, amount);
-        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        let game = depositTreasury(get().game, amount);
         if ((game.treasury ?? 0) > before) {
+          const mil = unlockMilestones(game);
+          game = mil.state;
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+          get().noteMilestoneUnlocks(mil.unlocked);
           get().flashToast("Depositato in tesoreria", "good");
           sfxGood();
         } else {
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
           get().flashToast("Deposito non riuscito", "bad");
         }
       },
@@ -598,12 +618,16 @@ export const useGameStore = create<GameStore>()(
       },
       investGrowth: (amount) => {
         const before = get().game.growthInvested ?? 0;
-        const game = investGrowth(get().game, amount);
-        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        let game = investGrowth(get().game, amount);
         if ((game.growthInvested ?? 0) > before) {
+          const mil = unlockMilestones(game);
+          game = mil.state;
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+          get().noteMilestoneUnlocks(mil.unlocked);
           get().flashToast("Reinvestimento crescita", "good");
           sfxGood();
         } else {
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
           get().flashToast("Investimento non riuscito", "bad");
         }
       },
@@ -674,12 +698,16 @@ export const useGameStore = create<GameStore>()(
       },
       acceptProject: (id) => {
         const before = get().game;
-        const game = acceptProject(before, id);
-        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+        let game = acceptProject(before, id);
         if (game.activeProject && !before.activeProject) {
+          const mil = unlockMilestones(game);
+          game = mil.state;
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
+          get().noteMilestoneUnlocks(mil.unlocked);
           get().flashToast(`Progetto avviato: ${getProjectDef(id).label}`, "good");
           sfxGood();
         } else {
+          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
           get().flashToast("Progetto non avviato", "bad");
           sfxBad();
         }
