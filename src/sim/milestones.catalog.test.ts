@@ -9,13 +9,15 @@ import {
 } from "./milestones";
 
 describe("milestones catalog v2", () => {
-  it("includes early and survive_24 defs", () => {
+  it("includes early mid and platino expansions", () => {
     const ids = MILESTONE_DEFS.map((d) => d.id);
     expect(ids).toContain("first_invoice");
-    expect(ids).toContain("first_f24");
-    expect(ids).toContain("first_month_profit");
+    expect(ids).toContain("first_hire");
+    expect(ids).toContain("staff_5");
     expect(ids).toContain("survive_24");
-    expect(ids).toContain("survive_12");
+    expect(ids).toContain("survive_36");
+    expect(ids).toContain("holding_6");
+    expect(MILESTONE_DEFS.length).toBeGreaterThanOrEqual(20);
   });
 
   it("nextObjectives returns up to 3 incomplete in catalog order", () => {
@@ -44,6 +46,44 @@ describe("milestones catalog v2", () => {
     const r = unlockMilestones(s);
     expect(r.unlocked).toContain("first_invoice");
     expect(r.state.milestones).toContain("first_invoice");
+  });
+
+  it("unlocks first_hire and staff_5 from headcount", () => {
+    const s = createInitialGameState();
+    s.employees = Array.from({ length: 5 }, (_, i) => ({
+      id: i + 1,
+      role: "Operaio" as const,
+      grossMonthly: 1800,
+      hireMonthIdx: 2024 * 12,
+      senioritySteps: 0,
+      tfrAccrued: 0,
+    }));
+    const r = unlockMilestones(s);
+    expect(r.unlocked).toContain("first_hire");
+    expect(r.unlocked).toContain("staff_5");
+  });
+
+  it("unlocks cash and holding platino thresholds", () => {
+    const s = createInitialGameState();
+    s.career.peakCash = 100_000;
+    s.subsidiaries = Array.from({ length: 6 }, (_, i) => ({
+      id: i + 1,
+      name: `S${i}`,
+      sector: "servizi" as const,
+      monthlyEbitda: 100,
+      capacityBonus: 0,
+      monthsOwned: 1,
+      risk: "low" as const,
+      purchasePrice: 1000,
+      listedUntilMonthIdx: null,
+      capexCooldownMonths: 0,
+    }));
+    const r = unlockMilestones(s);
+    expect(r.unlocked).toContain("cash_25k");
+    expect(r.unlocked).toContain("cash_100k");
+    expect(r.unlocked).toContain("holding_3");
+    expect(r.unlocked).toContain("holding_6");
+    expect(r.unlocked).toContain("first_acquisition");
   });
 
   it("unlocks first_f24 when a liability is paid", () => {
@@ -88,5 +128,6 @@ describe("milestones catalog v2", () => {
 
   it("milestoneLabel resolves Italian labels", () => {
     expect(milestoneLabel("first_invoice")).toMatch(/fattura/i);
+    expect(milestoneLabel("staff_10")).toMatch(/10/);
   });
 });
