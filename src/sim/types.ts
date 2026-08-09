@@ -1,5 +1,5 @@
 /**
- * Core simulation types for Liquidazi.
+ * Core simulation types for Floatdesk.
  * Fiscal entities grow phase by phase; all rates come from
  * src/config/fiscalYearSnapshot.ts — never hardcoded here.
  * Region/city market pack lives in src/config/market.ts (+ marketPack.json).

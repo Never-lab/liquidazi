@@ -1,3 +1,4 @@
+import { BRAND_NAME } from "../config/brand";
 import { useGameStore } from "../store/gameStore";
 import { Button } from "../components/ui/Button";
 import { Icon } from "../ui/icons";
@@ -51,7 +52,7 @@ export const MenuScreen = () => {
   return (
     <div className={styles.shell}>
       <div className={styles.heroBlock}>
-        <p className={styles.brandMark}>Liquidazi</p>
+        <p className={styles.brandMark}>{BRAND_NAME}</p>
         <h2 className={styles.headline}>Tieni in piedi la cassa della tua SRL.</h2>
         <p className={styles.lede}>
           Ciao <strong>{auth?.username ?? "ospite"}</strong> · {slotLabel}. Sopravvivi 24 mesi;

@@ -1,4 +1,4 @@
-# Liquidazi — ROADMAP
+# Floatdesk — ROADMAP
 
 Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa è shipped e cosa è next.
 
@@ -37,16 +37,16 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Shock senza stock (#6) | [plan](docs/superpowers/plans/2026-08-08-shock-senza-stock.md) | [spec](docs/superpowers/specs/2026-08-08-shock-senza-stock-design.md) |
 | Compliance recovery + multi-mutuo credito | [plan](docs/superpowers/plans/2026-08-08-compliance-credito.md) | [spec](docs/superpowers/specs/2026-08-08-compliance-credito-design.md) |
 | Investimenti UX + light balance | — | [spec](docs/superpowers/specs/2026-08-08-investimenti-ux-design.md) |
-| SEO + Plausible (meta, robots/sitemap, checklist) | — | [PR #49](https://github.com/Never-lab/liquidazi/pull/49) |
+| Ops Controllo `/ops` | — | [PR #50](https://github.com/Never-lab/liquidazi/pull/50) |
 
 ## Next (coda attiva)
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Ops Controllo `/ops`** — entry separata noindex, redirect dal menu admin; in PR
+1. **Brand Floatdesk** — rename UI/SEO + favicon; dominio `floatdesk.app`; in PR
 2. **Competitive bets — B3 share card** — vedi [competitive-bets](docs/superpowers/specs/2026-08-08-competitive-bets-design.md)
 3. **Deep panel icons** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
-4. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
+4. **Custom domain Railway** — punta `floatdesk.app` al servizio (dopo registrazione DNS).
 5. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
 6. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
 

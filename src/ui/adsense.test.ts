@@ -7,7 +7,7 @@ import {
 } from "./adsense";
 
 describe("adsenseConfig", () => {
-  it("falls back to Liquidazi defaults when env empty", () => {
+  it("falls back to default AdSense client/slot when env empty", () => {
     expect(adsenseConfig({ VITE_ADSENSE_CLIENT: "", VITE_ADSENSE_SLOT: "" })).toEqual({
       client: DEFAULT_ADSENSE_CLIENT,
       slot: DEFAULT_ADSENSE_SLOT,

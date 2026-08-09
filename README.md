@@ -1,8 +1,10 @@
-# Liquidazi
+# Floatdesk
 
 Business simulation game (educational): run an Italian **SRL-like** company — cash flow, IVA, payroll, F24, IRES/IRAP, loans.
 
 > **Disclaimer:** modello educativo semplificato. Non è consulenza fiscale né software commercialista.
+
+**Brand:** Floatdesk · dominio target **floatdesk.app** (repo GitHub: `Never-lab/liquidazi`).
 
 ## Come si gioca
 

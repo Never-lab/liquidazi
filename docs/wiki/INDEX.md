@@ -1,4 +1,4 @@
-# Liquidazi — guida
+# Floatdesk — guida
 
 Simulazione educativa di impresa (SRL semplificata). Questa wiki è il riferimento per i giocatori; nel gioco trovi la stessa Guida dal menu.
 

@@ -1,5 +1,5 @@
 /**
- * Liquidazi API — auth + leaderboard runs + cloud saves.
+ * Floatdesk API — auth + leaderboard runs + cloud saves.
  * Zero deps: node:http, crypto, fs.
  */
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "node:crypto";

@@ -1,5 +1,5 @@
 /**
- * Liquidazi API entrypoint.
+ * Floatdesk API entrypoint.
  * Start: node server/index.mjs
  */
 import { createServer } from "node:http";
@@ -46,7 +46,7 @@ const handler = createHandler({
   adminUsernames,
 });
 createServer(handler).listen(PORT, HOST, () => {
-  console.log(`Liquidazi listening on http://${HOST}:${PORT}`);
+  console.log(`Floatdesk listening on http://${HOST}:${PORT}`);
   console.log(`dataDir=${dataDir} storage=${storage}`);
   if (adminUsernames.length) {
     console.log(`adminUsernames=${adminUsernames.length} configured`);

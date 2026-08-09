@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { ApiError } from "../api/client";
+import { BRAND_NAME } from "../config/brand";
 import { useGameStore } from "../store/gameStore";
 import { Icon } from "../ui/icons";
 import styles from "./MenuScreen.module.css";
@@ -66,7 +67,7 @@ export const AuthScreen = () => {
 
   return (
     <div className={styles.shell}>
-      <p className={styles.brandMark}>Liquidazi</p>
+      <p className={styles.brandMark}>{BRAND_NAME}</p>
       <h2 className={styles.headline}>
         {mode === "login" ? "Accedi allo studio." : "Apri un account."}
       </h2>
