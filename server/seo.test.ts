@@ -23,6 +23,11 @@ describe("siteOrigin", () => {
 });
 
 describe("robotsTxt / sitemapXml", () => {
+  it("disallows ops paths", () => {
+    expect(robotsTxt("https://a.example")).toContain("Disallow: /ops");
+    expect(robotsTxt(null)).toContain("Disallow: /ops.html");
+  });
+
   it("includes sitemap when origin known", () => {
     expect(robotsTxt("https://a.example")).toContain(
       "Sitemap: https://a.example/sitemap.xml",

@@ -78,7 +78,13 @@ export const MenuScreen = () => {
           <NavItem icon="trophy" label="Trofei" onClick={() => setScreen("trophies")} />
         )}
         {auth?.admin && (
-          <NavItem icon="spark" label="Controllo" onClick={() => setScreen("admin")} />
+          <NavItem
+            icon="spark"
+            label="Controllo"
+            onClick={() => {
+              window.location.assign("/ops");
+            }}
+          />
         )}
         <NavItem icon="book" label="Tutorial" onClick={() => setScreen("tutorial")} />
         <NavItem icon="book" label="Guida" onClick={() => setScreen("guide")} />

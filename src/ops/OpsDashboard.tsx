@@ -3,12 +3,12 @@ import {
   deleteAdminRun,
   fetchAdminStats,
   type AdminStats,
+  type AuthSession,
 } from "../api/client";
 import { formatCash } from "../components/formatCash";
 import { Hint } from "../components/ui/Hint";
 import { opsTrafficLinks } from "../ui/plausible";
-import { useGameStore } from "../store/gameStore";
-import styles from "./MenuScreen.module.css";
+import styles from "../screens/MenuScreen.module.css";
 
 const fmtBytes = (n: number) => {
   if (n < 1024) return `${n} B`;
@@ -28,17 +28,20 @@ const OUTCOME_LABEL: Record<string, string> = {
   lost: "KO",
 };
 
-export const AdminScreen = () => {
-  const setScreen = useGameStore((s) => s.setScreen);
-  const auth = useGameStore((s) => s.auth);
-  const installTesterSave = useGameStore((s) => s.installTesterSave);
+type Props = {
+  auth: AuthSession;
+  onBackToGame: () => void;
+  onInstallTester: () => void;
+};
+
+export const OpsDashboard = ({ auth, onBackToGame, onInstallTester }: Props) => {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const reload = useCallback(() => {
-    if (!auth?.token || !auth.admin) {
+    if (!auth.token || !auth.admin) {
       setError("Solo admin");
       setLoading(false);
       return;
@@ -49,14 +52,14 @@ export const AdminScreen = () => {
       .then(setStats)
       .catch((e) => setError(e instanceof Error ? e.message : "Errore stats"))
       .finally(() => setLoading(false));
-  }, [auth?.token, auth?.admin]);
+  }, [auth.token, auth.admin]);
 
   useEffect(() => {
     reload();
   }, [reload]);
 
   const onDeleteRun = async (id: string, label: string) => {
-    if (!auth?.token) return;
+    if (!auth.token) return;
     if (!window.confirm(`Eliminare la run di ${label} dalla classifica/dashboard?`)) {
       return;
     }
@@ -77,22 +80,19 @@ export const AdminScreen = () => {
 
   return (
     <div className={styles.menuWide}>
-      <h2 className={styles.title}>Controllo</h2>
+      <h2 className={styles.title}>Controllo (ops)</h2>
       <p className={styles.subtitle}>
-        Contatori server · puoi eliminare run di test dalla lista sotto · solo admin.
+        Dashboard admin isolata da <code>/ops</code> · {auth.username} · noindex.
       </p>
 
       <p className={styles.boardLabel}>Traffico / SEO</p>
-      <p className={styles.subtitle}>
-        Checklist organico (una tantum sul dominio live):
-      </p>
+      <p className={styles.subtitle}>Checklist organico (una tantum sul dominio live):</p>
       <ol className={styles.leaderList}>
         <li>
           <span className={styles.leaderMain}>
             <strong>Search Console</strong>
             <span className={styles.leaderMeta}>
-              Aggiungi proprietà URL → verifica → Invia{" "}
-              <code>/sitemap.xml</code>
+              Aggiungi proprietà URL → verifica → Invia <code>/sitemap.xml</code>
             </span>
           </span>
         </li>
@@ -100,8 +100,7 @@ export const AdminScreen = () => {
           <span className={styles.leaderMain}>
             <strong>robots / sitemap</strong>
             <span className={styles.leaderMeta}>
-              Live: <code>/robots.txt</code> e <code>/sitemap.xml</code> (origin da
-              Host o <code>PUBLIC_SITE_URL</code>)
+              Live: <code>/robots.txt</code> e <code>/sitemap.xml</code>
             </span>
           </span>
         </li>
@@ -109,7 +108,7 @@ export const AdminScreen = () => {
           <span className={styles.leaderMain}>
             <strong>Plausible</strong>
             <span className={styles.leaderMeta}>
-              Build con <code>VITE_PLAUSIBLE_DOMAIN</code> (opz. dashboard URL sotto)
+              Build con <code>VITE_PLAUSIBLE_DOMAIN</code>
             </span>
           </span>
         </li>
@@ -298,7 +297,7 @@ export const AdminScreen = () => {
                     ? OUTCOME_LABEL[r.outcome]
                     : r.outcome || "—";
                 const diff = r.difficulty
-                  ? DIFF_LABEL[r.difficulty] ?? r.difficulty
+                  ? (DIFF_LABEL[r.difficulty] ?? r.difficulty)
                   : null;
                 return (
                   <li key={r.id}>
@@ -323,7 +322,10 @@ export const AdminScreen = () => {
                             : "Elimina questa run dalla classifica. Irreversibile."
                         }
                         onClick={() =>
-                          void onDeleteRun(r.id, `${r.username} (${r.monthsPlayed} mesi)`)
+                          void onDeleteRun(
+                            r.id,
+                            `${r.username} (${r.monthsPlayed} mesi)`,
+                          )
                         }
                       >
                         {deletingId === r.id ? "…" : "Elimina"}
@@ -337,27 +339,22 @@ export const AdminScreen = () => {
         </>
       ) : null}
 
-      {auth?.admin && (
-        <>
-          <p className={styles.boardLabel}>Save di prova</p>
-          <p className={styles.subtitle}>
-            Installa nello <strong>Slot 1</strong> una partita midgame (~14 mesi,
-            rivale Tesa, F24 aperto, scorte 2) e apri subito il tavolo. Sovrascrive
-            lo Slot 1 e si sincronizza col cloud.
-          </p>
-          <div className={styles.actions}>
-            <Hint text="Sovrascrive lo Slot 1 con una partita midgame di test (~14 mesi).">
-              <button type="button" className={styles.secondary} onClick={installTesterSave}>
-                Installa save tester → Slot 1
-              </button>
-            </Hint>
-          </div>
-        </>
-      )}
+      <p className={styles.boardLabel}>Save di prova</p>
+      <p className={styles.subtitle}>
+        Torna al gioco e installa nello <strong>Slot 1</strong> una partita midgame di
+        test (~14 mesi).
+      </p>
+      <div className={styles.actions}>
+        <Hint text="Apre il gioco e installa il save tester nello Slot 1.">
+          <button type="button" className={styles.secondary} onClick={onInstallTester}>
+            Installa save tester → Slot 1
+          </button>
+        </Hint>
+      </div>
 
       <div className={styles.actions}>
-        <button type="button" className={styles.secondary} onClick={() => setScreen("menu")}>
-          Menu
+        <button type="button" className={styles.secondary} onClick={onBackToGame}>
+          Torna al gioco
         </button>
       </div>
     </div>

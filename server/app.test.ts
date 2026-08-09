@@ -31,6 +31,29 @@ afterAll(() => {
   rmSync(dataDir, { recursive: true, force: true });
 });
 
+describe("ops html", () => {
+  it("serves ops.html at /ops when dist present", async () => {
+    const dist = join(dataDir, "dist-ops");
+    mkdirSync(dist, { recursive: true });
+    writeFileSync(join(dist, "ops.html"), "<!doctype html><title>ops</title>");
+    writeFileSync(join(dist, "index.html"), "<!doctype html><title>game</title>");
+
+    const handler = createHandler({ dataDir, secret: SECRET, distDir: dist });
+    const srv = createServer(handler);
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    if (!addr || typeof addr === "string") throw new Error("no port");
+    const url = `http://127.0.0.1:${addr.port}`;
+    try {
+      const res = await fetch(`${url}/ops`);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain("ops");
+    } finally {
+      srv.close();
+    }
+  });
+});
+
 describe("SEO endpoints", () => {
   it("serves robots.txt and sitemap.xml", async () => {
     const robots = await fetch(`${base}/robots.txt`);

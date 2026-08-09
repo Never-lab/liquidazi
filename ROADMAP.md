@@ -37,19 +37,18 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Shock senza stock (#6) | [plan](docs/superpowers/plans/2026-08-08-shock-senza-stock.md) | [spec](docs/superpowers/specs/2026-08-08-shock-senza-stock-design.md) |
 | Compliance recovery + multi-mutuo credito | [plan](docs/superpowers/plans/2026-08-08-compliance-credito.md) | [spec](docs/superpowers/specs/2026-08-08-compliance-credito-design.md) |
 | Investimenti UX + light balance | — | [spec](docs/superpowers/specs/2026-08-08-investimenti-ux-design.md) |
-| UI clarity + hybrid tooltips (`Hint`) | [plan](docs/superpowers/plans/2026-08-08-ui-clarity-tooltips.md) | [spec](docs/superpowers/specs/2026-08-08-ui-clarity-tooltips-design.md) |
+| SEO + Plausible (meta, robots/sitemap, checklist) | — | [PR #49](https://github.com/Never-lab/liquidazi/pull/49) |
 
 ## Next (coda attiva)
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **SEO + Plausible** — meta/OG, `/robots.txt` + `/sitemap.xml`, checklist Controllo + script Plausible opzionale; in PR
+1. **Ops Controllo `/ops`** — entry separata noindex, redirect dal menu admin; in PR
 2. **Competitive bets — B3 share card** — vedi [competitive-bets](docs/superpowers/specs/2026-08-08-competitive-bets-design.md)
-3. **Ops Controllo separato** — app/path isolato (slice 3, dopo SEO/analytics).
-4. **Deep panel icons (slice 3)** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
-5. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
-6. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
-7. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
+3. **Deep panel icons** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
+4. **Custom domain Railway** — deferito dal piano publish; subdomain gratis già ok.
+5. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
+6. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
 
 ---
 
