@@ -1,4 +1,5 @@
 import { AdminScreen } from "./screens/AdminScreen";
+import { AdsConsentBanner } from "./components/AdsConsentBanner";
 import { CloudSavePill } from "./components/CloudSavePill";
 import { DisclaimerFooter } from "./components/DisclaimerFooter";
 import { ToastHost } from "./components/Toast";
@@ -63,6 +64,7 @@ function App() {
       <DemandPopupHost />
       <AchievementPopupHost />
       <CloudSavePill />
+      <AdsConsentBanner />
       <DisclaimerFooter />
     </div>
   );
