@@ -43,3 +43,14 @@
   min-height: 90px;
   margin: 8px 0;
 }
+
+.live {
+  border-style: solid;
+  padding: 4px;
+  justify-content: flex-start;
+}
+
+.ins {
+  width: 100%;
+  min-height: 50px;
+}
