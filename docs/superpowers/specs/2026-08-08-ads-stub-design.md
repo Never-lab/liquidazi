@@ -24,8 +24,10 @@ Single reusable `AdSlot` component with a `placement` id. Stub UI only. Kill swi
 | `rail-left` | Beside game desk (left) | Desktop wide only (e.g. `min-width: 1200px`) | ~120–160 × 240–600 |
 | `rail-right` | Beside game desk (right) | Same breakpoint | Same |
 | `end-banner` | `EndScreen` (lost **and** won) | Always on that screen (all viewports) | ~320×50 mobile / up to ~728×90 desktop fluid |
+| `landing-mid` | `LandingScreen` below “Cosa simuli” | Layout reserve; on unless `VITE_ADS_STUB=0` | ~full content width × ~90 |
+| `landing-footer` | `LandingScreen` above Classifiche/Tutorial | Same | Same |
 
-**Mobile:** no rails; only `end-banner` after the run ends.
+**Mobile:** no rails; only `end-banner` after the run ends. Landing stubs stay visible on all viewports (marketing layout).
 
 **Not allowed:** overlays on Commesse, sticky HUD actions, event/project modals, or any control that advances the month.
 
@@ -57,8 +59,8 @@ Single reusable `AdSlot` component with a `placement` id. Stub UI only. Kill swi
 
 ## Done when
 
-- Three placements exist behind `AdSlot` + env kill switch.
-- Rails visible only on wide desktop; end banner on KO and win.
+- Five placements exist behind `AdSlot` + env kill switch (`landing-*` on unless forced off).
+- Rails visible only on wide desktop; end banner on KO and win; landing mid+footer on marketing door.
 - No third-party scripts; lint/test/build green.
 - No sim / progression changes.
 

@@ -20,9 +20,8 @@ Concise rules for agents working in this repo. Cursor also reads [`AGENTS.md`](.
 For new features or non-trivial UX (not typo fixes):
 
 1. **Brainstorm** — clarify scope; get approval before coding.
-2. **Spec** → `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
-3. **Plan** → `docs/superpowers/plans/YYYY-MM-DD-<topic>.md`
-4. **Implement** task-by-task (TDD where logic exists); verify; PR.
+2. **Design** — store the approved design in **claude-mem** (project `liquidazi`, type `decision`). Do **not** write `docs/superpowers/specs/` or `plans/` by default (saves tokens). Formal spec/plan files only if the user explicitly asks.
+3. **Implement** task-by-task (TDD where logic exists); verify; PR. Pull design from mem if needed (`search` / observation).
 
 Do not skip to implementation on ambiguous “make everything clearer / build X” requests.
 

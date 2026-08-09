@@ -34,6 +34,31 @@
   max-width: 52ch;
 }
 
+.checklist {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stepTodo,
+.stepDone {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.stepTodo {
+  color: var(--color-text);
+}
+
+.stepDone {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
 .dismiss {
   background: transparent;
   border: none;

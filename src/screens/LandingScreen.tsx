@@ -1,3 +1,4 @@
+import { AdSlot } from "../components/AdSlot";
 import { Button } from "../components/ui/Button";
 import { useGameStore } from "../store/gameStore";
 import styles from "./LandingScreen.module.css";
@@ -38,6 +39,8 @@ export const LandingScreen = () => {
         </ul>
       </section>
 
+      <AdSlot placement="landing-mid" />
+
       <section className={styles.stats} aria-label="Statistiche in arrivo">
         <div className={styles.stat}>
           <span className={styles.statLabel}>Run (periodo)</span>
@@ -56,6 +59,8 @@ export const LandingScreen = () => {
       <p className={styles.disclaimer}>
         Modello educativo semplificato. Non è consulenza fiscale né software commercialista.
       </p>
+
+      <AdSlot placement="landing-footer" />
 
       <nav className={styles.links} aria-label="Altro">
         <button type="button" className={styles.linkBtn} onClick={() => setScreen("leaderboard")}>
