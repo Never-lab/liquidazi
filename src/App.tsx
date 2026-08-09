@@ -2,6 +2,7 @@ import { AdminScreen } from "./screens/AdminScreen";
 import { AdsConsentBanner } from "./components/AdsConsentBanner";
 import { CloudSavePill } from "./components/CloudSavePill";
 import { DisclaimerFooter } from "./components/DisclaimerFooter";
+import { PlausibleAnalytics } from "./components/PlausibleAnalytics";
 import { ToastHost } from "./components/Toast";
 import { DemandPopupHost } from "./components/DemandPopup";
 import { AchievementPopupHost } from "./components/AchievementPopup";
@@ -65,6 +66,7 @@ function App() {
       <AchievementPopupHost />
       <CloudSavePill />
       <AdsConsentBanner />
+      <PlausibleAnalytics />
       <DisclaimerFooter />
     </div>
   );

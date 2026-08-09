@@ -31,6 +31,22 @@ afterAll(() => {
   rmSync(dataDir, { recursive: true, force: true });
 });
 
+describe("SEO endpoints", () => {
+  it("serves robots.txt and sitemap.xml", async () => {
+    const robots = await fetch(`${base}/robots.txt`);
+    expect(robots.status).toBe(200);
+    const robotsBody = await robots.text();
+    expect(robotsBody).toContain("User-agent: *");
+    expect(robotsBody).toContain("Sitemap:");
+
+    const sm = await fetch(`${base}/sitemap.xml`);
+    expect(sm.status).toBe(200);
+    const smBody = await sm.text();
+    expect(smBody).toContain("<urlset");
+    expect(smBody).toContain("<loc>");
+  });
+});
+
 describe("cloud saves", () => {
   it("GET /api/health reports storage mode", async () => {
     const { status, data } = await api("/api/health");

@@ -6,6 +6,7 @@ import {
 } from "../api/client";
 import { formatCash } from "../components/formatCash";
 import { Hint } from "../components/ui/Hint";
+import { opsTrafficLinks } from "../ui/plausible";
 import { useGameStore } from "../store/gameStore";
 import styles from "./MenuScreen.module.css";
 
@@ -72,6 +73,7 @@ export const AdminScreen = () => {
   };
 
   const bal = stats?.balance;
+  const traffic = opsTrafficLinks();
 
   return (
     <div className={styles.menuWide}>
@@ -79,6 +81,60 @@ export const AdminScreen = () => {
       <p className={styles.subtitle}>
         Contatori server · puoi eliminare run di test dalla lista sotto · solo admin.
       </p>
+
+      <p className={styles.boardLabel}>Traffico / SEO</p>
+      <p className={styles.subtitle}>
+        Checklist organico (una tantum sul dominio live):
+      </p>
+      <ol className={styles.leaderList}>
+        <li>
+          <span className={styles.leaderMain}>
+            <strong>Search Console</strong>
+            <span className={styles.leaderMeta}>
+              Aggiungi proprietà URL → verifica → Invia{" "}
+              <code>/sitemap.xml</code>
+            </span>
+          </span>
+        </li>
+        <li>
+          <span className={styles.leaderMain}>
+            <strong>robots / sitemap</strong>
+            <span className={styles.leaderMeta}>
+              Live: <code>/robots.txt</code> e <code>/sitemap.xml</code> (origin da
+              Host o <code>PUBLIC_SITE_URL</code>)
+            </span>
+          </span>
+        </li>
+        <li>
+          <span className={styles.leaderMain}>
+            <strong>Plausible</strong>
+            <span className={styles.leaderMeta}>
+              Build con <code>VITE_PLAUSIBLE_DOMAIN</code> (opz. dashboard URL sotto)
+            </span>
+          </span>
+        </li>
+      </ol>
+      {(traffic.gscUrl || traffic.plausibleDashboardUrl) && (
+        <p className={styles.subtitle}>
+          {traffic.gscUrl ? (
+            <>
+              <a href={traffic.gscUrl} target="_blank" rel="noopener noreferrer">
+                Apri Search Console
+              </a>
+              {traffic.plausibleDashboardUrl ? " · " : null}
+            </>
+          ) : null}
+          {traffic.plausibleDashboardUrl ? (
+            <a
+              href={traffic.plausibleDashboardUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Apri Plausible
+            </a>
+          ) : null}
+        </p>
+      )}
 
       {error && <p className={styles.error}>{error}</p>}
       {loading && !stats ? (
