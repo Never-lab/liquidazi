@@ -70,6 +70,12 @@ export const LandingScreen = () => {
         <button type="button" className={styles.linkBtn} onClick={() => setScreen("tutorial")}>
           Tutorial
         </button>
+        <a className={styles.linkBtn} href="/privacy">
+          Privacy
+        </a>
+        <a className={styles.linkBtn} href="/termini">
+          Termini
+        </a>
       </nav>
     </div>
   );

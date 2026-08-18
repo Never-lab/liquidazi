@@ -9,6 +9,7 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 ## [Unreleased]
 
 ### Added
+- Pagine **Privacy** (`/privacy`) e **Termini** (`/termini`), link in footer e landing.
 - Sessione account: logout dopo **2 ore** di inattività, tetto **7 giorni** dal login (ospite invariato).
 - Reputazione a **tre layer** (locale / comunale / nazionale): punti all’incasso, tabellone misto, filtro mercato.
 

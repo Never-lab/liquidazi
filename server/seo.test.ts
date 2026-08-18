@@ -38,9 +38,11 @@ describe("robotsTxt / sitemapXml", () => {
     expect(robotsTxt(null)).not.toContain("Sitemap:");
   });
 
-  it("emits one homepage url", () => {
+  it("emits homepage plus privacy and termini", () => {
     const xml = sitemapXml("https://a.example");
     expect(xml).toContain("<loc>https://a.example/</loc>");
+    expect(xml).toContain("<loc>https://a.example/privacy</loc>");
+    expect(xml).toContain("<loc>https://a.example/termini</loc>");
     expect(xml).toContain("urlset");
   });
 });
