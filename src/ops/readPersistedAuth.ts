@@ -2,6 +2,11 @@ import type { AuthSession } from "../api/client";
 
 export const PERSIST_KEY = "liquidazi-save";
 
+type TokenStorage = {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+};
+
 /** Read auth from Zustand persist blob (shared with the game app). */
 export const readPersistedAuth = (
   raw: string | null = typeof localStorage !== "undefined"
@@ -22,5 +27,23 @@ export const readPersistedAuth = (
     };
   } catch {
     return null;
+  }
+};
+
+export const writePersistedAuthToken = (
+  token: string,
+  storage: TokenStorage = localStorage,
+): void => {
+  try {
+    const raw = storage.getItem(PERSIST_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as {
+      state?: { auth?: AuthSession | null };
+    };
+    if (!parsed.state?.auth?.token) return;
+    parsed.state.auth = { ...parsed.state.auth, token };
+    storage.setItem(PERSIST_KEY, JSON.stringify(parsed));
+  } catch {
+    /* ignore */
   }
 };

@@ -13,7 +13,7 @@ let server: ReturnType<typeof createServer>;
 const api = async (path: string, opts: RequestInit = {}) => {
   const res = await fetch(`${base}${path}`, opts);
   const data = await res.json().catch(() => ({}));
-  return { status: res.status, data };
+  return { status: res.status, data, headers: res.headers };
 };
 
 beforeAll(async () => {
@@ -115,6 +115,47 @@ describe("cloud saves", () => {
   it("GET /api/saves requires auth", async () => {
     const { status } = await api("/api/saves");
     expect(status).toBe(401);
+  });
+
+  it("issues a 4-part session token and refreshes it on /me", async () => {
+    const reg = await api("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "sess_user", password: "secret12" }),
+    });
+    expect(reg.status).toBe(201);
+    const token = (reg.data as { token: string }).token;
+    expect(token.split(".")).toHaveLength(4);
+
+    const me = await api("/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(me.status).toBe(200);
+    const refreshed = me.headers.get("X-Session-Token");
+    expect(refreshed).toBeTruthy();
+    expect(refreshed?.split(".")).toHaveLength(4);
+  });
+
+  it("rejects legacy 3-part tokens and idle-expired tokens", async () => {
+    const { makeSessionToken, SESSION_IDLE_MS } = await import("./sessionToken.mjs");
+    const reg = await api("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "sess_exp", password: "secret12" }),
+    });
+    const fresh = (reg.data as { token: string }).token;
+    const userId = fresh.split(".")[0];
+
+    const legacy = await api("/api/auth/me", {
+      headers: { Authorization: `Bearer ${fresh.split(".").slice(0, 3).join(".")}` },
+    });
+    expect(legacy.status).toBe(401);
+
+    const expired = makeSessionToken(userId, SECRET, Date.now() - SESSION_IDLE_MS - 1000);
+    const idle = await api("/api/auth/me", {
+      headers: { Authorization: `Bearer ${expired}` },
+    });
+    expect(idle.status).toBe(401);
   });
 
   it("rejects oversized auth and run request bodies", async () => {
