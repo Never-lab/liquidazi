@@ -8,6 +8,17 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+### Added
+- Upgrade **Magazzino scorte** (4 livelli, cap 8/10/12/14 mesi; base 6).
+- Bilancio: riga **Interessi tesoreria** (attivi; i passivi restano mutuo/fido).
+
+### Changed
+- Obiettivi: toast basso-destra con suono, auto-chiusura; niente popup a schermo intero.
+- Ordine scorte bloccato (toast) se supererebbe il cap magazzino.
+
+### Fixed
+- Seconda run: niente replay popup per trofei già sull’account.
+
 ## [1.0.0] — 2026-08-18
 
 Prima release pubblica del brand **Floatdesk** (repo GitHub `Never-lab/liquidazi`). Tag precedente: `v0.1.0-mvp`. `package.json` passa da `0.0.0` a `1.0.0`.

@@ -1,27 +1,22 @@
-.backdrop {
+.toast {
   position: fixed;
-  inset: 0;
+  right: 16px;
+  bottom: 72px;
   z-index: 70;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(20, 26, 22, 0.35);
-}
-
-.card {
-  width: min(90vw, 380px);
-  padding: 22px 24px;
+  width: min(92vw, 320px);
+  padding: 12px 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-strong);
-  background: var(--color-accent-soft);
-  box-shadow: 0 12px 32px rgba(20, 26, 22, 0.18);
-  text-align: center;
-  animation: achPopIn 0.28s ease-out;
+  background: var(--color-surface);
+  box-shadow: 0 10px 28px rgba(20, 26, 22, 0.2);
+  text-align: left;
+  cursor: pointer;
+  animation: achSlideIn 0.28s ease-out;
 }
 
 .kicker {
-  margin: 0 0 6px;
-  font-size: 11px;
+  margin: 0 0 2px;
+  font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 700;
@@ -31,61 +26,39 @@
 .title {
   display: block;
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .body {
-  margin: 0 0 12px;
-  font-size: 0.95rem;
+  margin: 0;
+  font-size: 0.85rem;
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
-.ctaHint {
-  margin: 0 0 14px;
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-}
-
-.primary,
-.secondary {
-  min-height: var(--touch);
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
+.cta {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
   font: inherit;
   font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
+  text-decoration: underline;
 }
 
-.primary {
-  border: 1px solid var(--color-accent);
-  background: var(--color-accent);
-  color: var(--color-on-accent, #fff);
-}
-
-.secondary {
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-@keyframes achPopIn {
+@keyframes achSlideIn {
   from {
     opacity: 0;
-    transform: scale(0.94);
+    transform: translateX(16px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateX(0);
   }
 }

@@ -2,7 +2,7 @@ import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
 import { getProjectDef } from "../config/projects";
 import { capacityPointsFor } from "../config/staffPay";
-import { upgradeLevel } from "../config/upgrades";
+import { supplyCapMonths, upgradeLevel } from "../config/upgrades";
 import { migrateUpgradeState } from "./migrateUpgrades";
 import { rng } from "./rng";
 import {
@@ -309,7 +309,8 @@ export const orderEmergencySupply = (state: GameState): GameState => {
   const cost = emergencySupplyNet(state);
   let next = recordSupplierCost(state, cost, 1);
   next = structuredClone(next);
-  next.supplyMonths = Math.min(6, (next.supplyMonths ?? 0) + 2);
+  const cap = supplyCapMonths(migrateUpgradeState(next));
+  next.supplyMonths = Math.min(cap, (next.supplyMonths ?? 0) + 2);
   next.log.unshift({
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),
@@ -358,6 +359,19 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
     return blocked;
   }
 
+  if (op.kind === "supply") {
+    const add = supplyMonthsFromNet(op.net);
+    const cap = supplyCapMonths(migrateUpgradeState(state));
+    if ((state.supplyMonths ?? 0) + add > cap) {
+      const blocked = structuredClone(state);
+      blocked.lastUiHint = {
+        text: `Magazzino pieno (max ${cap} mesi). Potenzia Magazzino scorte o consuma scorte prima di ordinare.`,
+        tone: "bad",
+      };
+      return blocked;
+    }
+  }
+
   let next =
     op.kind === "sale"
       ? issueCustomerInvoice(state, op.net, {
@@ -370,9 +384,8 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
   if (op.kind === "sale") {
     next.company.reputation = Math.min(100, next.company.reputation + 1);
   } else {
-    // Supply builds coverage (cap 6 months)
     next.supplyMonths = Math.min(
-      6,
+      supplyCapMonths(migrateUpgradeState(next)),
       (next.supplyMonths ?? 0) + supplyMonthsFromNet(op.net),
     );
   }

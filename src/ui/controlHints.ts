@@ -38,7 +38,7 @@ export const upgradeBuyHint = (opts: {
   shortCash: boolean;
   costLabel: string;
 }): string => {
-  if (opts.atMax) return "Livello massimo (Lv3) già raggiunto per questo upgrade.";
+  if (opts.atMax) return "Livello massimo già raggiunto per questo upgrade.";
   if (opts.shortCash) return `Cassa insufficiente (servono ${opts.costLabel}).`;
   return `Acquista / potenzia per ${opts.costLabel}.`;
 };
