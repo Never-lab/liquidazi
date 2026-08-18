@@ -9,6 +9,8 @@ describe("legal copy", () => {
     expect(text).toMatch(/Plausible/i);
     expect(text).toMatch(/AdSense/i);
     expect(text).toMatch(/Feedback/i);
+    expect(text).toMatch(/log tecnico/i);
+    expect(text).toMatch(/IP/);
     expect(LEGAL_PAGES.privacy.title).toBe("Privacy");
   });
 

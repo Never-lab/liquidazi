@@ -9,6 +9,7 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 ## [Unreleased]
 
 ### Added
+- Log tecnico rotante su Controllo (`/ops`): ultime richieste, conteggi 24h/7g e 404; niente IP/query/body/token.
 - Pagina **404** HTML (status 404) per URL sconosciuti; `/privacy` e `/termini` restano l’app.
 - Pagine **Privacy** (`/privacy`) e **Termini** (`/termini`), link in footer e landing.
 - Sessione account: logout dopo **2 ore** di inattività, tetto **7 giorni** dal login (ospite invariato).

@@ -20,6 +20,13 @@ import { clientIp, createRateLimiter } from "./rateLimit.mjs";
 import { extractRunFromGame, syncRunsFromSaves, upsertRun } from "./runSync.mjs";
 import { robotsTxt, siteOrigin, sitemapXml } from "./seo.mjs";
 import {
+  DEFAULT_EVENT_LOG_LIMIT,
+  appendEvent,
+  requestPath,
+  shouldSkipEvent,
+  summarizeEvents,
+} from "./eventLog.mjs";
+import {
   makeSessionToken,
   readSessionToken,
   refreshSessionToken,
@@ -179,6 +186,7 @@ const emptySaves = () => ({
  *   distDir: string | null,
  *   storage?: "volume" | "local",
  *   adminUsernames?: string[],
+ *   eventLogLimit?: number,
  * }} opts
  * @returns {(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse) => void}
  */
@@ -188,6 +196,7 @@ export function createHandler({
   distDir,
   storage = "local",
   adminUsernames = [],
+  eventLogLimit = DEFAULT_EVENT_LOG_LIMIT,
 }) {
   mkdirSync(dataDir, { recursive: true });
   const adminSet = new Set(
@@ -218,6 +227,9 @@ export function createHandler({
   let runs = load("runs.json", []);
   /** @type {{ id: string, kind: string, message: string, contact: string | null, username: string | null, createdAt: string }[]} */
   let feedback = load("feedback.json", []);
+  /** @type {{ id: string, at: string, method: string, path: string, status: number, username: string | null }[]} */
+  let events = load("events.json", []);
+  if (!Array.isArray(events)) events = [];
 
   const savePath = (userId) => join(dataDir, "saves", `${userId}.json`);
   const newRunId = () => randomBytes(8).toString("hex");
@@ -265,6 +277,25 @@ export function createHandler({
     const user = users.find((u) => u.id === session.userId) ?? null;
     if (!user) return null;
     return { user, session };
+  };
+
+  const recordEvent = (req, status) => {
+    const method = req.method || "GET";
+    const path = requestPath(new URL(req.url || "/", "http://local").pathname);
+    if (shouldSkipEvent(method, path)) return;
+    events = appendEvent(
+      events,
+      {
+        id: randomBytes(8).toString("hex"),
+        at: new Date().toISOString(),
+        method,
+        path,
+        status: Number(status) || 0,
+        username: authorize(req)?.user?.username ?? null,
+      },
+      eventLogLimit,
+    );
+    save("events.json", events);
   };
 
   const SECURITY_HEADERS = {
@@ -330,6 +361,21 @@ export function createHandler({
   };
 
   return async (req, res) => {
+    // ponytail: one writeHead hook instead of threading req into json/sendFile
+    let recorded = false;
+    const origWriteHead = res.writeHead;
+    res.writeHead = function writeHeadLogged(status, ...args) {
+      if (!recorded) {
+        recorded = true;
+        try {
+          recordEvent(req, status);
+        } catch {
+          /* never break the response */
+        }
+      }
+      return origWriteHead.call(this, status, ...args);
+    };
+
     if (req.method === "OPTIONS") {
       return json(res, 204, {});
     }
@@ -483,7 +529,7 @@ export function createHandler({
             return 0;
           }
         };
-        for (const name of ["users.json", "runs.json", "feedback.json"]) {
+        for (const name of ["users.json", "runs.json", "feedback.json", "events.json"]) {
           dataBytes += sizeOf(join(dataDir, name));
         }
         if (existsSync(savesDir)) {
@@ -526,6 +572,7 @@ export function createHandler({
           feedbackCount: feedback.length,
           recentFeedback,
           balance: computeBalance(runs),
+          ...summarizeEvents(events),
         }, session);
       }
 

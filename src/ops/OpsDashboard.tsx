@@ -85,34 +85,47 @@ export const OpsDashboard = ({ auth, onBackToGame, onInstallTester }: Props) => 
         Dashboard admin isolata da <code>/ops</code> · {auth.username} · noindex.
       </p>
 
-      <p className={styles.boardLabel}>Traffico / SEO</p>
-      <p className={styles.subtitle}>Checklist organico (una tantum sul dominio live):</p>
-      <ol className={styles.leaderList}>
-        <li>
-          <span className={styles.leaderMain}>
-            <strong>Search Console</strong>
-            <span className={styles.leaderMeta}>
-              Aggiungi proprietà URL → verifica → Invia <code>/sitemap.xml</code>
-            </span>
-          </span>
-        </li>
-        <li>
-          <span className={styles.leaderMain}>
-            <strong>robots / sitemap</strong>
-            <span className={styles.leaderMeta}>
-              Live: <code>/robots.txt</code> e <code>/sitemap.xml</code>
-            </span>
-          </span>
-        </li>
-        <li>
-          <span className={styles.leaderMain}>
-            <strong>Plausible</strong>
-            <span className={styles.leaderMeta}>
-              Build con <code>VITE_PLAUSIBLE_DOMAIN</code>
-            </span>
-          </span>
-        </li>
-      </ol>
+      <p className={styles.boardLabel}>Traffico</p>
+      <p className={styles.subtitle}>
+        Log tecnico rotante sul server (metodo, percorso, stato, username se
+        loggato). Niente IP, query, body o token.
+      </p>
+      {stats ? (
+        <>
+          <ul className={styles.adminStats}>
+            <li>
+              <span>Richieste 24h / 7g</span>
+              <strong>
+                {stats.events24h} / {stats.events7d}
+              </strong>
+            </li>
+            <li>
+              <span>404 (24h)</span>
+              <strong>{stats.notFound24h}</strong>
+            </li>
+          </ul>
+          {stats.recentEvents.length === 0 ? (
+            <p className={styles.subtitle}>Nessuna richiesta ancora.</p>
+          ) : (
+            <ol className={styles.leaderList}>
+              {stats.recentEvents.map((e) => (
+                <li key={e.id}>
+                  <span className={styles.leaderMain}>
+                    <strong>
+                      {e.method} {e.path}
+                    </strong>
+                    <span className={styles.leaderMeta}>
+                      {e.status}
+                      {e.username ? ` · ${e.username}` : ""} ·{" "}
+                      {new Date(e.at).toLocaleString("it-IT")}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </>
+      ) : null}
       {(traffic.gscUrl || traffic.plausibleDashboardUrl) && (
         <p className={styles.subtitle}>
           {traffic.gscUrl ? (

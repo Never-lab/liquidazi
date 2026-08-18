@@ -20,7 +20,7 @@ export const LEGAL_PAGES: Record<LegalPageId, LegalDoc> = {
       },
       {
         heading: "Account e cloud",
-        body: "Se crei un account salviamo username, hash della password, trofei, salvataggi cloud (tre slot e preferenze) e, se invii una run, le statistiche in classifica (username visibile). Il feedback può includere username se sei loggato. La sessione scade dopo 2 ore di inattività e al massimo 7 giorni dal login.",
+        body: "Se crei un account salviamo username, hash della password, trofei, salvataggi cloud (tre slot e preferenze) e, se invii una run, le statistiche in classifica (username visibile). Il feedback può includere username se sei loggato. La sessione scade dopo 2 ore di inattività e al massimo 7 giorni dal login. Sul server teniamo un log tecnico rotante delle richieste (metodo, percorso, stato HTTP, username se loggato): niente IP, query, body o token.",
       },
       {
         heading: "Sul tuo dispositivo",

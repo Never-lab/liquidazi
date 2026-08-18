@@ -23,7 +23,7 @@ Each env: own volume `/data`, own `LIQUIDAZI_SECRET`, own public URL. Do not clo
 
 Health: `GET /api/health` → `"storage":"volume"`. GitHub secret `RAILWAY_TOKEN` = Railway **production** project token. Il workflow fa `railway up --environment production`; se restano più servizi, variabile repo `RAILWAY_SERVICE`.
 
-Auth: password min **8** chars; session token HMAC **2h idle** / **7 day** absolute cap (legacy 3-part tokens rejected). In-memory rate limits on register/login (20 / 15 min per IP) and feedback (8 / hour per IP). Self-reported runs clamp money stats and reject forged early `won` (&lt; 24 mesi).
+Auth: password min **8** chars; session token HMAC **2h idle** / **7 day** absolute cap (legacy 3-part tokens rejected). In-memory rate limits on register/login (20 / 15 min per IP) and feedback (8 / hour per IP). Self-reported runs clamp money stats and reject forged early `won` (&lt; 24 mesi). Ops `/ops` shows a rotating request log (`events.json`, last 2000; no IP, query, body, or token).
 
 Static files: hashed `/assets/*` `Cache-Control: public, max-age=31536000, immutable`; `index.html` / `ops.html` `no-cache`; other root files `max-age=3600`. Unknown non-API paths: HTML **404** (`server/notFound.html`); SPA fallback only for `/privacy` and `/termini`. `npm run dev` (Vite) may still serve the app on unknown URLs.
 
