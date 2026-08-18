@@ -6,7 +6,7 @@ Business simulation game (educational): run an Italian **SRL-like** company — 
 
 **Brand:** Floatdesk · dominio target **floatdesk.app** (repo GitHub: `Never-lab/liquidazi`).
 
-**Versione:** `1.0.1` — note in [`CHANGELOG.md`](CHANGELOG.md). La Guida in-game / [`docs/wiki/`](docs/wiki/INDEX.md) spiega come funziona il sim.
+**Versione:** `1.1.0` — note in [`CHANGELOG.md`](CHANGELOG.md). La Guida in-game / [`docs/wiki/`](docs/wiki/INDEX.md) spiega come funziona il sim.
 
 ## Come si gioca
 

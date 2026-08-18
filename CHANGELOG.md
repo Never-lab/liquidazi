@@ -8,6 +8,10 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-08-18
+
+Eventi mondo a famiglie, overlay come secca/boom, deploy production su tag più affidabile.
+
 ### Added
 - Eventi mondo a **famiglie** (ambiente, burocrazia, logistica) con catene di probabilità (es. frana → strada chiusa). Cartella resta solo da F24 insoluti.
 - Popup overlay (come secca/boom) per shock e avvisi mondo auto-applicati; le decisioni restano overlay con pulsanti.
@@ -60,6 +64,7 @@ Sim educativo di SRL semplificata (cassa, IVA, F24, personale, prestiti). Non è
 
 - Hardening runtime (rate limit, clamp sulle run) e UX F24/collection.
 
-[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Never-lab/liquidazi/releases/tag/v1.1.0
 [1.0.1]: https://github.com/Never-lab/liquidazi/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Never-lab/liquidazi/releases/tag/v1.0.0
