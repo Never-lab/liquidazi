@@ -30,3 +30,9 @@ graphify-out/cache/
 graphify-out/**/*.html
 graphify-out/**/*.svg
 .wiki-mirror/
+
+# agent scratch (never commit)
+.superpowers/
+
+# local Obsidian vault metadata for docs/ideas
+docs/ideas/.obsidian/
