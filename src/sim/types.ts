@@ -34,8 +34,12 @@ export interface Company {
   monthlyRent: number;
   /** canone base prima degli sconti sede (fissato al primo acquisto) */
   monthlyRentBase?: number;
-  /** 0–100 commercial reputation (clients / defaults) */
+  /** 0–100 commercial reputation (local layer / clients / defaults) */
   reputation: number;
+  /** 0–100 municipal PA reputation */
+  repMunicipal: number;
+  /** 0–20 national PA reputation (1 per 5 municipal) */
+  repNational: number;
 }
 
 export interface Calendar {
@@ -46,6 +50,7 @@ export interface Calendar {
 
 export type InvoiceKind = "AR" | "AP";
 export type ClientType = "private" | "pa";
+export type MarketLayer = "local" | "municipal" | "national";
 
 export interface Invoice {
   id: number;
@@ -64,6 +69,8 @@ export interface Invoice {
   splitPayment?: boolean;
   /** AR written off as bad debt */
   defaulted?: boolean;
+  /** Which reputation layer this AR feeds on settle */
+  marketLayer?: MarketLayer;
 }
 
 export interface VatAccount {
@@ -156,6 +163,8 @@ export interface Opportunity {
   termMonths: number;
   /** if set, multi-month contract locking capacity */
   contractMonths?: number;
+  /** Sale market tier; supplies omit this */
+  marketLayer?: MarketLayer;
 }
 
 export type PressureId =
@@ -420,6 +429,8 @@ export interface GameState {
   chainBoosts: ChainBoost[];
   /** Set when a shock/auto event applies; HUD copies then clears. */
   lastEventPopup: EventPopup | null;
+  /** Local AR settles toward +1 municipal (every 5). */
+  localPaysTowardMunicipal: number;
   /** Annual investment project in progress (max one) */
   activeProject: ActiveProject | null;
   /** Pending January offer (blocks month close until accept/skip) */
@@ -566,6 +577,8 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
       densityIndex: withMarket ? densityIndexFor(city, sector) : 1,
       monthlyRent: rent,
       reputation: 50,
+      repMunicipal: 0,
+      repNational: 0,
     },
     calendar: {
       month: 1,
@@ -641,6 +654,7 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     lastShockAt: null,
     chainBoosts: [],
     lastEventPopup: null,
+    localPaysTowardMunicipal: 0,
     activeProject: null,
     projectOffer: null,
     projectOfferYear: null,

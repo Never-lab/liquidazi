@@ -12,6 +12,7 @@ import {
   type UpgradeId,
   type UpgradeLevel,
 } from "../config/upgrades";
+import { MAX_AR_NET, MAX_AR_TERM_MONTHS } from "./reputation";
 import { f24BlockedByCollection } from "./collection";
 import { migrateLoansInPlace, MAX_OPEN_LOANS, openLoans } from "./loans";
 import { migrateUpgradeState } from "./migrateUpgrades";
@@ -26,12 +27,14 @@ import {
   type Loan,
   type LoanGuarantee,
   type LoanOffer,
+  type MarketLayer,
 } from "./types";
 
 export interface InvoiceOpts {
   clientType?: ClientType;
   /** months until settlement; default 1 */
   termMonths?: number;
+  marketLayer?: MarketLayer;
 }
 
 const addInvoice = (
@@ -45,7 +48,7 @@ const addInvoice = (
   const mods = marketModifiersFromIndex(next.company.densityIndex);
   const scaledNet = round2(net * (kind === "AR" ? mods.priceFactor : mods.costFactor));
   const vat = round2(scaledNet * snap.iva_standard_rate);
-  const term = Math.max(1, Math.min(12, opts?.termMonths ?? 1));
+  const term = Math.max(1, Math.min(MAX_AR_TERM_MONTHS, opts?.termMonths ?? 1));
   next.invoices.push({
     id: next.nextId++,
     kind,
@@ -60,6 +63,7 @@ const addInvoice = (
           clientType: opts?.clientType ?? "private",
           splitPayment: (opts?.clientType ?? "private") === "pa",
           defaulted: false,
+          marketLayer: opts?.marketLayer,
         }
       : {}),
   });
@@ -72,7 +76,7 @@ export const issueCustomerInvoice = (
   net: number,
   opts?: InvoiceOpts,
 ): GameState => {
-  if (!(net > 0) || net > 35000) return state;
+  if (!(net > 0) || net > MAX_AR_NET) return state;
   return addInvoice(state, "AR", net, opts);
 };
 

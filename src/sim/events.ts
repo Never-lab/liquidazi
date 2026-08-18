@@ -1,3 +1,4 @@
+import { cityById, pickCityInHomeRegion, pickCityOutsideHomeRegion } from "../config/market";
 import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
 import { getProjectDef } from "../config/projects";
@@ -8,7 +9,6 @@ import { rng } from "./rng";
 import {
   round2,
   toMonthIndex,
-  type ClientType,
   type DemandRegime,
   type GameState,
   type Opportunity,
@@ -17,23 +17,27 @@ import { issueCustomerInvoice, recordSupplierCost } from "./actions";
 import { acceptAsContract, contractSlotsUsed, maybeMakeContract } from "./contracts";
 import {
   capacityPressurePenalty,
-  paChanceBoost,
   rollPressure,
   shouldRollPressure,
   ticketFactorFromPressure,
 } from "./pressures";
 import { DEFAULT_STAFF_MORALE } from "./morale";
 import { applyRivalSteal, seedRival } from "./rival";
-import { repDemandMult, repSlotBonus } from "./reputation";
+import {
+  MUNICIPAL_NET_MAX,
+  MUNICIPAL_NET_MIN,
+  NATIONAL_NET_MAX,
+  NATIONAL_NET_MIN,
+  pickMarketLayer,
+  repDemandMult,
+  repSlotBonus,
+} from "./reputation";
 
 export { rng };
 
 const CLIENT_NAMES = [
   "Rossi Snc", "Bianchi SRL", "Verdi & C.", "Neri Group", "Blu Servizi",
   "Gamma Soft", "Delta Trade", "Eta Logistica", "Studio Conti", "Bar Centrale",
-];
-const PA_NAMES = [
-  "Comune", "ASL", "Università", "Provincia", "Ministero (appalto)",
 ];
 const SUPPLIER_NAMES = [
   "Forniture Nord", "Materie Prime Spa", "Utenze+", "Magazzino Est", "Tech Supply",
@@ -199,22 +203,63 @@ const pushSale = (
   rand: () => number,
   id: number,
 ): number => {
+  const layer = pickMarketLayer(
+    state.company.repMunicipal ?? 0,
+    state.company.repNational ?? 0,
+    rand,
+  );
+
+  if (layer === "municipal") {
+    const net = round2(
+      MUNICIPAL_NET_MIN + rand() * (MUNICIPAL_NET_MAX - MUNICIPAL_NET_MIN),
+    );
+    const place = pickCityInHomeRegion(state.company.city, rand);
+    const who = `${pick(["Comune", "ASL", "Provincia"], rand)} di ${place.label}`;
+    ops.push({
+      id,
+      kind: "sale",
+      title: `Appalto comunale · ${who}`,
+      net,
+      expiresInMonths: 1,
+      clientType: "pa",
+      termMonths: pick([6, 12, 12, 12], rand),
+      marketLayer: "municipal",
+    });
+    return id + 1;
+  }
+
+  if (layer === "national") {
+    const net = round2(
+      NATIONAL_NET_MIN + rand() * (NATIONAL_NET_MAX - NATIONAL_NET_MIN),
+    );
+    const place = pickCityOutsideHomeRegion(state.company.city, rand);
+    const who = pick(["Ministero", "Regione", "Università"], rand);
+    ops.push({
+      id,
+      kind: "sale",
+      title: `Appalto nazionale · ${who} · ${place.label}`,
+      net,
+      expiresInMonths: 1,
+      clientType: "pa",
+      termMonths: pick([24, 30, 36], rand),
+      marketLayer: "national",
+    });
+    return id + 1;
+  }
+
   const sizeFactor = 0.35 + rand() * 0.65;
   const net = round2(Math.max(300, Math.min(cap, cap * sizeFactor)));
-  const isPa = rand() < profile.paChance + paChanceBoost(state);
-  const clientType: ClientType = isPa ? "pa" : "private";
-  const termMonths = pick(isPa ? profile.paTerms : profile.privateTerms, rand);
-  const who = isPa
-    ? `${pick(PA_NAMES, rand)} di ${state.company.city}`
-    : pick(CLIENT_NAMES, rand);
+  const termMonths = Math.min(3, pick(profile.privateTerms, rand));
+  const home = cityById(state.company.city);
   const raw: Opportunity = {
     id,
     kind: "sale",
-    title: isPa ? `Appalto PA · ${who}` : `Commessa · ${who}`,
+    title: `Commessa · ${pick(CLIENT_NAMES, rand)} · ${home.label}`,
     net,
     expiresInMonths: 1,
-    clientType,
+    clientType: "private",
     termMonths,
+    marketLayer: "local",
   };
   ops.push(maybeMakeContract(raw, rand, state.company.reputation));
   return id + 1;
@@ -377,13 +422,12 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
       ? issueCustomerInvoice(state, op.net, {
           clientType: op.clientType ?? "private",
           termMonths: op.termMonths,
+          marketLayer: op.marketLayer ?? (op.clientType === "pa" ? "municipal" : "local"),
         })
       : recordSupplierCost(state, op.net, op.termMonths);
   next = structuredClone(next);
   next.opportunities = next.opportunities.filter((o) => o.id !== opportunityId);
-  if (op.kind === "sale") {
-    next.company.reputation = Math.min(100, next.company.reputation + 1);
-  } else {
+  if (op.kind !== "sale") {
     next.supplyMonths = Math.min(
       supplyCapMonths(migrateUpgradeState(next)),
       (next.supplyMonths ?? 0) + supplyMonthsFromNet(op.net),

@@ -17,6 +17,7 @@ export const maybeMakeContract = (
   reputation: number,
 ): Opportunity => {
   if (op.kind !== "sale") return op;
+  if (op.marketLayer && op.marketLayer !== "local") return op;
   const mult = repContractMult(reputation);
   if (op.clientType === "pa" && rand() < 0.35 * mult) {
     return {
@@ -60,7 +61,6 @@ export const acceptAsContract = (
   };
   next.activeContracts = [...active, contract];
   next.opportunities = next.opportunities.filter((o) => o.id !== op.id);
-  next.company.reputation = Math.min(100, next.company.reputation + 2);
   next.log.unshift({
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),

@@ -16,6 +16,7 @@ Simulazione educativa di impresa (SRL semplificata). Questa wiki è il riferimen
 
 - Tabellone **secca / boom**; popup solo al cambio regime
 - **Pressione rivale** Calma / Tesa / Guerra
+- Reputazione **locale / comunale / nazionale** (punti all’incasso; filtro mercato sul tabellone)
 - Con **cartella** aperta l’F24 mensile è bloccato (in rateazione i nuovi F24 sì)
 - Shock magazzino **senza scorte** costano di più
 

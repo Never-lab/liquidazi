@@ -106,6 +106,7 @@ const CHOICE_POOL: ChoiceDef[] = [
             expiresInMonths: 1,
             clientType: "pa",
             termMonths: 5,
+            marketLayer: "municipal",
           });
           pushLog(s, "good", `Accettato appalto PA da ${net.toLocaleString("it-IT")} € + IVA (pagamenti lunghi).`);
         },
@@ -165,6 +166,7 @@ const CHOICE_POOL: ChoiceDef[] = [
             expiresInMonths: 1,
             clientType: "private",
             termMonths: 1,
+            marketLayer: "local",
           });
           pushLog(s, "neutral", "Sconto concesso: reputazione −8, una vendita extra sul tabellone.");
         },
@@ -266,6 +268,7 @@ const CHOICE_POOL: ChoiceDef[] = [
             expiresInMonths: 1,
             clientType: "private",
             termMonths: 1,
+            marketLayer: "local",
           });
           pushLog(s, "good", "Campagna lanciata: rep +10 e un lead sul tabellone.");
         },
@@ -373,6 +376,7 @@ const CHOICE_POOL: ChoiceDef[] = [
             expiresInMonths: 1,
             clientType: "private",
             termMonths: 1,
+            marketLayer: "local",
           });
           const who = s.rival?.name ?? "Il rivale";
           pushLog(
@@ -1246,6 +1250,7 @@ const applyCalendar = (state: GameState, rand: () => number): void => {
         expiresInMonths: 1,
         clientType: "private",
         termMonths: 1,
+        marketLayer: "local",
       });
       pushLog(
         state,
@@ -1336,6 +1341,7 @@ const applyAuto = (state: GameState, rand: () => number): void => {
       expiresInMonths: 1,
       clientType: isPa ? "pa" : "private",
       termMonths,
+      marketLayer: isPa ? "municipal" : "local",
     });
     pushLog(
       state,

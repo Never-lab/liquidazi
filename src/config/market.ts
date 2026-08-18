@@ -77,6 +77,37 @@ export const cityById = (id: CityId): CityDef => {
 export const citiesInRegion = (regionId: RegionId): CityDef[] =>
   CITIES.filter((c) => c.regionId === regionId);
 
+const capoluoghiByRegion = new Map<RegionId, CityDef[]>();
+for (const c of CITIES) {
+  if (!c.capoluogo) continue;
+  const list = capoluoghiByRegion.get(c.regionId) ?? [];
+  list.push(c);
+  capoluoghiByRegion.set(c.regionId, list);
+}
+
+const pickFrom = (list: readonly CityDef[], rand: () => number, fallback: CityDef): CityDef => {
+  if (list.length === 0) return fallback;
+  return list[Math.floor(rand() * list.length)] ?? fallback;
+};
+
+/** Capoluogo in the company's region (municipal PA jobs). */
+export const pickCityInHomeRegion = (homeCityId: CityId, rand: () => number): CityDef => {
+  const home = cityById(homeCityId);
+  const pool = capoluoghiByRegion.get(home.regionId) ?? [];
+  return pickFrom(pool, rand, home);
+};
+
+/** Capoluogo outside the company's region (national PA jobs). */
+export const pickCityOutsideHomeRegion = (homeCityId: CityId, rand: () => number): CityDef => {
+  const home = cityById(homeCityId);
+  const pool: CityDef[] = [];
+  for (const [regionId, cities] of capoluoghiByRegion) {
+    if (regionId === home.regionId) continue;
+    pool.push(...cities);
+  }
+  return pickFrom(pool, rand, home);
+};
+
 export const sectorById = (id: SectorId): SectorDef => {
   const s = SECTORS.find((x) => x.id === id);
   if (!s) throw new Error(`unknown sector ${id}`);

@@ -1,9 +1,12 @@
 import { useState } from "react";
 import {
   BOARD_FILTER_LABEL,
+  MARKET_FILTER_LABEL,
   nextBoardFilter,
+  nextMarketFilter,
   visibleOpportunities,
   type BoardFilter,
+  type MarketFilter,
 } from "../sim/boardView";
 import {
   emergencySupplyNet,
@@ -24,15 +27,18 @@ export const OpportunitiesPanel = () => {
   const decline = useGameStore((s) => s.declineOpportunity);
   const emergency = useGameStore((s) => s.orderEmergencySupply);
   const [filter, setFilter] = useState<BoardFilter>("in");
+  const [market, setMarket] = useState<MarketFilter>("all");
   const cap = maxDealNet(game);
   const capacity = monthlyCapacity(game);
   const taken = salesAcceptedThisMonth(game);
   const stockMonths = game.supplyMonths ?? 0;
   const emptyStock = stockMonths <= 0;
   const boardHasSupply = game.opportunities.some((o) => o.kind === "supply");
-  const visible = visibleOpportunities(game.opportunities, filter);
+  const visible = visibleOpportunities(game.opportunities, filter, market);
   const hidden = game.opportunities.length - visible.length;
-  const rep = Math.round(game.company.reputation);
+  const loc = Math.round(game.company.reputation);
+  const mun = Math.round(game.company.repMunicipal ?? 0);
+  const nat = Math.round(game.company.repNational ?? 0);
   const repSlots = repSlotBonus(game.company.reputation);
   const insolutiMult = repDefaultMult(game.company.reputation);
   const emergencyCost = emergencySupplyNet(game);
@@ -50,6 +56,15 @@ export const OpportunitiesPanel = () => {
         >
           <Icon name="filter" size={16} />
           {BOARD_FILTER_LABEL[filter]}
+        </button>
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={() => setMarket((f) => nextMarketFilter(f))}
+          title={`Mercato: ${MARKET_FILTER_LABEL[market]}. Tocca per cambiare.`}
+          aria-label={`Filtro mercato: ${MARKET_FILTER_LABEL[market]}`}
+        >
+          {MARKET_FILTER_LABEL[market]}
         </button>
       </div>
       <div className={styles.statChips} aria-label="Indicatori commesse">
@@ -77,9 +92,9 @@ export const OpportunitiesPanel = () => {
         </span>
         <span
           className={styles.statChip}
-          title={`Rep ${rep} → +${repSlots} slot · insoluti ×${insolutiMult.toFixed(2)} · più rep = più offerte e meno insoluti`}
+          title={`Locale ${loc} → +${repSlots} slot · insoluti ×${insolutiMult.toFixed(2)}. Comunale ${mun} / nazionale ${nat}: più punti → più appalti di quel tipo.`}
         >
-          Reputazione {rep}
+          Loc {loc} · Com {mun} · Naz {nat}
         </span>
         {(game.activeContracts?.length ?? 0) > 0 ? (
           <span

@@ -6,6 +6,8 @@ import {
   densityIndexFor,
   firmsInSector,
   monthlyRentFor,
+  pickCityInHomeRegion,
+  pickCityOutsideHomeRegion,
 } from "../config/market";
 import { issueCustomerInvoice, recordSupplierCost } from "./actions";
 import { advanceMonth } from "./advanceMonth";
@@ -23,6 +25,19 @@ describe("ISTAT geography pack", () => {
     expect(CITIES.length).toBeGreaterThan(7000);
     expect(cityById(ROMA).label).toBe("Roma");
     expect(cityById(ROMA).capoluogo).toBe(true);
+  });
+
+  it("pickCityInHomeRegion stays in the home region", () => {
+    const roma = cityById(ROMA);
+    const place = pickCityInHomeRegion(ROMA, () => 0);
+    expect(place.regionId).toBe(roma.regionId);
+    expect(place.label).not.toBe(ROMA);
+  });
+
+  it("pickCityOutsideHomeRegion leaves the home region", () => {
+    const roma = cityById(ROMA);
+    const place = pickCityOutsideHomeRegion(ROMA, () => 0.5);
+    expect(place.regionId).not.toBe(roma.regionId);
   });
 });
 
