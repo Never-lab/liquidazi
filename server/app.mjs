@@ -13,7 +13,8 @@ import {
   readdirSync,
   statSync,
 } from "node:fs";
-import { join, extname, sep } from "node:path";
+import { join, extname, sep, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { computeBalance } from "./balance.mjs";
 import { clientIp, createRateLimiter } from "./rateLimit.mjs";
 import { extractRunFromGame, syncRunsFromSaves, upsertRun } from "./runSync.mjs";
@@ -107,6 +108,28 @@ const MIME = {
   ".ico": "image/x-icon",
   ".woff2": "font/woff2",
   ".map": "application/json",
+};
+
+const NOT_FOUND_HTML = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "notFound.html"),
+  "utf8",
+);
+
+const isSpaPath = (reqPath) => {
+  const n = reqPath.replace(/\/+$/, "") || "/";
+  return n === "/privacy" || n === "/termini";
+};
+
+const sendNotFoundPage = (res, { head = false } = {}) => {
+  res.writeHead(404, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-cache",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY",
+  });
+  if (head) return res.end();
+  res.end(NOT_FOUND_HTML);
 };
 
 const safeJoin = (root, reqPath) => {
@@ -800,8 +823,12 @@ export function createHandler({
         };
         if (filePath && trySend(filePath)) return;
         const indexPath = join(distDir, "index.html");
-        if (!extname(path) && trySend(indexPath)) return;
-        return json(res, 404, { error: "Not found" });
+        if (isSpaPath(path) && trySend(indexPath)) return;
+        return sendNotFoundPage(res, { head: req.method === "HEAD" });
+      }
+
+      if (req.method === "GET" || req.method === "HEAD") {
+        return sendNotFoundPage(res, { head: req.method === "HEAD" });
       }
 
       return json(res, 404, { error: "Not found" });

@@ -44,17 +44,18 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Banner cookie completo** — in PR [#66](https://github.com/Never-lab/liquidazi/pull/66)
-2. **Privacy e termini** (`/privacy`, `/termini`) — in PR [#65](https://github.com/Never-lab/liquidazi/pull/65)
-3. **Timeout sessione** (2h idle / 7g cap) — in PR [#63](https://github.com/Never-lab/liquidazi/pull/63)
-4. **Reputazione a layer** (locale / comunale / nazionale) — in corso
-5. **Brand Floatdesk** — rename UI/SEO + favicon; dominio `floatdesk.app`; in PR
-6. **Railway staging + prod-on-tag** — in PR (autodeploy `main` → staging; tag `v*` → production)
-7. **Competitive bets — B3 share card** — vedi [competitive-bets](docs/superpowers/specs/2026-08-08-competitive-bets-design.md)
-8. **Deep panel icons** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
-9. **Custom domain Railway** — punta `floatdesk.app` al servizio (dopo registrazione DNS).
-10. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
-11. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
+1. **Pagina 404 HTML** — in PR [#67](https://github.com/Never-lab/liquidazi/pull/67)
+2. **Banner cookie completo** — in PR [#66](https://github.com/Never-lab/liquidazi/pull/66)
+3. **Privacy e termini** (`/privacy`, `/termini`) — in PR [#65](https://github.com/Never-lab/liquidazi/pull/65)
+4. **Timeout sessione** (2h idle / 7g cap) — in PR [#63](https://github.com/Never-lab/liquidazi/pull/63)
+5. **Reputazione a layer** (locale / comunale / nazionale) — in corso
+6. **Brand Floatdesk** — rename UI/SEO + favicon; dominio `floatdesk.app`; in PR
+7. **Railway staging + prod-on-tag** — in PR (autodeploy `main` → staging; tag `v*` → production)
+8. **Competitive bets — B3 share card** — vedi [competitive-bets](docs/superpowers/specs/2026-08-08-competitive-bets-design.md)
+9. **Deep panel icons** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
+10. **Custom domain Railway** — punta `floatdesk.app` al servizio (dopo registrazione DNS).
+11. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
+12. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
 
 ---
 

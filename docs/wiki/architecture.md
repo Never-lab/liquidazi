@@ -18,7 +18,7 @@ Node `>=20.19` (Railway uses Node 22 via `nixpacks.toml`).
 
 `auth` → `intro` → `menu` → `setup` / `tutorial` / `guide` / `saves` / `leaderboard` / `feedback` / `admin` → `game` → `gameover`.
 
-Routing is a switch in `src/App.tsx` on `useGameStore.screen`. Public legal pages `/privacy` and `/termini` are pathname-based (not Zustand screens); SPA fallback serves `index.html`.
+Routing is a switch in `src/App.tsx` on `useGameStore.screen`. Public legal pages `/privacy` and `/termini` are pathname-based (not Zustand screens); SPA fallback serves `index.html` only for those. Other unknown non-API URLs return HTML **404** (`server/notFound.html`).
 
 ## Key folders
 
