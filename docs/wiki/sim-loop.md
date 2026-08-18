@@ -31,14 +31,13 @@ Fire / flood / van theft / truck / supplier bust go through `applySupplyShock`. 
 
 ## Reputation (commercial)
 
-`company.reputation` (0–100) feeds `src/sim/reputation.ts`:
+Three layers. **Local** `company.reputation` (0–100) still feeds `src/sim/reputation.ts` slot/demand/contract/default multipliers and local ticket size.
 
-- Slot bonus `round(rep/20)` capped at 5 (80→100 is +4→+5 slots)
-- Board sale count × `(0.75 + rep/200)`
-- Contract offer odds × `clamp(0.55 + rep/200, 0.4, 1.1)`
-- Private AR defaults × `(1.45 − rep/200)`
+**Municipal** (0–100) and **national** (0–20, +1 per 5 municipal) only change how often big PA jobs appear on the board. Points land when the AR **settles**, not when you accept. Default = no points, no extra reputation hit.
 
-Ticket size still uses continuous `0.85 + rep/100 × 0.35`. Fiscal **compliance** is separate (bank spread / F24).
+Local tickets stay on `maxDealNet`. Municipal 25–40k, terms often 12 months, **any capoluogo in the company region**. National 50–150k, 24–36 months, **capoluogo in another region**. Titles use the ISTAT city **label**, never the 6-digit code. Every 5 local settlements also +1 municipal (bootstrap). Board filter: Tutte / Locale / Comunale / Nazionale.
+
+Ticket size for local still uses continuous `0.85 + rep/100 × 0.35`. Fiscal **compliance** is separate (bank spread / F24).
 
 ## Demand seasons (board)
 

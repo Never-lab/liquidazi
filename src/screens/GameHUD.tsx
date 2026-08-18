@@ -113,11 +113,11 @@ export const GameHUD = () => {
             {seasonHint ? ` · ${seasonHint}` : ""}
           </p>
           <h2 className={styles.company}>{game.company.name}</h2>
-          <p className={styles.monthLine} title="Mese di gioco, scorte magazzino (mesi di copertura) e reputazione (domanda / insoluti).">
+          <p className={styles.monthLine} title="Mese di gioco, scorte magazzino (mesi di copertura) e reputazione locale / comunale / nazionale.">
             {MESI[game.calendar.month - 1]} {game.calendar.year}
             {" · "}m{game.monthsPlayed + 1}
             {" · "}scorte {game.supplyMonths ?? 0}m
-            {" · "}rep {Math.round(game.company.reputation)}
+            {" · "}loc {Math.round(game.company.reputation)} · com {Math.round(game.company.repMunicipal ?? 0)} · naz {Math.round(game.company.repNational ?? 0)}
             {game.monthsBelowZero > 0
               ? ` · rosso ${game.monthsBelowZero}/${LOSE_MONTHS_BELOW_ZERO}`
               : ""}

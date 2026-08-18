@@ -35,6 +35,7 @@ describe("deal caps and opportunities", () => {
     const { ops } = generateOpportunities(s, { forceRegime: "normale" });
     expect(ops.filter((o) => o.kind === "sale").length).toBeGreaterThanOrEqual(1);
     expect(ops.length).toBeLessThanOrEqual(10);
-    expect(ops.every((o) => o.net <= maxDealNet(s))).toBe(true);
+    const sales = ops.filter((o) => o.kind === "sale");
+    expect(sales.every((o) => (o.marketLayer ?? "local") !== "local" || o.net <= maxDealNet(s))).toBe(true);
   });
 });

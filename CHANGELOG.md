@@ -8,7 +8,8 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
-## [1.1.0] — 2026-08-18
+### Added
+- Reputazione a **tre layer** (locale / comunale / nazionale): punti all’incasso, tabellone misto, filtro mercato.
 
 Eventi mondo a famiglie, overlay come secca/boom, deploy production su tag più affidabile.
 

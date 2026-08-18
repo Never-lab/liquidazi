@@ -43,7 +43,7 @@ import {
   type GameState,
   type LiabilityKind,
 } from "./types";
-import { repDefaultMult } from "./reputation";
+import { applyLayerCredit, layerFromInvoice, repDefaultMult } from "./reputation";
 import {
   baseGrossFor,
   grossWithSeniority,
@@ -215,7 +215,6 @@ export const advanceMonth = (state: GameState): GameState => {
       ) {
         inv.settled = true;
         inv.defaulted = true;
-        next.company.reputation = Math.max(0, round2(next.company.reputation - 5));
         next.log.unshift({
           id: next.nextId++,
           monthIdx: idx,
@@ -228,6 +227,7 @@ export const advanceMonth = (state: GameState): GameState => {
 
       inv.settled = true;
       if (inv.kind === "AR") {
+        applyLayerCredit(next, layerFromInvoice(inv));
         const inflow = inv.splitPayment ? inv.net : inv.gross;
         next.company.cash = round2(next.company.cash + inflow);
       } else {

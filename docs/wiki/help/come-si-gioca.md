@@ -14,6 +14,8 @@ Il tabellone non è sempre uguale: a volte è **secca** (poche vendite), a volte
 
 La **pressione rivale** (Calma / Tesa / Guerra) può farti rubare lead; rispondi agli eventi quando la concorrenza alza la voce.
 
+La reputazione è a tre layer: **locale** (privati, slot e insoluti), **comunale** e **nazionale** (appalti più grossi e pagamenti lunghi). I punti arrivano quando incassi, non quando accetti. Sul tabellone puoi filtrare per mercato.
+
 ## Obiettivo
 
 Tieni la cassa in piedi. **Dodici mesi di seguito in rosso** = fine partita. Ignorare a lungo le tasse può finire in **insolvenza fiscale**. In difficoltà la banca può offrirti un prestito di salvataggio.
