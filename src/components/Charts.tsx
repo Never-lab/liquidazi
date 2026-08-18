@@ -1,4 +1,6 @@
+import { useState, type PointerEvent } from "react";
 import type { HistoryPoint } from "../sim/types";
+import { nearestIndex } from "../ui/nearestIndex";
 import styles from "./Charts.module.css";
 
 const W = 360;
@@ -46,6 +48,12 @@ const areaPath = (pts: { x: number; y: number }[], baselineY: number): string =>
   return `${head} ${mid} L ${last.x} ${baselineY} Z`;
 };
 
+const pointerViewX = (e: PointerEvent<SVGSVGElement>, viewW: number): number => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const w = rect.width || 1;
+  return ((e.clientX - rect.left) / w) * viewW;
+};
+
 export const CashSparkline = ({
   history,
   bad,
@@ -73,6 +81,8 @@ export const CashSparkline = ({
 
 export const ChartsPanel = ({ history }: { history: HistoryPoint[] }) => {
   const recent = history.slice(-12);
+  const [hover, setHover] = useState<number | null>(null);
+
   if (recent.length === 0) {
     return (
       <section className={styles.board}>
@@ -98,6 +108,8 @@ export const ChartsPanel = ({ history }: { history: HistoryPoint[] }) => {
   const plotH = H_CASH - PAD - PAD_B;
   const zeroY = PAD + plotH - ((0 - cashMin) / (cashMax - cashMin || 1)) * plotH;
   const lastPt = cashPts[cashPts.length - 1];
+  const hoverPt = hover != null ? cashPts[hover] : undefined;
+  const hoverRow = hover != null ? recent[hover] : undefined;
 
   const absMax = Math.max(...results.map((r) => Math.abs(r)), 1);
   const n = recent.length;
@@ -105,8 +117,16 @@ export const ChartsPanel = ({ history }: { history: HistoryPoint[] }) => {
   const barW = Math.max(4, groupW * 0.55);
   const midY = PAD + (H_PL - PAD - PAD_B) / 2;
   const halfH = (H_PL - PAD - PAD_B) / 2;
+  const maxRC = Math.max(...recent.flatMap((h) => [h.revenue, h.costs]), 1);
+  const rcPlotH = H_PL - PAD - PAD_B;
+  const pairW = Math.max(6, groupW * 0.72);
+  const slimW = Math.max(3, pairW / 2 - 1);
 
   const labelStep = n > 8 ? 2 : 1;
+
+  const onCashMove = (e: PointerEvent<SVGSVGElement>) => {
+    setHover(nearestIndex(cashPts.map((p) => p.x), pointerViewX(e, W)));
+  };
 
   return (
     <section className={styles.board}>
@@ -140,9 +160,11 @@ export const ChartsPanel = ({ history }: { history: HistoryPoint[] }) => {
         <h3 className={styles.title}>Cassa</h3>
         <svg
           viewBox={`0 0 ${W} ${H_CASH}`}
-          className={styles.svgTall}
+          className={`${styles.svgTall} ${styles.svgInteractive}`}
           role="img"
-          aria-label="Grafico cassa nel tempo"
+          aria-label="Grafico cassa nel tempo. Passa il puntatore per i mesi precedenti."
+          onPointerMove={onCashMove}
+          onPointerLeave={() => setHover(null)}
         >
           <line x1={PAD} x2={W - PAD} y1={zeroY} y2={zeroY} className={styles.zeroLine} />
           {cashPts.length > 0 && (
@@ -155,14 +177,34 @@ export const ChartsPanel = ({ history }: { history: HistoryPoint[] }) => {
             strokeLinejoin="round"
             points={poly(cashPts)}
           />
-          {cashPts.map((p, i) => (
-            <circle key={`c-${i}`} cx={p.x} cy={p.y} r="0" className={styles.hit}>
-              <title>
-                {labels[i]}: {fmtEur(cash[i]!)}
-              </title>
-            </circle>
-          ))}
-          {lastPt && <circle cx={lastPt.x} cy={lastPt.y} r="4" className={styles.cashDot} />}
+          {cashPts.map((p, i) => {
+            const hitW = n === 1 ? W - PAD * 2 : (W - PAD * 2) / Math.max(n - 1, 1);
+            return (
+              <rect
+                key={`hit-${i}`}
+                x={p.x - hitW / 2}
+                y={0}
+                width={hitW}
+                height={H_CASH}
+                className={styles.hitBand}
+              />
+            );
+          })}
+          {hoverPt && (
+            <>
+              <line
+                x1={hoverPt.x}
+                x2={hoverPt.x}
+                y1={PAD}
+                y2={H_CASH - PAD_B}
+                className={styles.hoverGuide}
+              />
+              <circle cx={hoverPt.x} cy={hoverPt.y} r="5" className={styles.hoverDot} />
+            </>
+          )}
+          {lastPt && hover == null && (
+            <circle cx={lastPt.x} cy={lastPt.y} r="4" className={styles.cashDot} />
+          )}
           {cashPts.map((p, i) =>
             i % labelStep === 0 || i === cashPts.length - 1 ? (
               <text
@@ -177,6 +219,11 @@ export const ChartsPanel = ({ history }: { history: HistoryPoint[] }) => {
             ) : null,
           )}
         </svg>
+        <p className={styles.readout} aria-live="polite">
+          {hoverRow
+            ? `${hoverRow.label} · cassa ${fmtEur(hoverRow.cash)}`
+            : "Passa sul grafico per i mesi precedenti"}
+        </p>
       </div>
 
       <div className={styles.chart}>
@@ -231,6 +278,66 @@ export const ChartsPanel = ({ history }: { history: HistoryPoint[] }) => {
           <span className={styles.legBad}>Perdita mese</span>
           {" · "}
           ricavi periodo {fmtEur(sumRev)} · costi {fmtEur(sumCost)}
+        </p>
+      </div>
+
+      <div className={styles.chart}>
+        <h3 className={styles.title}>Ricavi e costi</h3>
+        <svg
+          viewBox={`0 0 ${W} ${H_PL}`}
+          className={styles.svg}
+          role="img"
+          aria-label="Grafico ricavi e costi mensili"
+        >
+          {recent.map((h, i) => {
+            const gx = PAD_L + i * groupW + (groupW - pairW) / 2;
+            const revH = (h.revenue / maxRC) * rcPlotH;
+            const costH = (h.costs / maxRC) * rcPlotH;
+            return (
+              <g key={`rc-${i}-${h.monthIdx}`}>
+                <rect
+                  x={gx}
+                  y={PAD + rcPlotH - revH}
+                  width={slimW}
+                  height={Math.max(1, revH)}
+                  className={styles.barRevenue}
+                >
+                  <title>
+                    {h.label}: ricavi {fmtEur(h.revenue)}
+                  </title>
+                </rect>
+                <rect
+                  x={gx + slimW + 2}
+                  y={PAD + rcPlotH - costH}
+                  width={slimW}
+                  height={Math.max(1, costH)}
+                  className={styles.barCost}
+                >
+                  <title>
+                    {h.label}: costi {fmtEur(h.costs)}
+                  </title>
+                </rect>
+              </g>
+            );
+          })}
+          {recent.map((h, i) =>
+            i % labelStep === 0 || i === recent.length - 1 ? (
+              <text
+                key={`rclbl-${i}`}
+                x={PAD_L + i * groupW + groupW / 2}
+                y={H_PL - 6}
+                className={styles.axisLabel}
+                textAnchor="middle"
+              >
+                {h.label}
+              </text>
+            ) : null,
+          )}
+        </svg>
+        <p className={styles.caption}>
+          <span className={styles.legGood}>Ricavi</span>
+          {" · "}
+          <span className={styles.legBad}>Costi</span>
         </p>
       </div>
     </section>

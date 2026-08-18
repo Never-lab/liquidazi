@@ -20,8 +20,43 @@ export const SchedulePanel = ({ compact }: Props) => {
   const closeTot = scheduleTotals(closing);
   const openTot = scheduleTotals(rows);
 
+  const closeBlock = (
+    <div className={`${styles.closePreview} ${compact ? styles.closePreviewSolo : ""}`}>
+      <p className={styles.closePreviewTitle}>
+        Questa chiusura · {closeTot.count} fattur
+        {closeTot.count === 1 ? "a" : "e"}
+      </p>
+      {closeTot.count === 0 ? (
+        <p className={styles.muted}>
+          Nessuna scadenza questo mese. Chiudendo non muovi cash da fatture (solo costi fissi /
+          F24 se li paghi).
+        </p>
+      ) : (
+        <p className={styles.closePreviewNums}>
+          Incassi {formatCash(closeTot.inflow)}
+          {" · "}
+          Pagamenti {formatCash(Math.abs(closeTot.outflow))}
+          {" · "}
+          <strong>
+            netto fatture {closeTot.net >= 0 ? "+" : ""}
+            {formatCash(closeTot.net)}
+          </strong>
+        </p>
+      )}
+      {openTot.count > 0 && (
+        <p className={styles.muted}>
+          Solo queste {closeTot.count} su {openTot.count} aperte. Il resto resta in Operazioni →
+          Fisco. Privati: possibile insoluto.
+        </p>
+      )}
+    </div>
+  );
+
+  if (compact) {
+    return <section className={styles.panelWide}>{closeBlock}</section>;
+  }
+
   if (rows.length === 0) {
-    if (compact) return null;
     return (
       <section className={styles.panel}>
         <h2 className={styles.panelTitle}>Scadenziario</h2>
@@ -34,7 +69,7 @@ export const SchedulePanel = ({ compact }: Props) => {
   }
 
   return (
-    <section className={compact ? styles.panelWide : styles.panel}>
+    <section className={styles.panel}>
       <div className={styles.panelHead}>
         <h2 className={styles.panelTitle}>Scadenziario fatture</h2>
         <span
@@ -46,33 +81,7 @@ export const SchedulePanel = ({ compact }: Props) => {
         </span>
       </div>
 
-      <div className={styles.closePreview}>
-        <p className={styles.closePreviewTitle}>
-          Questa chiusura · {closeTot.count} fattur
-          {closeTot.count === 1 ? "a" : "e"}
-        </p>
-        {closeTot.count === 0 ? (
-          <p className={styles.muted}>
-            Nessuna scadenza questo mese. Chiudendo non muovi cash da fatture (solo costi fissi /
-            F24 se li paghi).
-          </p>
-        ) : (
-          <p className={styles.closePreviewNums}>
-            Incassi {formatCash(closeTot.inflow)}
-            {" · "}
-            Pagamenti {formatCash(Math.abs(closeTot.outflow))}
-            {" · "}
-            <strong>
-              netto fatture {closeTot.net >= 0 ? "+" : ""}
-              {formatCash(closeTot.net)}
-            </strong>
-          </p>
-        )}
-        <p className={styles.muted}>
-          Solo queste {closeTot.count} su {openTot.count} aperte. Il resto resta in elenco. Privati:
-          possibile insoluto.
-        </p>
-      </div>
+      {closeBlock}
 
       {closing.length > 0 && (
         <>
@@ -92,13 +101,10 @@ export const SchedulePanel = ({ compact }: Props) => {
             incassare)
           </p>
           <ul className={styles.list}>
-            {(compact ? later.slice(0, 6) : later).map((r) => (
+            {later.map((r) => (
               <ScheduleRowItem key={r.invoice.id} r={r} />
             ))}
           </ul>
-          {compact && later.length > 6 && (
-            <p className={styles.muted}>…altre {later.length - 6} in Operazioni → Fisco.</p>
-          )}
         </>
       )}
     </section>
