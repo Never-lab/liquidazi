@@ -140,6 +140,8 @@ describe("forced shocks", () => {
       if (s.lastShockAt === m) {
         hit = true;
         expect(s.pendingEvent).toBeNull();
+        expect(s.lastEventPopup?.title).toBeTruthy();
+        expect(s.lastEventPopup?.body).toBeTruthy();
         break;
       }
     }

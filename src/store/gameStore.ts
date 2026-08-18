@@ -52,6 +52,7 @@ import type { MilestoneId } from "../sim/types";
 import {
   createInitialGameState,
   type DemandRegime,
+  type EventPopup,
   type GameState,
   type NewGameOptions,
 } from "../sim/types";
@@ -110,6 +111,8 @@ interface GameStore {
   toast: { text: string; tone: ToastTone } | null;
   /** One-shot secca/boom popup after month close; null when hidden. */
   demandPopup: DemandRegime | null;
+  /** One-shot overlay for auto-applied world shocks (same shell as secca/boom). */
+  eventPopup: EventPopup | null;
   /** FIFO achievement celebration popups. */
   achievementQueue: MilestoneId[];
   /** Account trophies (logged-in only). */
@@ -130,6 +133,7 @@ interface GameStore {
   setPreferredDifficulty: (d: DifficultyId) => void;
   flashToast: (text: string, tone?: ToastTone) => void;
   dismissDemandPopup: () => void;
+  dismissEventPopup: () => void;
   dismissAchievementPopup: () => void;
   noteMilestoneUnlocks: (unlocked: MilestoneId[]) => void;
   newGame: (opts: NewGameOptions) => void;
@@ -196,6 +200,7 @@ export const useGameStore = create<GameStore>()(
       coachOn: true,
       toast: null,
       demandPopup: null,
+      eventPopup: null,
       achievementQueue: [],
       accountAchievements: [],
       preferredDifficulty: "normal",
@@ -309,6 +314,7 @@ export const useGameStore = create<GameStore>()(
         toastTimer = setTimeout(() => set({ toast: null }), 2400);
       },
       dismissDemandPopup: () => set({ demandPopup: null }),
+      dismissEventPopup: () => set({ eventPopup: null }),
       dismissAchievementPopup: () =>
         set((s) => ({ achievementQueue: s.achievementQueue.slice(1) })),
       noteMilestoneUnlocks: (unlocked) => {
@@ -345,7 +351,7 @@ export const useGameStore = create<GameStore>()(
         );
         game = refreshAcquisitionBoard(game);
         const slots = syncSlot(get().slots, get().activeSlot, game);
-        set({ game, slots, screen: "game", coachOn: true, achievementQueue: [] });
+        set({ game, slots, screen: "game", coachOn: true, achievementQueue: [], eventPopup: null, demandPopup: null });
         get().flashToast("Nuova azienda aperta", "good");
         sfxGood();
       },
@@ -362,6 +368,8 @@ export const useGameStore = create<GameStore>()(
         }
         const before = get().game;
         const game = advanceMonth(before);
+        const eventPopup = game.pendingEvent ? null : game.lastEventPopup;
+        if (game.lastEventPopup) game.lastEventPopup = null;
         let screen = get().screen;
         if (game.status === "lost" || game.status === "won") screen = "gameover";
         const slots = syncSlot(get().slots, get().activeSlot, game);
@@ -371,7 +379,7 @@ export const useGameStore = create<GameStore>()(
           before.demandRegime,
           regime,
         );
-        set({ game, screen, slots, demandPopup });
+        set({ game, screen, slots, demandPopup, eventPopup });
         const newly = (game.milestones ?? []).filter(
           (id) => !(before.milestones ?? []).includes(id),
         );
@@ -387,6 +395,8 @@ export const useGameStore = create<GameStore>()(
         } else if (game.status === "won") {
           get().flashToast("Traguardo: 24 mesi di attività", "good");
           sfxGood();
+        } else if (eventPopup) {
+          sfxMonthClose();
         } else if (
           game.lastShockAt != null &&
           game.lastShockAt === game.monthsPlayed &&
@@ -754,6 +764,7 @@ export const useGameStore = create<GameStore>()(
           screen: "game",
           coachOn: false,
           demandPopup: null,
+          eventPopup: null,
         });
         get().flashToast("Slot 1: save tester midgame installato", "good");
         sfxGood();
@@ -768,6 +779,8 @@ export const useGameStore = create<GameStore>()(
         set({
           activeSlot: index,
           game,
+          eventPopup: null,
+          demandPopup: null,
         });
         get().flashToast(`Slot attivo: ${slot.label}`, "neutral");
       },

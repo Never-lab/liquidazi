@@ -256,6 +256,14 @@ export interface PendingEvent {
   family?: EventFamily;
 }
 
+/** One-shot overlay copy after an auto-applied world event (not persisted in UI store). */
+export type EventPopup = {
+  title: string;
+  body: string;
+  family?: EventFamily;
+  tone?: "good" | "bad" | "neutral";
+};
+
 export type AcquisitionRisk = "low" | "med" | "high";
 
 export interface AcquisitionTarget {
@@ -410,6 +418,8 @@ export interface GameState {
   lastShockAt: number | null;
   /** Follow-up weight boosts from world-event chains (1–2 months after trigger). */
   chainBoosts: ChainBoost[];
+  /** Set when a shock/auto event applies; HUD copies then clears. */
+  lastEventPopup: EventPopup | null;
   /** Annual investment project in progress (max one) */
   activeProject: ActiveProject | null;
   /** Pending January offer (blocks month close until accept/skip) */
@@ -630,6 +640,7 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     rival: null,
     lastShockAt: null,
     chainBoosts: [],
+    lastEventPopup: null,
     activeProject: null,
     projectOffer: null,
     projectOfferYear: null,
