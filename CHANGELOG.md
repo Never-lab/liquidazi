@@ -18,6 +18,7 @@ Eventi mondo a famiglie, overlay come secca/boom, deploy production su tag più 
 - Popup overlay (come secca/boom) per shock e avvisi mondo auto-applicati; le decisioni restano overlay con pulsanti.
 
 ### Changed
+- Asset hashed in `/assets/`: cache HTTP 1 anno (`immutable`); HTML `no-cache` (deploy nuovi visibili subito).
 - Deploy production: `railway up` punta all’ambiente `production` (e opzionale `RAILWAY_SERVICE`).
 
 ## [1.0.1] — 2026-08-18

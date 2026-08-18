@@ -25,6 +25,8 @@ Health: `GET /api/health` → `"storage":"volume"`. GitHub secret `RAILWAY_TOKEN
 
 Auth: password min **8** chars; in-memory rate limits on register/login (20 / 15 min per IP) and feedback (8 / hour per IP). Self-reported runs clamp money stats and reject forged early `won` (&lt; 24 mesi).
 
+Static files: hashed `/assets/*` `Cache-Control: public, max-age=31536000, immutable`; `index.html` / `ops.html` `no-cache`; other root files `max-age=3600`.
+
 ## Wiki maintenance
 
 | Command | Purpose |
