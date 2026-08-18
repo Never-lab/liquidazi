@@ -8,12 +8,22 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-08-18
+
+Reputazione a tre layer, Privacy/Termini, sessione account, cookie banner, cache asset, 404 e log ops.
+
 ### Added
 - Log tecnico rotante su Controllo (`/ops`): ultime richieste, conteggi 24h/7g e 404; niente IP/query/body/token.
 - Pagina **404** HTML (status 404) per URL sconosciuti; `/privacy` e `/termini` restano l’app.
 - Pagine **Privacy** (`/privacy`) e **Termini** (`/termini`), link in footer e landing.
 - Sessione account: logout dopo **2 ore** di inattività, tetto **7 giorni** dal login (ospite invariato).
 - Reputazione a **tre layer** (locale / comunale / nazionale): punti all’incasso, tabellone misto, filtro mercato.
+
+### Changed
+- Banner cookie: testo su storage necessario + ads, link Privacy, riapertura dal footer (solo se AdSense è on).
+- Asset hashed in `/assets/`: cache HTTP 1 anno (`immutable`); HTML `no-cache` (deploy nuovi visibili subito).
+
+## [1.1.0] — 2026-08-18
 
 Eventi mondo a famiglie, overlay come secca/boom, deploy production su tag più affidabile.
 
@@ -22,8 +32,6 @@ Eventi mondo a famiglie, overlay come secca/boom, deploy production su tag più 
 - Popup overlay (come secca/boom) per shock e avvisi mondo auto-applicati; le decisioni restano overlay con pulsanti.
 
 ### Changed
-- Banner cookie: testo su storage necessario + ads, link Privacy, riapertura dal footer (solo se AdSense è on).
-- Asset hashed in `/assets/`: cache HTTP 1 anno (`immutable`); HTML `no-cache` (deploy nuovi visibili subito).
 - Deploy production: `railway up` punta all’ambiente `production` (e opzionale `RAILWAY_SERVICE`).
 
 ## [1.0.1] — 2026-08-18
@@ -71,7 +79,8 @@ Sim educativo di SRL semplificata (cassa, IVA, F24, personale, prestiti). Non è
 
 - Hardening runtime (rate limit, clamp sulle run) e UX F24/collection.
 
-[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/Never-lab/liquidazi/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Never-lab/liquidazi/releases/tag/v1.1.0
 [1.0.1]: https://github.com/Never-lab/liquidazi/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Never-lab/liquidazi/releases/tag/v1.0.0
