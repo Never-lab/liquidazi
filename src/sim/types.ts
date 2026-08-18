@@ -15,6 +15,7 @@ import {
 } from "../config/market";
 import { DIFFICULTIES, type DifficultyId } from "../config/difficulty";
 import { HOLDING_SLOT_BASE } from "../config/holding";
+import { type ChainBoost, type EventFamily } from "./worldEvents";
 import type { ProjectId } from "../config/projects";
 import type { UpgradeId } from "../config/upgrades";
 
@@ -252,6 +253,7 @@ export interface PendingEvent {
   title: string;
   body: string;
   options: PendingEventOption[];
+  family?: EventFamily;
 }
 
 export type AcquisitionRisk = "low" | "med" | "high";
@@ -406,6 +408,8 @@ export interface GameState {
   rival: Rival | null;
   /** monthsPlayed when last forced shock was queued (cooldown) */
   lastShockAt: number | null;
+  /** Follow-up weight boosts from world-event chains (1–2 months after trigger). */
+  chainBoosts: ChainBoost[];
   /** Annual investment project in progress (max one) */
   activeProject: ActiveProject | null;
   /** Pending January offer (blocks month close until accept/skip) */
@@ -625,6 +629,7 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     activeContracts: [],
     rival: null,
     lastShockAt: null,
+    chainBoosts: [],
     activeProject: null,
     projectOffer: null,
     projectOfferYear: null,

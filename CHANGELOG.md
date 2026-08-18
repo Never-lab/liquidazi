@@ -8,6 +8,9 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+### Added
+- Eventi mondo a **famiglie** (ambiente, burocrazia, logistica) con catene di probabilità (es. frana → strada chiusa). Cartella resta solo da F24 insoluti.
+
 ### Changed
 - Deploy production: `railway up` punta all’ambiente `production` (e opzionale `RAILWAY_SERVICE`).
 

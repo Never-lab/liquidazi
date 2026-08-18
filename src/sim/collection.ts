@@ -14,8 +14,8 @@ import {
   RATEATION_MONTHS,
   TERMINAL_MONTHS_TO_LOST,
 } from "../config/collection";
-import { round2, toMonthIndex, type GameState } from "./types";
-import type { TaxLiability } from "./types";
+import { moraIncrement } from "./worldEvents";
+import { round2, toMonthIndex, type GameState, type TaxLiability } from "./types";
 
 export const CARTELLA_EVENT_ID = "fiscal_cartella";
 
@@ -38,7 +38,9 @@ export const applyMonthlyMora = (state: GameState): void => {
 export const updateMonthsTaxOverdue = (state: GameState): void => {
   const idx = toMonthIndex(state.calendar);
   if (overdueTotal(state, idx) > 0) {
-    state.monthsTaxOverdue = (state.monthsTaxOverdue ?? 0) + 1;
+    state.chainBoosts ??= [];
+    state.monthsTaxOverdue =
+      (state.monthsTaxOverdue ?? 0) + moraIncrement(state.chainBoosts, state.monthsPlayed);
   } else {
     state.monthsTaxOverdue = 0;
   }
@@ -184,6 +186,7 @@ export const maybeOpenCartella = (state: GameState): void => {
     id: CARTELLA_EVENT_ID,
     title: "Cartella di pagamento",
     body: `Debito fiscale in riscossione: ${principal.toLocaleString("it-IT")} €. Paga, rateizza (12 mesi +10%) o ignora (pignoramento).`,
+    family: "burocratico",
     options: [
       { id: "pay_all", label: "Paga tutto" },
       { id: "rateize", label: "Rateizza (12 mesi)" },

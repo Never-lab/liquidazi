@@ -5,6 +5,7 @@ import {
   maybeOpenCartella,
   resolveCartellaChoice,
   tickCollectionCase,
+  updateMonthsTaxOverdue,
 } from "./collection";
 import {
   ENFORCEMENT_AGGIO,
@@ -17,6 +18,7 @@ import {
 import { advanceMonth } from "./advanceMonth";
 import { issueCustomerInvoice, payF24 } from "./actions";
 import { createInitialGameState, round2, toMonthIndex } from "./types";
+import { applyChains, chainKeyId } from "./worldEvents";
 
 describe("fiscal mora", () => {
   it("after one-shot penalty, amount grows each further month", () => {
@@ -45,6 +47,29 @@ describe("fiscal mora", () => {
     s = payF24(s);
     s = advanceMonth(s);
     expect(s.monthsTaxOverdue).toBe(0);
+  });
+
+  it("late-pay chain doubles overdue months only if F24 is already late", () => {
+    const s = createInitialGameState();
+    const idx = toMonthIndex(s.calendar);
+    applyChains(
+      s.chainBoosts,
+      { chains: [{ target: chainKeyId("fiscal_cartella"), months: 2, mul: 2 }] },
+      s.monthsPlayed - 1,
+    );
+    updateMonthsTaxOverdue(s);
+    expect(s.monthsTaxOverdue).toBe(0);
+
+    s.liabilities.push({
+      id: 99,
+      kind: "IVA",
+      amount: 100,
+      dueIdx: idx - 1,
+      paid: false,
+      penalized: true,
+    });
+    updateMonthsTaxOverdue(s);
+    expect(s.monthsTaxOverdue).toBe(2);
   });
 });
 

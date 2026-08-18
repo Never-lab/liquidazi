@@ -1,7 +1,17 @@
 import { DIFFICULTIES } from "../config/difficulty";
 import { SECTOR_PROFILES } from "../config/sectorProfile";
+import { CARTELLA_EVENT_ID } from "./collection";
 import { maxDealNet, rng } from "./events";
 import { rivalCampaignCost } from "./rival";
+import {
+  applyChains,
+  chainKeyId,
+  effectiveWeight,
+  pickWeighted,
+  type ChainLink,
+  type EventFamily,
+  type WorldEventMeta,
+} from "./worldEvents";
 import {
   round2,
   toMonthIndex,
@@ -59,6 +69,10 @@ export const coverNegativeCashFromTreasury = (s: GameState): number => {
 type ChoiceDef = {
   kind: "choice";
   id: string;
+  family?: EventFamily;
+  spawn?: "weighted" | "system";
+  weight?: number;
+  chains?: ChainLink[];
   title: string;
   body: string;
   options: {
@@ -67,6 +81,10 @@ type ChoiceDef = {
     apply: (s: GameState) => void;
   }[];
 };
+
+const CHAIN_ROAD: ChainLink[] = [{ target: chainKeyId("shock_road_block"), months: 2, mul: 4 }];
+const CHAIN_DELAY: ChainLink[] = [{ target: chainKeyId("shock_delivery_delay"), months: 2, mul: 4 }];
+const CHAIN_CARTELLA: ChainLink[] = [{ target: chainKeyId("fiscal_cartella"), months: 2, mul: 2 }];
 
 const CHOICE_POOL: ChoiceDef[] = [
   {
@@ -466,6 +484,7 @@ const SHOCK_POOL: ChoiceDef[] = [
   {
     kind: "choice",
     id: "shock_fire",
+    family: "ambientale",
     title: "Incendio in magazzino",
     body: "Un principio d'incendio rovina parte delle scorte. Paghi la messa in sicurezza e perdi copertura. Senza scorte il ripristino urgente costa di più.",
     options: [
@@ -481,6 +500,8 @@ const SHOCK_POOL: ChoiceDef[] = [
   {
     kind: "choice",
     id: "shock_quake",
+    family: "ambientale",
+    chains: CHAIN_ROAD,
     title: "Terremoto — uffici danneggiati",
     body: "La sede ha subito danni strutturali. Il 20% della cassa liquida va alle riparazioni.",
     options: [
@@ -497,6 +518,8 @@ const SHOCK_POOL: ChoiceDef[] = [
   {
     kind: "choice",
     id: "shock_flood",
+    family: "ambientale",
+    chains: CHAIN_ROAD,
     title: "Alluvione / infiltrazione",
     body: "Acqua in deposito e uffici. Scorte danneggiate e costi di ripristino. Senza scorte paghi di più la ricostituzione urgente.",
     options: [
@@ -553,6 +576,7 @@ const SHOCK_POOL: ChoiceDef[] = [
   {
     kind: "choice",
     id: "shock_tax_raid",
+    family: "burocratico",
     title: "Accesso Agenzia delle Entrate",
     body: "Controllo documentale a sorpresa. Accantoni sanzioni soft e la compliance ne risente.",
     options: [
@@ -601,6 +625,7 @@ const SHOCK_POOL: ChoiceDef[] = [
   {
     kind: "choice",
     id: "shock_van_theft",
+    family: "logistico",
     title: "Furto furgone / merce",
     body: "Rubano un carico in transito. Scorte giù e franchigia assicurativa da pagare. A magazzino vuoto la ricostituzione urgente costa di più.",
     options: [
@@ -735,6 +760,7 @@ const SHOCK_POOL: ChoiceDef[] = [
   {
     kind: "choice",
     id: "shock_pa_delay",
+    family: "burocratico",
     title: "Blocco pagamenti PA",
     body: "Un ente slitta tutti i tuoi crediti PA aperti di +2 mesi.",
     options: [
@@ -802,6 +828,7 @@ const SHOCK_POOL: ChoiceDef[] = [
   {
     kind: "choice",
     id: "shock_license",
+    family: "burocratico",
     title: "Sospensione autorizzazione",
     body: "Un ufficio comunale sospende un'autorizzazione finché non paghi e sanisci carte.",
     options: [
@@ -821,6 +848,8 @@ const SHOCK_POOL: ChoiceDef[] = [
   {
     kind: "choice",
     id: "shock_truck",
+    family: "logistico",
+    chains: CHAIN_DELAY,
     title: "Incidente mezzo aziendale",
     body: "Sinistro con fermo mezzo. Scorte in ritardo e riparazione salata. Senza scorte il fermo costa di più.",
     options: [
@@ -836,6 +865,7 @@ const SHOCK_POOL: ChoiceDef[] = [
   {
     kind: "choice",
     id: "shock_heat",
+    family: "ambientale",
     title: "Ondata di caldo / guasto clima",
     body: "Utenze e riparazioni HVAC fuori controllo per settimane.",
     options: [
@@ -908,6 +938,147 @@ const SHOCK_POOL: ChoiceDef[] = [
       },
     ],
   },
+  {
+    kind: "choice",
+    id: "shock_landslide",
+    family: "ambientale",
+    chains: CHAIN_ROAD,
+    title: "Frana in zona",
+    body: "Una frana locale danneggia accessi e scorte. Nei mesi dopo è più facile trovare strade non percorribili.",
+    options: [
+      {
+        id: "ok",
+        label: "Metti in sicurezza (−1 scorta, −550 €+)",
+        apply: (s) => {
+          applySupplyShock(s, { lostMonths: 1, baseFlat: 550, label: "Frana" });
+        },
+      },
+    ],
+  },
+  {
+    kind: "choice",
+    id: "shock_traffic",
+    family: "logistico",
+    chains: CHAIN_DELAY,
+    title: "Traffico eccezionale",
+    body: "Code e divieti fanno slittare i giri. Più probabilità di consegne in ritardo il mese prossimo.",
+    options: [
+      {
+        id: "ok",
+        label: "Straordinari di corsa (−3% cassa)",
+        apply: (s) => {
+          const hit = shockCash(s, 0.03, 280);
+          pushLog(s, "bad", `Traffico: −${hit.toLocaleString("it-IT")} € di straordinari.`);
+        },
+      },
+    ],
+  },
+  {
+    kind: "choice",
+    id: "shock_road_block",
+    family: "logistico",
+    title: "Strada non percorribile",
+    body: "Un tratto è chiuso o interrotto. Le scorte arrivano a singhiozzo.",
+    options: [
+      {
+        id: "ok",
+        label: "Deviazione (−1 scorta, −400 €+)",
+        apply: (s) => {
+          applySupplyShock(s, { lostMonths: 1, baseFlat: 400, label: "Strada chiusa" });
+        },
+      },
+    ],
+  },
+  {
+    kind: "choice",
+    id: "shock_delivery_delay",
+    family: "logistico",
+    title: "Consegna in ritardo",
+    body: "Un carico di forniture slitta. Copertura magazzino più corta.",
+    options: [
+      {
+        id: "ok",
+        label: "Attendi (−1 scorta, −350 €+)",
+        apply: (s) => {
+          applySupplyShock(s, { lostMonths: 1, baseFlat: 350, label: "Consegna in ritardo" });
+        },
+      },
+    ],
+  },
+  {
+    kind: "choice",
+    id: "shock_paperwork",
+    family: "burocratico",
+    title: "Errore nelle pratiche",
+    body: "Una commessa ha carte incomplete. Correggi e paghi bolli; la compliance ne risente.",
+    options: [
+      {
+        id: "ok",
+        label: "Sanisci (−450 €, compliance −6)",
+        apply: (s) => {
+          s.company.cash = round2(s.company.cash - 450);
+          s.ytd.otherCosts = round2(s.ytd.otherCosts + 450);
+          s.compliance = Math.max(0, s.compliance - 6);
+          pushLog(s, "bad", "Pratiche errate: −450 €, compliance −6.");
+        },
+      },
+    ],
+  },
+  {
+    kind: "choice",
+    id: "shock_late_pay",
+    family: "burocratico",
+    chains: CHAIN_CARTELLA,
+    title: "Pagamento in ritardo",
+    body: "Un versamento slitta. Se hai F24 insoluti, i mesi di mora verso la cartella pesano di più.",
+    options: [
+      {
+        id: "ok",
+        label: "Interessi di mora (−220 €)",
+        apply: (s) => {
+          s.company.cash = round2(s.company.cash - 220);
+          s.ytd.otherCosts = round2(s.ytd.otherCosts + 220);
+          pushLog(s, "bad", "Pagamento in ritardo: −220 €.");
+        },
+      },
+    ],
+  },
+  {
+    kind: "choice",
+    id: "shock_audit_hold",
+    family: "burocratico",
+    chains: CHAIN_CARTELLA,
+    title: "Fermo per controlli",
+    body: "Un ufficio blocca una pratica. Se sei già in ritardo fiscale, la cartella si avvicina.",
+    options: [
+      {
+        id: "ok",
+        label: "Rispondi al controllo (−500 €, compliance −8)",
+        apply: (s) => {
+          s.company.cash = round2(s.company.cash - 500);
+          s.ytd.otherCosts = round2(s.ytd.otherCosts + 500);
+          s.compliance = Math.max(0, s.compliance - 8);
+          pushLog(s, "bad", "Fermo controlli: −500 €, compliance −8.");
+        },
+      },
+    ],
+  },
+  {
+    kind: "choice",
+    id: "shock_supplier_late",
+    family: "burocratico",
+    title: "Fornitore in ritardo",
+    body: "Il fornitore non consegna nei termini. Scorte più corte, niente cartella inventata.",
+    options: [
+      {
+        id: "ok",
+        label: "Sollecito (−1 scorta, −420 €+)",
+        apply: (s) => {
+          applySupplyShock(s, { lostMonths: 1, baseFlat: 420, label: "Fornitore in ritardo" });
+        },
+      },
+    ],
+  },
 ];
 
 /** @internal test helper */
@@ -915,6 +1086,33 @@ export const forcedShockCount = (): number => SHOCK_POOL.length;
 
 const findChoiceDef = (id: string): ChoiceDef | undefined =>
   CHOICE_POOL.find((c) => c.id === id) ?? SHOCK_POOL.find((c) => c.id === id);
+
+const toMeta = (d: ChoiceDef): WorldEventMeta | undefined => {
+  if (!d.family) return undefined;
+  return {
+    id: d.id,
+    family: d.family,
+    spawn: d.spawn ?? "weighted",
+    weight: d.weight ?? 1,
+    chains: d.chains ?? [],
+  };
+};
+
+const SYSTEM_EVENTS: WorldEventMeta[] = [
+  {
+    id: CARTELLA_EVENT_ID,
+    family: "burocratico",
+    spawn: "system",
+    weight: 0,
+    chains: [],
+  },
+];
+
+export const worldMetaOf = (id: string): WorldEventMeta | undefined => {
+  const def = findChoiceDef(id);
+  if (def) return toMeta(def);
+  return SYSTEM_EVENTS.find((e) => e.id === id);
+};
 
 /** 0 = lean, 1–3 = increasingly comfortable (more shocks). */
 export const comfortLevel = (state: GameState): number => {
@@ -936,7 +1134,20 @@ const tryQueueShock = (state: GameState, rand: () => number): boolean => {
   const chance = 0.16 + comfort * 0.12; // ~0.28 / 0.40 / 0.52
   if (rand() > chance) return false;
 
-  let def = SHOCK_POOL[Math.floor(rand() * SHOCK_POOL.length)]!;
+  state.chainBoosts ??= [];
+  let def =
+    pickWeighted(
+      SHOCK_POOL,
+      (d) =>
+        effectiveWeight(
+          d.weight ?? 1,
+          state.chainBoosts ?? [],
+          d.id,
+          d.family,
+          state.monthsPlayed,
+        ),
+      rand,
+    ) ?? SHOCK_POOL[0]!;
   if (state.rival && state.rival.heat >= 70 && rand() < 0.35) {
     def = findChoiceDef("shock_rival_raid") ?? def;
   }
@@ -944,6 +1155,8 @@ const tryQueueShock = (state: GameState, rand: () => number): boolean => {
   if (!opt) return false;
   opt.apply(state);
   coverNegativeCashFromTreasury(state);
+  const meta = toMeta(def);
+  if (meta) applyChains(state.chainBoosts, meta, state.monthsPlayed);
   state.lastShockAt = state.monthsPlayed;
   return true;
 };
@@ -952,6 +1165,7 @@ const toPending = (def: ChoiceDef): PendingEvent => ({
   id: def.id,
   title: def.title,
   body: def.body,
+  family: def.family,
   options: def.options.map((o) => ({ id: o.id, label: o.label })),
 });
 
@@ -1124,6 +1338,7 @@ const applyAuto = (state: GameState, rand: () => number): void => {
 export const runWorldEvents = (state: GameState): GameState => {
   const next = structuredClone(state);
   next.pendingEvent ??= null;
+  next.chainBoosts ??= [];
   next.tempCapacityMonths ??= 0;
   next.lastShockAt ??= null;
   next.supplyMonths ??= 0;
@@ -1207,8 +1422,11 @@ export const resolveEventOption = (state: GameState, optionId: string): GameStat
 
   const next = structuredClone(state);
   next.tempCapacityMonths ??= 0;
+  next.chainBoosts ??= [];
   opt.apply(next);
   if (SHOCK_POOL.includes(def)) coverNegativeCashFromTreasury(next);
+  const meta = toMeta(def);
+  if (meta) applyChains(next.chainBoosts, meta, next.monthsPlayed);
   next.pendingEvent = null;
   return next;
 };

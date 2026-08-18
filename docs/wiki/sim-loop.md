@@ -15,7 +15,7 @@ Invoices settle on terms (PA pays late). Accepting work books future cash, not i
 
 ## Shocks
 
-Forced mid/late shocks live in `src/sim/eventCatalog.ts` (`forcedShock*` / `runWorldEvents`). Balance pass: shocks apply in the open-month path; pool is large (`forcedShockCount() ≥ 18`).
+Forced mid/late shocks live in `src/sim/eventCatalog.ts` (`forcedShock*` / `runWorldEvents`). Pool is large (`forcedShockCount() ≥ 18`). Tagged shocks belong to families (ambiente / burocrazia / logistica) with 1–2 month **weight chains** (not a second hit the same close). Cartella is family burocratica but still opens only from overdue F24.
 
 `comfortLevel(state)` rises with **cash** (not treasury parking). Higher comfort increases chance of an immediate shock roll — parking cash in treasury can lower shock pressure by reducing cash comfort.
 
