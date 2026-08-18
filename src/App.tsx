@@ -101,7 +101,7 @@ function App() {
       <DemandPopupHost />
       <AchievementPopupHost />
       <CloudSavePill />
-      {legalPage ? null : <AdsConsentBanner />}
+      <AdsConsentBanner />
       <PlausibleAnalytics />
       <DisclaimerFooter />
     </div>

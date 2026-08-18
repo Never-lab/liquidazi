@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import {
+  COOKIE_BANNER,
   getAdsConsentSnapshot,
   subscribeAdsConsent,
   writeAdsConsent,
@@ -7,7 +8,7 @@ import {
 import { adsenseConfig } from "../ui/adsense";
 import styles from "./AdsConsentBanner.module.css";
 
-/** Minimal first-party CMP: show until user accepts or rejects ads cookies. */
+/** First-party CMP: ads cookies only; necessary storage does not need a choice. */
 export const AdsConsentBanner = () => {
   const consent = useSyncExternalStore(
     subscribeAdsConsent,
@@ -21,12 +22,13 @@ export const AdsConsentBanner = () => {
     <div className={styles.banner} role="dialog" aria-labelledby="ads-consent-title">
       <div className={styles.inner}>
         <p id="ads-consent-title" className={styles.title}>
-          Cookie pubblicitari
+          {COOKIE_BANNER.title}
         </p>
         <p className={styles.text}>
-          Usiamo Google AdSense negli spazi advertiser per coprire i costi di hosting.
-          Nessun annuncio sul tabellone di gioco. Puoi rifiutare: vedrai solo i
-          segnaposto.
+          {COOKIE_BANNER.text}{" "}
+          <a className={styles.privacy} href={COOKIE_BANNER.privacyHref}>
+            {COOKIE_BANNER.privacyLabel}
+          </a>
         </p>
         <div className={styles.actions}>
           <button
@@ -34,14 +36,14 @@ export const AdsConsentBanner = () => {
             className={styles.reject}
             onClick={() => writeAdsConsent("rejected")}
           >
-            Rifiuta
+            {COOKIE_BANNER.reject}
           </button>
           <button
             type="button"
             className={styles.accept}
             onClick={() => writeAdsConsent("accepted")}
           >
-            Accetta
+            {COOKIE_BANNER.accept}
           </button>
         </div>
       </div>

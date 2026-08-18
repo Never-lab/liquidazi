@@ -28,7 +28,7 @@ export const LEGAL_PAGES: Record<LegalPageId, LegalDoc> = {
       },
       {
         heading: "Misurazione e ads",
-        body: "Plausible (se configurato) è senza cookie. Google AdSense carica solo se accetti il banner «Cookie pubblicitari»; se rifiuti vedi i segnaposto. Non vendiamo i tuoi dati.",
+        body: "Plausible (se configurato) è senza cookie. Google AdSense carica solo se accetti il banner «Cookie e storage»; se rifiuti vedi i segnaposto. Puoi cambiare idea dal link Cookie in fondo alla pagina. Non vendiamo i tuoi dati.",
       },
     ],
   },

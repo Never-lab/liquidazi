@@ -44,16 +44,17 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Privacy e termini** (`/privacy`, `/termini`) — in PR [#65](https://github.com/Never-lab/liquidazi/pull/65)
-2. **Timeout sessione** (2h idle / 7g cap) — in PR [#63](https://github.com/Never-lab/liquidazi/pull/63)
-3. **Reputazione a layer** (locale / comunale / nazionale) — in corso
-4. **Brand Floatdesk** — rename UI/SEO + favicon; dominio `floatdesk.app`; in PR
-5. **Railway staging + prod-on-tag** — in PR (autodeploy `main` → staging; tag `v*` → production)
-6. **Competitive bets — B3 share card** — vedi [competitive-bets](docs/superpowers/specs/2026-08-08-competitive-bets-design.md)
-7. **Deep panel icons** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
-8. **Custom domain Railway** — punta `floatdesk.app` al servizio (dopo registrazione DNS).
-9. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
-10. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
+1. **Banner cookie completo** — in corso
+2. **Privacy e termini** (`/privacy`, `/termini`) — in PR [#65](https://github.com/Never-lab/liquidazi/pull/65)
+3. **Timeout sessione** (2h idle / 7g cap) — in PR [#63](https://github.com/Never-lab/liquidazi/pull/63)
+4. **Reputazione a layer** (locale / comunale / nazionale) — in corso
+5. **Brand Floatdesk** — rename UI/SEO + favicon; dominio `floatdesk.app`; in PR
+6. **Railway staging + prod-on-tag** — in PR (autodeploy `main` → staging; tag `v*` → production)
+7. **Competitive bets — B3 share card** — vedi [competitive-bets](docs/superpowers/specs/2026-08-08-competitive-bets-design.md)
+8. **Deep panel icons** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
+9. **Custom domain Railway** — punta `floatdesk.app` al servizio (dopo registrazione DNS).
+10. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
+11. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
 
 ---
 

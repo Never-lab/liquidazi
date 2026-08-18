@@ -1,3 +1,4 @@
+import { clearAdsConsent } from "../ui/adsConsent";
 import styles from "./DisclaimerFooter.module.css";
 
 export const DisclaimerFooter = () => (
@@ -6,6 +7,9 @@ export const DisclaimerFooter = () => (
     <nav className={styles.links} aria-label="Informazioni legali">
       <a href="/privacy">Privacy</a>
       <a href="/termini">Termini</a>
+      <button type="button" className={styles.cookie} onClick={() => clearAdsConsent()}>
+        Cookie
+      </button>
     </nav>
   </footer>
 );
