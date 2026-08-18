@@ -25,7 +25,9 @@ export type IconName =
   | "tax"
   | "home"
   | "check"
-  | "mail";
+  | "mail"
+  | "crate"
+  | "filter";
 
 type Props = {
   name: IconName;
@@ -196,6 +198,15 @@ const Glyph = ({ name }: { name: IconName }) => {
           <path d="M4 7l8 6 8-6" {...pathProps} />
         </>
       );
+    case "crate":
+      return (
+        <>
+          <path d="M4 8h16v12H4V8z" {...pathProps} />
+          <path d="M4 8l8-4 8 4M12 4v16M4 14h16" {...pathProps} />
+        </>
+      );
+    case "filter":
+      return <path d="M4 6h16l-6 7v6l-4-2v-4L4 6z" {...pathProps} />;
     default:
       return null;
   }

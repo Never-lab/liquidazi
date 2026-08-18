@@ -15,6 +15,10 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 ### Changed
 - Obiettivi: toast basso-destra con suono, auto-chiusura; niente popup a schermo intero.
 - Ordine scorte bloccato (toast) se supererebbe il cap magazzino.
+- HUD: posta e obiettivi a icone sotto il banner (niente chip testo); icona scorte placeholder.
+- Commesse: default solo entrate, filtro ciclico entrate/forniture/tutte.
+- Scadenziario sulla scrivania: solo il blocco verde «questa chiusura».
+- Andamento: hover sulla cassa dei mesi precedenti; grafico ricavi e costi.
 
 ### Fixed
 - Seconda run: niente replay popup per trofei già sull’account.

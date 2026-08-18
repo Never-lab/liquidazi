@@ -5,6 +5,7 @@ import { CoachBanner } from "../components/CoachBanner";
 import { EventChoiceBanner } from "../components/EventChoiceBanner";
 import { ProjectOfferBanner } from "../components/ProjectOfferBanner";
 import { NotificationInbox } from "../components/NotificationInbox";
+import { ObjectivesInbox } from "../components/ObjectivesInbox";
 import { HoldingPanel } from "../components/HoldingPanel";
 import { InvestmentsPanel } from "../components/InvestmentsPanel";
 import { LoanPanel } from "../components/LoanPanel";
@@ -20,7 +21,6 @@ import { Sheet } from "../components/ui/Sheet";
 import { formatCash } from "../components/formatCash";
 import { DIFFICULTIES } from "../config/difficulty";
 import { cityById } from "../config/market";
-import { MILESTONE_DEFS, nextObjectives } from "../sim/milestones";
 import { pressureEffectBlurb } from "../sim/pressures";
 import {
   pressureBand,
@@ -87,8 +87,6 @@ export const GameHUD = () => {
     pendingProjectOffer: Boolean(pendingProjectOffer),
   });
   const summary = game.lastCloseSummary;
-  const nextGoals = nextObjectives(game, 3);
-  const doneCount = (game.milestones ?? []).length;
   const diffLabel = DIFFICULTIES[game.difficulty ?? "normal"].label;
   const seasonHint =
     game.calendar.month === 8
@@ -171,7 +169,6 @@ export const GameHUD = () => {
               {formatCash(openTax)}
             </strong>
           </div>
-          <NotificationInbox />
           <div className={styles.closeStack}>
             {closeHint ? (
               <Hint text={closeHint}>
@@ -202,29 +199,22 @@ export const GameHUD = () => {
             )}
           </div>
         </div>
+        <nav className={styles.iconNav} aria-label="Posta, obiettivi e scorte">
+          <NotificationInbox />
+          <ObjectivesInbox />
+          <Hint text="Scorte: schermata in arrivo. Per ora guarda «scorte» nel rigo del mese e le forniture nelle commesse.">
+            <button
+              type="button"
+              className={styles.iconNavBtn}
+              disabled
+              aria-label="Scorte, in arrivo"
+              title="Scorte: in arrivo. Per ora usa il rigo del mese e le commesse."
+            >
+              <Icon name="crate" size={18} />
+            </button>
+          </Hint>
+        </nav>
       </header>
-
-      <div className={styles.goals}>
-        {nextGoals.map((m) => (
-          <span key={m.id} className={styles.goalTodo} title={m.blurb}>
-            ○ {m.label}
-          </span>
-        ))}
-        {nextGoals.length === 0 ? (
-          <span className={styles.goalDone} title="Tutti gli obiettivi run">
-            <Icon name="check" size={12} className={styles.goalCheck} />
-            Run completata ({doneCount}/{MILESTONE_DEFS.length})
-          </span>
-        ) : (
-          <button
-            type="button"
-            className={styles.goalLink}
-            onClick={() => setScreen("objectives")}
-          >
-            Tutti ({doneCount}/{MILESTONE_DEFS.length})
-          </button>
-        )}
-      </div>
 
       <div className={styles.alerts}>
         <CoachBanner />

@@ -275,47 +275,31 @@
   }
 }
 
-.goals {
+.iconNav {
+  grid-column: 1 / -1;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
 }
 
-.goalTodo,
-.goalDone {
+.iconNavBtn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-}
-
-.goalDone {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-  background: var(--color-accent-soft);
-  font-weight: 600;
-}
-
-.goalLink {
-  border: 1px dashed var(--color-border-strong);
-  background: transparent;
-  color: var(--color-accent);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
-  min-height: var(--touch);
 }
 
-.goalCheck {
-  flex-shrink: 0;
+.iconNavBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .alerts {
