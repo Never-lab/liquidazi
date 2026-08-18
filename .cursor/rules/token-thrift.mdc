@@ -1,0 +1,14 @@
+---
+description: Skip redundant orientation when the slice is already approved in-chat
+alwaysApply: true
+---
+
+# Token thrift
+
+When this chat already has an approved design, or the user says «ok», «procedi», «implementa come approvato», «commit», or «PR»:
+
+- Do **not** re-read Superpowers skills, wiki `INDEX.md`, graphify, or claude-mem.
+- Do **not** brainstorm alternatives. Implement, or git/PR if they asked that.
+- Orientation (`CLAUDE.md`, wiki) only if the task is new and ambiguous.
+
+Still apply: Italian player copy, TDD for new logic, one concern per PR, lint/test/build before opening a PR, no commit unless asked.

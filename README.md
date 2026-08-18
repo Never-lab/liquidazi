@@ -103,7 +103,7 @@ Tutte le aliquote vivono in [`src/config/fiscalYearSnapshot.ts`](src/config/fisc
 
 ## Contribuire
 
-PR verso `main`: devono passare CI (`lint` + `test` + `build`). Vedi [AGENTS.md](AGENTS.md).
+PR verso `main`: devono passare CI (`lint` + `test` + `build`). Vedi [CLAUDE.md](CLAUDE.md).
 
 ## Struttura
 

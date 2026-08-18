@@ -1,6 +1,6 @@
 # Floatdesk — agent brief (CLAUDE.md)
 
-Concise rules for agents working in this repo. Cursor also reads [`AGENTS.md`](./AGENTS.md) (keep them in sync).
+Concise rules for agents working in this repo. [`AGENTS.md`](./AGENTS.md) is a stub pointer (Cursor loads it); edit this file only.
 
 ## Product
 
@@ -58,3 +58,5 @@ Do not skip to implementation on ambiguous “make everything clearer / build X�
 
 - Default: work on a feature branch in this checkout (worktrees under `.worktrees/` if isolation is requested).
 - Prefer one clear clarifying question over speculative multi-path implementation when scope is huge (“all UI”, “comment everything”).
+- If the design is already approved in this chat (or the user says «ok / procedi / implementa come approvato»): skip Superpowers brainstorm, wiki INDEX, graphify, and claude-mem search. Implement from this thread.
+- Do not re-read this file, the wiki, or skill docs mid-slice once the task is clear.
