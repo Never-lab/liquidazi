@@ -1,8 +1,13 @@
 /** One-shot company upgrades — educational, not a tech tree. */
 
-export type UpgradeId = "gestionale_f24" | "commerciale" | "sede" | "processi";
+export type UpgradeId =
+  | "gestionale_f24"
+  | "commerciale"
+  | "sede"
+  | "processi"
+  | "scorte";
 
-export type UpgradeLevel = 0 | 1 | 2 | 3;
+export type UpgradeLevel = 0 | 1 | 2 | 3 | 4;
 
 export type UpgradeLevels = Partial<Record<UpgradeId, UpgradeLevel>>;
 
@@ -38,6 +43,12 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     label: "Processi interni",
     blurb: "+1 slot capacità senza assumere; cedolino −5% sul costo lordo didattico.",
     cost: 3000,
+  },
+  scorte: {
+    id: "scorte",
+    label: "Magazzino scorte",
+    blurb: "Capienza scorte 8 mesi (base 6).",
+    cost: 2800,
   },
 };
 
@@ -84,9 +95,20 @@ export const UPGRADE_LEVELS: Record<
       blurb: "+3 slot capacità; cedolino −10% sul costo lordo didattico.",
     },
   ],
+  scorte: [
+    { costMult: 1.0, blurb: UPGRADES.scorte.blurb },
+    { costMult: 1.6, blurb: "Capienza scorte 10 mesi." },
+    { costMult: 2.2, blurb: "Capienza scorte 12 mesi." },
+    { costMult: 2.8, blurb: "Capienza scorte 14 mesi." },
+  ],
 };
 
 export const UPGRADE_LIST = Object.values(UPGRADES);
+
+export const SUPPLY_MONTHS_BASE = 6;
+
+export const upgradeMaxLevel = (id: UpgradeId): UpgradeLevel =>
+  id === "scorte" ? 4 : 3;
 
 export const upgradeLevel = (
   levels: UpgradeLevels | undefined,
@@ -95,8 +117,12 @@ export const upgradeLevel = (
   const raw = levels?.[id] ?? 0;
   const n = Math.trunc(Number(raw));
   if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.min(3, n)) as UpgradeLevel;
+  const max = upgradeMaxLevel(id);
+  return Math.max(0, Math.min(max, n)) as UpgradeLevel;
 };
+
+export const supplyCapMonths = (levels?: UpgradeLevels): number =>
+  SUPPLY_MONTHS_BASE + upgradeLevel(levels, "scorte") * 2;
 
 export const hasUpgrade = (
   levelsOrLegacy: UpgradeLevels | UpgradeId[] | undefined,
@@ -113,6 +139,7 @@ export const nextUpgradeLevel = (
   id: UpgradeId,
 ): UpgradeLevel | null => {
   const current = upgradeLevel(levels, id);
-  if (current >= 3) return null;
+  const max = upgradeMaxLevel(id);
+  if (current >= max) return null;
   return (current + 1) as UpgradeLevel;
 };

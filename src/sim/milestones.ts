@@ -97,6 +97,16 @@ export const nextObjectives = (game: GameState, limit = 3): ObjectiveRow[] => {
     .map((d) => ({ ...d, done: false }));
 };
 
+/** Popup/toast: skip trophies already on the account (new run). */
+export const unseenUnlocks = (
+  unlocked: readonly MilestoneId[],
+  accountOwned: readonly MilestoneId[],
+): MilestoneId[] => {
+  if (accountOwned.length === 0) return [...unlocked];
+  const owned = new Set(accountOwned);
+  return unlocked.filter((id) => !owned.has(id));
+};
+
 export const platinumProgress = (
   unlocked: readonly string[],
 ): { done: number; total: number; pct: number } => {

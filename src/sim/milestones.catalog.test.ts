@@ -5,6 +5,7 @@ import {
   milestoneLabel,
   nextObjectives,
   platinumProgress,
+  unseenUnlocks,
   unlockMilestones,
 } from "./milestones";
 
@@ -29,6 +30,13 @@ describe("milestones catalog v2", () => {
     expect(next).toHaveLength(3);
     expect(next.every((m) => !m.done)).toBe(true);
     expect(next[0]!.id).toBe("first_invoice");
+  });
+
+  it("unseenUnlocks skips account trophies already owned", () => {
+    expect(unseenUnlocks(["first_invoice", "first_close"], ["first_invoice"])).toEqual([
+      "first_close",
+    ]);
+    expect(unseenUnlocks(["first_invoice"], ["first_invoice"])).toEqual([]);
   });
 
   it("unlocks first_invoice when AR exists", () => {

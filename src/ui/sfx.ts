@@ -42,3 +42,10 @@ export const sfxGood = () => {
   tone(440, 0.06, "sine", 0.035);
   setTimeout(() => tone(660, 0.08, "sine", 0.03), 50);
 };
+
+/** Steam-like unlock sting (bottom-right trophy toast). */
+export const sfxTrophy = () => {
+  tone(523, 0.07, "sine", 0.04);
+  setTimeout(() => tone(659, 0.08, "sine", 0.035), 70);
+  setTimeout(() => tone(784, 0.12, "triangle", 0.03), 140);
+};

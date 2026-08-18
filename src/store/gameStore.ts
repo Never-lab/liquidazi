@@ -47,7 +47,7 @@ import { resolveEventOption } from "../sim/eventCatalog";
 import { acceptOpportunity, declineOpportunity, demandPopupForAdvance, seedNewGame, orderEmergencySupply } from "../sim/events";
 import { migrateGameState } from "../sim/migrateGameState";
 import { createTesterGameState } from "../sim/testerSave";
-import { formatCloseToast, unlockMilestones } from "../sim/milestones";
+import { formatCloseToast, unseenUnlocks, unlockMilestones } from "../sim/milestones";
 import type { MilestoneId } from "../sim/types";
 import {
   createInitialGameState,
@@ -238,6 +238,7 @@ export const useGameStore = create<GameStore>()(
           coachOn: saves.coachOn ?? get().coachOn,
           game,
           accountAchievements,
+          achievementQueue: [],
           screen: screenAfterAuth(),
         });
       },
@@ -312,9 +313,11 @@ export const useGameStore = create<GameStore>()(
         set((s) => ({ achievementQueue: s.achievementQueue.slice(1) })),
       noteMilestoneUnlocks: (unlocked) => {
         if (unlocked.length === 0) return;
-        set((s) => ({
-          achievementQueue: [...s.achievementQueue, ...unlocked],
-        }));
+        set((s) => {
+          const fresh = unseenUnlocks(unlocked, s.accountAchievements);
+          if (fresh.length === 0) return s;
+          return { achievementQueue: [...s.achievementQueue, ...fresh] };
+        });
         const token = get().auth?.token;
         if (!token) return;
         void postAchievements(token, unlocked)
@@ -342,7 +345,7 @@ export const useGameStore = create<GameStore>()(
         );
         game = refreshAcquisitionBoard(game);
         const slots = syncSlot(get().slots, get().activeSlot, game);
-        set({ game, slots, screen: "game", coachOn: true });
+        set({ game, slots, screen: "game", coachOn: true, achievementQueue: [] });
         get().flashToast("Nuova azienda aperta", "good");
         sfxGood();
       },

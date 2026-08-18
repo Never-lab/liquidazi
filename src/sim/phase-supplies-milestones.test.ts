@@ -130,4 +130,42 @@ describe("Supplies + milestones", () => {
     expect(s.milestones).toContain("survive_12");
     expect(s.holdingSlotCap).toBeGreaterThanOrEqual(6);
   });
+
+  it("rifiuta fornitura se supera il cap magazzino", () => {
+    let s = createInitialGameState();
+    s.supplyMonths = 6;
+    s.opportunities = [
+      {
+        id: 1,
+        kind: "supply",
+        title: "Fornitura test",
+        net: 400,
+        expiresInMonths: 1,
+        termMonths: 1,
+      },
+    ];
+    s = acceptOpportunity(s, 1);
+    expect(s.supplyMonths).toBe(6);
+    expect(s.opportunities).toHaveLength(1);
+    expect(s.lastUiHint?.text).toMatch(/Magazzino pieno/);
+  });
+
+  it("upgrade scorte lv4 alza il cap a 14 mesi", () => {
+    let s = createInitialGameState();
+    s.upgradeLevels = { scorte: 4 };
+    s.supplyMonths = 12;
+    s.opportunities = [
+      {
+        id: 1,
+        kind: "supply",
+        title: "Fornitura test",
+        net: 1200,
+        expiresInMonths: 1,
+        termMonths: 1,
+      },
+    ];
+    s = acceptOpportunity(s, 1);
+    expect(s.supplyMonths).toBe(14);
+    expect(s.lastUiHint).toBeNull();
+  });
 });

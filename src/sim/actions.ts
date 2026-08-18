@@ -8,6 +8,7 @@ import {
   UPGRADES,
   UPGRADE_LEVELS,
   upgradeLevel,
+  upgradeMaxLevel,
   type UpgradeId,
   type UpgradeLevel,
 } from "../config/upgrades";
@@ -504,8 +505,9 @@ export const upgradeCost = (state: GameState, id: UpgradeId): number => {
   const def = UPGRADES[id];
   const levels = migrateUpgradeState(state);
   const current = upgradeLevel(levels, id);
-  const levelIdx = current >= 3 ? 2 : current;
-  const costMult = UPGRADE_LEVELS[id][levelIdx]!.costMult;
+  const tiers = UPGRADE_LEVELS[id];
+  const levelIdx = Math.min(current, Math.max(0, tiers.length - 1));
+  const costMult = tiers[levelIdx]!.costMult;
   if (id === "sede") {
     const rentBase = sedeRentBase(state.company, current);
     return Math.round(Math.max(def.cost, Math.round(rentBase * 6)) * costMult);
@@ -513,14 +515,14 @@ export const upgradeCost = (state: GameState, id: UpgradeId): number => {
   return Math.round(def.cost * costMult);
 };
 
-/** Level-up company upgrade (Lv1→Lv3). */
+/** Level-up company upgrade. */
 export const buyUpgrade = (state: GameState, id: UpgradeId): GameState => {
   const next = structuredClone(state);
   next.upgradeLevels = migrateUpgradeState(next);
 
   if (!UPGRADES[id]) return next;
   const current = upgradeLevel(next.upgradeLevels, id);
-  if (current >= 3) return next;
+  if (current >= upgradeMaxLevel(id)) return next;
   const cost = upgradeCost(next, id);
   if (next.company.cash < cost) return next;
 

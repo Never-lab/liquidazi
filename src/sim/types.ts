@@ -213,6 +213,8 @@ export interface YearToDate {
   interest: number;
   otherCosts: number;
   capitalGains: number;
+  /** Rendimento tesoreria (interessi attivi), 0 se assenti. */
+  treasuryInterest?: number;
 }
 
 export interface YearReport extends YearToDate {
@@ -339,7 +341,7 @@ export interface GameState {
   /** Storico bilanci (ultimi N anni) per confronto YoY */
   yearReports: YearReport[];
   /** Upgrade aziendali per livello (0 = non acquistato) */
-  upgradeLevels?: Partial<Record<UpgradeId, 0 | 1 | 2 | 3>>;
+  upgradeLevels?: Partial<Record<UpgradeId, 0 | 1 | 2 | 3 | 4>>;
   /** @deprecated legacy saves — migrated to upgradeLevels */
   upgrades?: UpgradeId[];
   /** @deprecated Prefer `loans`; migrate mirrors first open loan. */

@@ -119,4 +119,42 @@ describe("Investimenti + acquisizioni lite", () => {
     s = advanceMonth(s);
     expect(s.treasury).toBeGreaterThan(10000);
   });
+
+  it("interessi tesoreria accumulano in ytd", () => {
+    let s = createInitialGameState();
+    s.quietMode = true;
+    s.company.cash = 5000;
+    s.treasury = 10000;
+    s = advanceMonth(s);
+    expect(s.ytd.treasuryInterest ?? 0).toBeGreaterThan(0);
+  });
+
+  it("bilancio di dicembre include interessi tesoreria nell'utile", () => {
+    const seed = () => {
+      const s = createInitialGameState();
+      s.quietMode = true;
+      s.company.cash = 100000;
+      s.calendar = { month: 12, year: 2024 };
+      s.ytd = {
+        revenue: 5000,
+        purchases: 0,
+        payrollCost: 0,
+        interest: 0,
+        otherCosts: 0,
+        capitalGains: 0,
+      };
+      return s;
+    };
+    let without = seed();
+    without.treasury = 0;
+    without = advanceMonth(without);
+    let withT = seed();
+    withT.treasury = 10000;
+    withT = advanceMonth(withT);
+    const earned = withT.lastYearReport?.treasuryInterest ?? 0;
+    expect(earned).toBeGreaterThan(0);
+    expect(withT.lastYearReport?.profit).toBeCloseTo(
+      (without.lastYearReport?.profit ?? 0) + earned,
+    );
+  });
 });

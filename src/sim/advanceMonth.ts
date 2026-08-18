@@ -252,7 +252,7 @@ export const advanceMonth = (state: GameState): GameState => {
     const interest = round2((next.treasury * treasuryAnnualRate(next.monthsPlayed)) / 12);
     if (interest > 0) {
       next.treasury = round2(next.treasury + interest);
-      // interest stays in treasury — not cash; track on treasury only via log
+      next.ytd.treasuryInterest = round2((next.ytd.treasuryInterest ?? 0) + interest);
       next.log.unshift({
         id: next.nextId++,
         monthIdx: idx,
@@ -457,8 +457,11 @@ export const advanceMonth = (state: GameState): GameState => {
     }
 
     const { revenue, purchases, payrollCost, interest, otherCosts, capitalGains = 0 } = next.ytd;
+    const treasuryInterest = next.ytd.treasuryInterest ?? 0;
     const gainsForIres = Math.max(0, capitalGains);
-    const profit = round2(revenue - purchases - payrollCost - interest - otherCosts + gainsForIres);
+    const profit = round2(
+      revenue - purchases - payrollCost - interest - otherCosts + gainsForIres + treasuryInterest,
+    );
     const irapBase = round2(revenue - purchases);
     const ires = round2(Math.max(0, profit) * snap.ires_rate);
     const irap = round2(Math.max(0, irapBase) * snap.irap_rate);
@@ -479,12 +482,21 @@ export const advanceMonth = (state: GameState): GameState => {
       ires,
       irap,
       staffAnnualOneri: staffOneri,
+      treasuryInterest,
     };
     next.yearReports = [...(next.yearReports ?? []), next.lastYearReport].slice(
       -YEAR_REPORTS_MAX,
     );
     next.priorYearTax = { ires, irap };
-    next.ytd = { revenue: 0, purchases: 0, payrollCost: 0, interest: 0, otherCosts: 0, capitalGains: 0 };
+    next.ytd = {
+      revenue: 0,
+      purchases: 0,
+      payrollCost: 0,
+      interest: 0,
+      otherCosts: 0,
+      capitalGains: 0,
+      treasuryInterest: 0,
+    };
     next.accontiCharged = { ires: 0, irap: 0 };
   }
 

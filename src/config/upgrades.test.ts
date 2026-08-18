@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   hasUpgrade,
-  upgradeLevel,
   nextUpgradeLevel,
+  supplyCapMonths,
+  upgradeLevel,
+  upgradeMaxLevel,
   UPGRADES,
   type UpgradeLevels,
 } from "./upgrades";
@@ -27,6 +29,15 @@ describe("upgrade levels helpers", () => {
     expect(upgradeLevel({ processi: 99 as never }, "processi")).toBe(3);
     expect(upgradeLevel({ processi: -2 as never }, "processi")).toBe(0);
     expect(upgradeLevel({ processi: 2.9 as never }, "processi")).toBe(2);
+  });
+
+  it("scorte: 4 livelli, cap 6→14 mesi", () => {
+    expect(supplyCapMonths(undefined)).toBe(6);
+    expect(upgradeMaxLevel("scorte")).toBe(4);
+    expect(supplyCapMonths({ scorte: 1 })).toBe(8);
+    expect(supplyCapMonths({ scorte: 4 })).toBe(14);
+    expect(nextUpgradeLevel({ scorte: 3 }, "scorte")).toBe(4);
+    expect(nextUpgradeLevel({ scorte: 4 }, "scorte")).toBeNull();
   });
 
   it("upgradeCost applies level multipliers for flat upgrades", () => {
