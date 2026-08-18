@@ -155,6 +155,10 @@
   color: var(--color-text);
 }
 
+a.linkBtn {
+  display: inline;
+}
+
 @keyframes landRise {
   from {
     opacity: 0;

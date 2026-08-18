@@ -20,16 +20,20 @@ import { SetupScreen } from "./screens/SetupScreen";
 import { TrophiesScreen } from "./screens/TrophiesScreen";
 import { TutorialScreen } from "./screens/TutorialScreen";
 import { GuideScreen } from "./screens/GuideScreen";
+import { LegalScreen } from "./screens/LegalScreen";
 import { BRAND_NAME } from "./config/brand";
 import { useGameStore } from "./store/gameStore";
+import { legalPageFromPath } from "./ui/legalPath";
 import { SESSION_EXPIRED_TOAST, isIdleExpired, watchSessionIdle } from "./ui/sessionIdle";
 import styles from "./App.module.css";
 
 function App() {
   const screen = useGameStore((s) => s.screen);
   const auth = useGameStore((s) => s.auth);
+  const legalPage = legalPageFromPath(window.location.pathname);
   const inGame = screen === "game";
   const bareShell =
+    Boolean(legalPage) ||
     screen === "landing" ||
     screen === "menu" ||
     screen === "auth" ||
@@ -70,28 +74,34 @@ function App() {
         </header>
       )}
 
-      <main className={`${styles.main} ${styles.screenIn}`} key={screen}>
-        {screen === "landing" && <LandingScreen />}
-        {screen === "auth" && <AuthScreen />}
-        {screen === "intro" && <IntroScreen />}
-        {screen === "menu" && <MenuScreen />}
-        {screen === "setup" && <SetupScreen />}
-        {screen === "tutorial" && <TutorialScreen />}
-        {screen === "guide" && <GuideScreen />}
-        {screen === "objectives" && <ObjectivesScreen />}
-        {screen === "trophies" && <TrophiesScreen />}
-        {screen === "game" && <GameHUD />}
-        {screen === "gameover" && <EndScreen />}
-        {screen === "leaderboard" && <LeaderboardScreen />}
-        {screen === "saves" && <SavesScreen />}
-        {screen === "feedback" && <FeedbackScreen />}
+      <main className={`${styles.main} ${styles.screenIn}`} key={legalPage ?? screen}>
+        {legalPage ? (
+          <LegalScreen page={legalPage} />
+        ) : (
+          <>
+            {screen === "landing" && <LandingScreen />}
+            {screen === "auth" && <AuthScreen />}
+            {screen === "intro" && <IntroScreen />}
+            {screen === "menu" && <MenuScreen />}
+            {screen === "setup" && <SetupScreen />}
+            {screen === "tutorial" && <TutorialScreen />}
+            {screen === "guide" && <GuideScreen />}
+            {screen === "objectives" && <ObjectivesScreen />}
+            {screen === "trophies" && <TrophiesScreen />}
+            {screen === "game" && <GameHUD />}
+            {screen === "gameover" && <EndScreen />}
+            {screen === "leaderboard" && <LeaderboardScreen />}
+            {screen === "saves" && <SavesScreen />}
+            {screen === "feedback" && <FeedbackScreen />}
+          </>
+        )}
       </main>
 
       <ToastHost />
       <DemandPopupHost />
       <AchievementPopupHost />
       <CloudSavePill />
-      <AdsConsentBanner />
+      {legalPage ? null : <AdsConsentBanner />}
       <PlausibleAnalytics />
       <DisclaimerFooter />
     </div>
