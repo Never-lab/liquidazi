@@ -44,7 +44,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Privacy e termini** (`/privacy`, `/termini`) — in corso
+1. **Privacy e termini** (`/privacy`, `/termini`) — in PR [#65](https://github.com/Never-lab/liquidazi/pull/65)
 2. **Timeout sessione** (2h idle / 7g cap) — in PR [#63](https://github.com/Never-lab/liquidazi/pull/63)
 3. **Reputazione a layer** (locale / comunale / nazionale) — in corso
 4. **Brand Floatdesk** — rename UI/SEO + favicon; dominio `floatdesk.app`; in PR
