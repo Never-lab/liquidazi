@@ -44,11 +44,13 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Competitive bets — B3 share card** — vedi [competitive-bets](docs/superpowers/specs/2026-08-08-competitive-bets-design.md)
-2. **Deep panel icons** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
-3. **Custom domain Railway** — punta `floatdesk.app` al servizio (dopo registrazione DNS).
-4. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
-5. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
+1. **Brand Floatdesk** — rename UI/SEO + favicon; dominio `floatdesk.app`; in PR
+2. **Railway staging + prod-on-tag** — in PR (autodeploy `main` → staging; tag `v*` → production)
+3. **Competitive bets — B3 share card** — vedi [competitive-bets](docs/superpowers/specs/2026-08-08-competitive-bets-design.md)
+4. **Deep panel icons** — iconografia dentro i body dei pannelli (assumi, rate, bilanci).
+5. **Custom domain Railway** — punta `floatdesk.app` al servizio (dopo registrazione DNS).
+6. **Più settori / generatori di domanda** — da post-MVP in [plans/01-mvp.md](plans/01-mvp.md).
+7. **Cleanup pack geo in `docs/`** — `docs/istat-geo.json` / `docs/province-firms.json` non sono runtime; decidere se tenere come export o rimuovere (runtime = `src/config/`).
 
 ---
 

@@ -1,0 +1,41 @@
+# Production Railway: only when a SemVer tag is pushed (v1.0.0, v1.2.3, …).
+# Staging keeps GitHub autodeploy from `main` (see README / docs/wiki/deploy.md).
+name: Deploy production
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    name: railway
+    needs: check
+    runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require production project token
+        run: test -n "$RAILWAY_TOKEN" || { echo "Missing GitHub secret RAILWAY_TOKEN (Railway production project token)."; exit 1; }
+      - name: Deploy to Railway production
+        run: railway up --ci --detach

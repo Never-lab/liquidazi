@@ -34,15 +34,25 @@ npm test
 
 ## Deploy (Railway)
 
-1. Push `main` to GitHub (`Never-lab/liquidazi`).
-2. New Railway project → Deploy from repo (Node **22** via `nixpacks.toml` / `engines`).
-3. Variables: set `LIQUIDAZI_SECRET` to a long random string (required). Optional: `LIQUIDAZI_ADMIN_USERNAMES=tuo_nick` (comma-separated) to unlock the in-game **Controllo** dashboard for those accounts.
-4. **Volume (obbligatorio):** Service → Settings → Volumes → add volume, mount path **`/data`** (mai `/app`: nasconde il codice e rompe il build). Railway espone `RAILWAY_VOLUME_MOUNT_PATH`; l’app scrive lì. Senza volume ogni redeploy azzera utenti, classifica e salvataggi.
-5. After deploy, `GET /api/health` must return `"storage":"volume"`. If the service fails to start with a FATAL about the volume, the mount is missing.
-6. Generate domain → open URL → register → play → reload on another browser: same slots.
-7. **AdSense (opzionale override):** default client/slot sono in codice; puoi sovrascrivere con `VITE_ADSENSE_CLIENT` / `VITE_ADSENSE_SLOT` al build. Kill switch: `VITE_ADS_STUB=0`. Lascia **Auto ads spente** in AdSense: gli annunci escono solo dagli `AdSlot`.
-8. **SEO / analytics:** `PUBLIC_SITE_URL=https://tuo-dominio` (sitemap assoluto). Build client: `VITE_SITE_URL` (canonical/OG), `VITE_PLAUSIBLE_DOMAIN` (attiva script), opz. `VITE_PLAUSIBLE_DASHBOARD_URL` + `VITE_GSC_URL` (link in Controllo). Checklist anche in Controllo → Traffico / SEO.
-9. **Ops:** admin → Menu → Controllo apre `/ops` (bundle separato, `noindex`). API admin invariata (`LIQUIDAZI_ADMIN_USERNAMES`).
+Due ambienti nello **stesso progetto**, stessa build (`railway.toml`: `npm run build` + `npm start`), URL e dati **separati**.
+
+| Ambiente | Quando si aggiorna | Dati |
+|----------|--------------------|------|
+| **staging** | ogni push su `main` (autodeploy GitHub; abilita Wait for CI) | volume `/data` **suo**, secret **suo** |
+| **production** | solo tag SemVer `vX.Y.Z` (workflow [deploy-production.yml](.github/workflows/deploy-production.yml)) | volume e secret **prod** — non copiare i giocatori su staging |
+
+Checklist una tantum (dashboard Railway + GitHub):
+
+1. Duplica l’ambiente attuale in **`staging`**. Lascia **`production`** sul servizio live di oggi.
+2. **Staging:** Source → branch `main`, autodeploy ON, **Wait for CI**. Volume nuovo mount **`/data`** (vuoto, non il volume prod). Generate domain (URL diverso da prod).
+3. **Production:** **disattiva** l’autodeploy da GitHub (altrimenti ogni `main` rideploya anche i giocatori). Volume `/data` esistente invariato.
+4. Variabili **per ambiente** (valori diversi): `LIQUIDAZI_SECRET` (obbligatorio, non il default dev). Optional: `LIQUIDAZI_ADMIN_USERNAMES`. Staging: `PUBLIC_SITE_URL` / `VITE_SITE_URL` = URL staging. Prod: URL pubblico / `floatdesk.app`.
+5. GitHub → Settings → Secrets: `RAILWAY_TOKEN` = **project token dell’ambiente production** (Railway → Project settings → Tokens). Senza questo secret il workflow sul tag fallisce.
+6. Health: `GET /api/health` → `"storage":"volume"` su **entrambi** gli URL.
+7. **AdSense / SEO** restano override di build (`VITE_ADSENSE_*`, `VITE_PLAUSIBLE_*`, `VITE_ADS_STUB=0`). Su staging puoi lasciare ads spente. **Ops:** `/ops` con gli admin di quell’ambiente.
+8. Release: `git tag -a vX.Y.Z` **dopo** il merge su `main`, poi `git push origin vX.Y.Z` → CI + deploy prod.
+
+Node **22** (`nixpacks.toml`). Volume mai su `/app`. Se il volume è già altrove, `DATA_DIR` o `RAILWAY_VOLUME_MOUNT_PATH`.
 
 Se hai già un volume montato altrove (es. `/app/server/data`), va bene: l’app usa `RAILWAY_VOLUME_MOUNT_PATH`. In alternativa imposta `DATA_DIR` al path del mount.
 
