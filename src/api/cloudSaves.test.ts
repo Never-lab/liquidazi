@@ -24,6 +24,7 @@ describe("cloud saves client", () => {
         expect((opts?.headers as Record<string, string>).Authorization).toBe("Bearer tok");
         return {
           ok: true,
+          headers: { get: () => null },
           json: async () => payload,
         };
       }),
@@ -45,7 +46,7 @@ describe("cloud saves client", () => {
       vi.fn(async (_url: string, opts?: RequestInit) => {
         expect(opts?.method).toBe("PUT");
         expect(JSON.parse(String(opts?.body))).toEqual(body);
-        return { ok: true, json: async () => body };
+        return { ok: true, headers: { get: () => null }, json: async () => body };
       }),
     );
     await expect(putSaves("tok", body)).resolves.toEqual(body);

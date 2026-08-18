@@ -22,6 +22,7 @@ import { TutorialScreen } from "./screens/TutorialScreen";
 import { GuideScreen } from "./screens/GuideScreen";
 import { BRAND_NAME } from "./config/brand";
 import { useGameStore } from "./store/gameStore";
+import { SESSION_EXPIRED_TOAST, isIdleExpired, watchSessionIdle } from "./ui/sessionIdle";
 import styles from "./App.module.css";
 
 function App() {
@@ -44,6 +45,21 @@ function App() {
     const next = q.toString();
     window.history.replaceState({}, "", next ? `/?${next}` : "/");
   }, []);
+
+  useEffect(() => {
+    if (!auth) return;
+    const expire = () => {
+      const s = useGameStore.getState();
+      if (!s.auth) return;
+      s.flashToast(SESSION_EXPIRED_TOAST, "bad");
+      s.logout();
+    };
+    if (isIdleExpired()) {
+      expire();
+      return;
+    }
+    return watchSessionIdle(expire);
+  }, [auth]);
 
   return (
     <div className={styles.app}>
