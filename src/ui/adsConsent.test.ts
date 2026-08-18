@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   ADS_CONSENT_KEY,
+  COOKIE_BANNER,
+  clearAdsConsent,
   getAdsConsentSnapshot,
   readAdsConsent,
   resetAdsConsentCache,
@@ -47,5 +49,24 @@ describe("adsConsent", () => {
     const s = memStorage();
     writeAdsConsent("accepted", s);
     expect(getAdsConsentSnapshot()).toBe("accepted");
+  });
+
+  it("clearAdsConsent removes the choice so the banner can show again", () => {
+    const s = memStorage();
+    writeAdsConsent("accepted", s);
+    clearAdsConsent(s);
+    expect(s.getItem(ADS_CONSENT_KEY)).toBe(null);
+    expect(readAdsConsent(s)).toBe(null);
+    expect(getAdsConsentSnapshot()).toBe(null);
+  });
+});
+
+describe("cookie banner copy", () => {
+  it("mentions necessary storage, ads, and Privacy", () => {
+    expect(COOKIE_BANNER.title).toMatch(/cookie/i);
+    expect(COOKIE_BANNER.text).toMatch(/necessar/i);
+    expect(COOKIE_BANNER.text).toMatch(/AdSense/i);
+    expect(COOKIE_BANNER.text).toMatch(/Plausible/i);
+    expect(COOKIE_BANNER.privacyHref).toBe("/privacy");
   });
 });

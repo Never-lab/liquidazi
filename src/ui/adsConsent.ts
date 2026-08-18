@@ -2,7 +2,16 @@ export type AdsConsent = "accepted" | "rejected";
 
 export const ADS_CONSENT_KEY = "liquidazi-ads-consent";
 
-type StorageLike = Pick<Storage, "getItem" | "setItem">;
+export const COOKIE_BANNER = {
+  title: "Cookie e storage",
+  privacyHref: "/privacy",
+  privacyLabel: "Privacy",
+  accept: "Accetta",
+  reject: "Rifiuta",
+  text: "Usiamo storage necessario (salvataggi e sessione) sul tuo dispositivo. Plausible, se attivo, è senza cookie. Google AdSense solo se accetti: niente annunci sul tabellone. Se rifiuti restano i segnaposto.",
+};
+
+type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 const listeners = new Set<() => void>();
 
@@ -42,6 +51,19 @@ export const writeAdsConsent = (
     }
   }
   cached = value;
+  listeners.forEach((l) => l());
+};
+
+export const clearAdsConsent = (storage?: StorageLike): void => {
+  const s = storage ?? storageOrUndef();
+  if (s) {
+    try {
+      s.removeItem(ADS_CONSENT_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+  cached = null;
   listeners.forEach((l) => l());
 };
 
