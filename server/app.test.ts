@@ -783,3 +783,92 @@ describe("security hardening", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 });
+
+describe("event log", () => {
+  const start = async (limit?: number) => {
+    const dir = mkdtempSync(join(tmpdir(), "liquidazi-elog-"));
+    const dist = join(dir, "dist");
+    mkdirSync(join(dist, "assets"), { recursive: true });
+    writeFileSync(join(dist, "index.html"), "<!doctype html><title>game</title>");
+    writeFileSync(join(dist, "assets", "main-abc.js"), "console.log(1)");
+    const handler = createHandler({
+      dataDir: dir,
+      secret: SECRET,
+      distDir: dist,
+      adminUsernames: ["boss"],
+      ...(limit != null ? { eventLogLimit: limit } : {}),
+    });
+    const srv = createServer(handler);
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    if (!addr || typeof addr === "string") throw new Error("no port");
+    const base = `http://127.0.0.1:${addr.port}`;
+    const boss = await fetch(`${base}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "boss", password: "secret12" }),
+    });
+    const token = ((await boss.json()) as { token: string }).token;
+    const readStats = async () => {
+      const res = await fetch(`${base}/api/admin/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return { status: res.status, data: (await res.json()) as Record<string, unknown> };
+    };
+    const stop = () => {
+      srv.close();
+      rmSync(dir, { recursive: true, force: true });
+    };
+    return { base, token, readStats, stop };
+  };
+
+  it("logs pages, APIs and 404s; skips assets, OPTIONS and viewing stats", async () => {
+    const { base, token, readStats, stop } = await start();
+    try {
+      await fetch(`${base}/api/health`);
+      await fetch(`${base}/api/health?x=secret`);
+      await fetch(`${base}/saves`);
+      await fetch(`${base}/assets/main-abc.js`);
+      await fetch(`${base}/api/health`, { method: "OPTIONS" });
+      await fetch(`${base}/api/health`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const out = await readStats();
+      expect(out.status).toBe(200);
+      const recent = out.data.recentEvents as {
+        method: string;
+        path: string;
+        status: number;
+        username: string | null;
+      }[];
+      expect(recent.some((e) => e.path === "/assets/main-abc.js")).toBe(false);
+      expect(recent.some((e) => e.method === "OPTIONS")).toBe(false);
+      expect(recent.some((e) => e.path === "/api/admin/stats")).toBe(false);
+      expect(recent.some((e) => e.path === "/api/health?x=secret")).toBe(false);
+
+      const health = recent.find((e) => e.path === "/api/health" && e.username === "boss");
+      expect(health).toMatchObject({ method: "GET", status: 200, username: "boss" });
+      expect(recent.some((e) => e.path === "/saves" && e.status === 404)).toBe(true);
+      expect(out.data.events24h).toBeGreaterThan(0);
+      expect(out.data.notFound24h).toBeGreaterThan(0);
+    } finally {
+      stop();
+    }
+  });
+
+  it("keeps only the last eventLogLimit rows", async () => {
+    const { base, readStats, stop } = await start(3);
+    try {
+      await fetch(`${base}/api/health`);
+      await fetch(`${base}/api/health`);
+      await fetch(`${base}/api/health`);
+      await fetch(`${base}/api/health`);
+      const out = await readStats();
+      expect(out.data.recentEvents).toHaveLength(3);
+    } finally {
+      stop();
+    }
+  });
+});
+

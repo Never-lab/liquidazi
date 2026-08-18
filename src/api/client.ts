@@ -31,6 +31,19 @@ export type AdminStats = {
   feedbackCount: number;
   recentFeedback: FeedbackEntry[];
   balance: BalanceStats;
+  events24h: number;
+  events7d: number;
+  notFound24h: number;
+  recentEvents: AdminEventRow[];
+};
+
+export type AdminEventRow = {
+  id: string;
+  at: string;
+  method: string;
+  path: string;
+  status: number;
+  username: string | null;
 };
 
 export type BalanceStats = {
