@@ -1,4 +1,5 @@
 import { Button } from "./ui/Button";
+import { FAMILY_LABEL } from "../sim/worldEvents";
 import { useGameStore } from "../store/gameStore";
 import styles from "../screens/GameHUD.module.css";
 
@@ -8,10 +9,12 @@ export const EventChoiceBanner = () => {
 
   if (!pending) return null;
 
+  const kicker = pending.family ? FAMILY_LABEL[pending.family] : "Decisione del mese";
+
   return (
     <div className={styles.eventChoice} role="dialog" aria-labelledby="event-title">
       <div>
-        <p className={styles.eventKicker}>Decisione del mese</p>
+        <p className={styles.eventKicker}>{kicker}</p>
         <h3 id="event-title" className={styles.eventTitle}>
           {pending.title}
         </h3>

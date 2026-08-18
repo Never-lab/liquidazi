@@ -15,6 +15,8 @@ export const migrateGameState = (state: GameState): GameState => {
   next.yearReports ??= next.lastYearReport ? [next.lastYearReport] : [];
   next.tempCapacityMonths ??= 0;
   next.pendingEvent ??= null;
+  next.lastShockAt ??= null;
+  next.chainBoosts ??= [];
   next.collectionCase ??= null;
   next.monthsTaxOverdue ??= 0;
   next.logReadThruId ??= 0;
