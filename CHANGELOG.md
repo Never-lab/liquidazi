@@ -10,6 +10,7 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ### Added
 - Eventi mondo a **famiglie** (ambiente, burocrazia, logistica) con catene di probabilità (es. frana → strada chiusa). Cartella resta solo da F24 insoluti.
+- Popup overlay (come secca/boom) per shock e avvisi mondo auto-applicati; le decisioni restano overlay con pulsanti.
 
 ### Changed
 - Deploy production: `railway up` punta all’ambiente `production` (e opzionale `RAILWAY_SERVICE`).

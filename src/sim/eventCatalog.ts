@@ -1157,6 +1157,12 @@ const tryQueueShock = (state: GameState, rand: () => number): boolean => {
   coverNegativeCashFromTreasury(state);
   const meta = toMeta(def);
   if (meta) applyChains(state.chainBoosts, meta, state.monthsPlayed);
+  state.lastEventPopup = {
+    title: def.title,
+    body: def.body,
+    family: def.family,
+    tone: "bad",
+  };
   state.lastShockAt = state.monthsPlayed;
   return true;
 };
@@ -1277,6 +1283,11 @@ const applyAuto = (state: GameState, rand: () => number): void => {
       "bad",
       `Ispezione / cartella soft: −${fine.toLocaleString("it-IT")} € (compliance ${Math.round(state.compliance)}).`,
     );
+    state.lastEventPopup = {
+      title: "Ispezione",
+      body: `Sanzione soft −${fine.toLocaleString("it-IT")} €. La compliance è scesa.`,
+      tone: "bad",
+    };
     return;
   }
 
@@ -1289,6 +1300,11 @@ const applyAuto = (state: GameState, rand: () => number): void => {
     }
     if (n > 0) {
       pushLog(state, "bad", `Ritardi clienti: ${n} fattura/e slittano di un mese.`);
+      state.lastEventPopup = {
+        title: "Ritardi clienti",
+        body: `${n} fattura/e slittano di un mese.`,
+        tone: "bad",
+      };
       return;
     }
   }
@@ -1298,6 +1314,11 @@ const applyAuto = (state: GameState, rand: () => number): void => {
     state.company.cash = round2(state.company.cash - hit);
     state.ytd.otherCosts = round2(state.ytd.otherCosts + hit);
     pushLog(state, "bad", `Costo imprevisto: −${hit.toLocaleString("it-IT")} €.`);
+    state.lastEventPopup = {
+      title: "Costo imprevisto",
+      body: `Uscita extra −${hit.toLocaleString("it-IT")} €.`,
+      tone: "bad",
+    };
     return;
   }
 
@@ -1321,6 +1342,11 @@ const applyAuto = (state: GameState, rand: () => number): void => {
       "good",
       `Commessa urgente (${isPa ? "PA" : "privato"}) da ${bonus.toLocaleString("it-IT")} € + IVA.`,
     );
+    state.lastEventPopup = {
+      title: "Commessa urgente",
+      body: `${isPa ? "PA" : "Privato"}: ${bonus.toLocaleString("it-IT")} € + IVA sul tabellone.`,
+      tone: "good",
+    };
     return;
   }
 
@@ -1341,6 +1367,7 @@ export const runWorldEvents = (state: GameState): GameState => {
   next.chainBoosts ??= [];
   next.tempCapacityMonths ??= 0;
   next.lastShockAt ??= null;
+  next.lastEventPopup ??= null;
   next.supplyMonths ??= 0;
 
   const rand = rng(toMonthIndex(next.calendar) * 1337 + next.monthsPlayed * 17);
@@ -1400,6 +1427,11 @@ export const runWorldEvents = (state: GameState): GameState => {
       "bad",
       `Imprevisto operativo: −${hit.toLocaleString("it-IT")} € (cassa comoda = più esposti).`,
     );
+    next.lastEventPopup = {
+      title: "Imprevisto operativo",
+      body: `Uscita extra −${hit.toLocaleString("it-IT")} € (cassa comoda = più esposti).`,
+      tone: "bad",
+    };
     return next;
   }
 

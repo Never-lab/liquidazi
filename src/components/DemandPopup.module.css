@@ -10,6 +10,14 @@
   cursor: pointer;
 }
 
+.backdropStatic {
+  cursor: default;
+}
+
+.choiceLayer {
+  z-index: 70;
+}
+
 .card {
   max-width: min(90vw, 360px);
   padding: 20px 22px;
@@ -22,6 +30,14 @@
   pointer-events: none;
 }
 
+.cardInteractive {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
 .secca {
   border-color: var(--color-danger);
   background: var(--color-danger-soft);
@@ -30,6 +46,15 @@
 .boom {
   border-color: var(--color-accent);
   background: var(--color-accent-soft);
+}
+
+.kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
 }
 
 .title {

@@ -17,6 +17,7 @@ export const migrateGameState = (state: GameState): GameState => {
   next.pendingEvent ??= null;
   next.lastShockAt ??= null;
   next.chainBoosts ??= [];
+  next.lastEventPopup ??= null;
   next.collectionCase ??= null;
   next.monthsTaxOverdue ??= 0;
   next.logReadThruId ??= 0;
