@@ -593,7 +593,7 @@ describe("static spa", () => {
     rmSync(staticDist, { recursive: true, force: true });
   });
 
-  it("serves index and js; SPA fallback for client route", async () => {
+  it("serves index and js; unknown paths are HTML 404, privacy is SPA", async () => {
     const idx = await fetch(`${staticBase}/`);
     expect(idx.status).toBe(200);
     expect(await idx.text()).toContain("<title>L</title>");
@@ -602,9 +602,17 @@ describe("static spa", () => {
     expect(js.status).toBe(200);
     expect(await js.text()).toBe("console.log(1)");
 
-    const spa = await fetch(`${staticBase}/saves`);
-    expect(spa.status).toBe(200);
-    expect(await spa.text()).toContain("<title>L</title>");
+    const privacy = await fetch(`${staticBase}/privacy`);
+    expect(privacy.status).toBe(200);
+    expect(privacy.headers.get("content-type")).toContain("text/html");
+    expect(await privacy.text()).toContain("<title>L</title>");
+
+    const missing = await fetch(`${staticBase}/saves`);
+    expect(missing.status).toBe(404);
+    expect(missing.headers.get("content-type")).toContain("text/html");
+    const html = await missing.text();
+    expect(html).toMatch(/non trovata/i);
+    expect(html).toContain("href=\"/\"");
   });
 
   it("returns a JSON 404 for unknown API routes", async () => {
