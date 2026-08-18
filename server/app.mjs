@@ -117,14 +117,23 @@ const safeJoin = (root, reqPath) => {
   return full;
 };
 
-const sendFile = (res, filePath) => {
+const cacheControlForFile = (filePath) => {
+  const posix = filePath.replaceAll("\\", "/");
+  if (posix.endsWith(".html")) return "no-cache";
+  if (posix.includes("/assets/")) return "public, max-age=31536000, immutable";
+  return "public, max-age=3600";
+};
+
+const sendFile = (res, filePath, { head = false } = {}) => {
   const ext = extname(filePath);
   res.writeHead(200, {
     "Content-Type": MIME[ext] || "application/octet-stream",
+    "Cache-Control": cacheControlForFile(filePath),
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "X-Frame-Options": "DENY",
   });
+  if (head) return res.end();
   createReadStream(filePath).pipe(res);
 };
 
@@ -770,11 +779,7 @@ export function createHandler({
           const opsPath = join(distDir, "ops.html");
           try {
             if (statSync(opsPath).isFile()) {
-              if (req.method === "HEAD") {
-                res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-                return res.end();
-              }
-              return sendFile(res, opsPath);
+              return sendFile(res, opsPath, { head: req.method === "HEAD" });
             }
           } catch {
             /* fall through */
@@ -785,12 +790,7 @@ export function createHandler({
           try {
             const st = statSync(p);
             if (st.isFile()) {
-              if (req.method === "HEAD") {
-                res.writeHead(200, { "Content-Type": MIME[extname(p)] || "application/octet-stream" });
-                res.end();
-                return true;
-              }
-              sendFile(res, p);
+              sendFile(res, p, { head: req.method === "HEAD" });
               return true;
             }
           } catch {

@@ -52,6 +52,41 @@ describe("ops html", () => {
       srv.close();
     }
   });
+
+  it("sets long cache on hashed assets and no-cache on html", async () => {
+    const dist = join(dataDir, "dist-cache");
+    mkdirSync(join(dist, "assets"), { recursive: true });
+    writeFileSync(join(dist, "index.html"), "<!doctype html><title>game</title>");
+    writeFileSync(join(dist, "ops.html"), "<!doctype html><title>ops</title>");
+    writeFileSync(join(dist, "favicon.svg"), "<svg xmlns='http://www.w3.org/2000/svg'></svg>");
+    writeFileSync(join(dist, "assets", "main-abc123.js"), "console.log(1)");
+
+    const handler = createHandler({ dataDir, secret: SECRET, distDir: dist });
+    const srv = createServer(handler);
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    if (!addr || typeof addr === "string") throw new Error("no port");
+    const url = `http://127.0.0.1:${addr.port}`;
+    try {
+      const asset = await fetch(`${url}/assets/main-abc123.js`);
+      expect(asset.status).toBe(200);
+      expect(asset.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+
+      const html = await fetch(`${url}/`);
+      expect(html.status).toBe(200);
+      expect(html.headers.get("cache-control")).toBe("no-cache");
+
+      const ops = await fetch(`${url}/ops`);
+      expect(ops.status).toBe(200);
+      expect(ops.headers.get("cache-control")).toBe("no-cache");
+
+      const icon = await fetch(`${url}/favicon.svg`);
+      expect(icon.status).toBe(200);
+      expect(icon.headers.get("cache-control")).toBe("public, max-age=3600");
+    } finally {
+      srv.close();
+    }
+  });
 });
 
 describe("SEO endpoints", () => {
