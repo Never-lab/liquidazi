@@ -44,7 +44,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 
 Una sola lista. Aggiornare qui quando si apre o chiude uno slice.
 
-1. **Log eventi su Controllo** — branch `feat/ops-event-log`
+1. **Log eventi su Controllo** — in PR [#68](https://github.com/Never-lab/liquidazi/pull/68)
 2. **Pagina 404 HTML** — in PR [#67](https://github.com/Never-lab/liquidazi/pull/67)
 2. **Banner cookie completo** — in PR [#66](https://github.com/Never-lab/liquidazi/pull/66)
 3. **Privacy e termini** (`/privacy`, `/termini`) — in PR [#65](https://github.com/Never-lab/liquidazi/pull/65)
