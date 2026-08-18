@@ -8,6 +8,9 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+### Changed
+- Deploy production: `railway up` punta all’ambiente `production` (e opzionale `RAILWAY_SERVICE`).
+
 ## [1.0.1] — 2026-08-18
 
 Patch playtest dopo il freeze 1.0.0: fix piccoli e rivisitazioni HUD/scrivania. Primo tag GitHub SemVer dopo `v0.1.0-mvp`.

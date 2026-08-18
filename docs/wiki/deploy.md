@@ -21,7 +21,7 @@ Two environments, same Nixpacks build. Details and dashboard checklist: root [`R
 
 Each env: own volume `/data`, own `LIQUIDAZI_SECRET`, own public URL. Do not clone prod player data onto staging.
 
-Health: `GET /api/health` → `"storage":"volume"`. GitHub secret `RAILWAY_TOKEN` = Railway **production** project token.
+Health: `GET /api/health` → `"storage":"volume"`. GitHub secret `RAILWAY_TOKEN` = Railway **production** project token. Il workflow fa `railway up --environment production`; se restano più servizi, variabile repo `RAILWAY_SERVICE`.
 
 Auth: password min **8** chars; in-memory rate limits on register/login (20 / 15 min per IP) and feedback (8 / hour per IP). Self-reported runs clamp money stats and reject forged early `won` (&lt; 24 mesi).
 
