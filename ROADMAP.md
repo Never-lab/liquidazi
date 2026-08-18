@@ -38,6 +38,7 @@ Indice unico di stato e coda. I piani/spec restano dove sono; qui si dice cosa �
 | Compliance recovery + multi-mutuo credito | [plan](docs/superpowers/plans/2026-08-08-compliance-credito.md) | [spec](docs/superpowers/specs/2026-08-08-compliance-credito-design.md) |
 | Investimenti UX + light balance | — | [spec](docs/superpowers/specs/2026-08-08-investimenti-ux-design.md) |
 | Ops Controllo `/ops` | — | [PR #50](https://github.com/Never-lab/liquidazi/pull/50) |
+| Brand Floatdesk | rename UI/SEO + favicon | [PR #52](https://github.com/Never-lab/liquidazi/pull/52) · release [1.0.0](CHANGELOG.md) |
 
 ## Next (coda attiva)
 

@@ -32,6 +32,12 @@ Brainstorm → approved design in **claude-mem** (not `docs/superpowers/specs|pl
 - `.superpowers/sdd/*`, local session reports/diffs
 - Secrets / `.env`
 
+## Release
+
+- Update [`CHANGELOG.md`](CHANGELOG.md) + `package.json` version before tagging `vX.Y.Z`.
+- Wiki = how the sim works; changelog = what changed in the release.
+- Tag on `main` after the PR merge (SemVer, `vX.Y.Z`).
+
 ## ROADMAP
 
 - **Done** only after merge to `main` (use **Next** or `in PR #N` while open).

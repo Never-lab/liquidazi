@@ -1,0 +1,38 @@
+# Changelog
+
+Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
+
+- Questo file: **cosa è cambiato** tra una release e l’altra (obbligo a ogni tag).
+- Wiki (`docs/wiki/`): **come si gioca / come funziona** il sim.
+- `ROADMAP.md`: coda di lavoro, non storico di release.
+
+## [Unreleased]
+
+## [1.0.0] — 2026-08-18
+
+Prima release pubblica del brand **Floatdesk** (repo GitHub `Never-lab/liquidazi`). Tag precedente: `v0.1.0-mvp`. `package.json` passa da `0.0.0` a `1.0.0`.
+
+Sim educativo di SRL semplificata (cassa, IVA, F24, personale, prestiti). Non è consulenza fiscale.
+
+### Added
+
+- Loop mensile: fatture, scorte, staff, F24, IRES/IRAP, mutuo/fido, tesoreria.
+- Mercato ISTAT + stock imprese provinciale; tabellone secca/boom; pressione rivale.
+- Holding / acquisizioni; progetti annuali; upgrade a livelli; oneri annuali personale.
+- Riscossione didattica (cartella, rateazione, pignoramento); posta in-game al posto del vecchio feed.
+- Obiettivi/trofei account, classifiche, 3 slot salvataggio, Controllo admin su `/ops`.
+- Landing/SEO, AdSense opt-in, brand Floatdesk (`floatdesk.app`).
+- Deploy Railway con volume persistente.
+
+### Changed
+
+- Shock di cassa a inizio mese (niente parcheggio tesoreria per evitarli).
+- Scorte: emergenza in % cassa; contratti con magazzino più redditizi; shock senza stock più cari.
+- Reputazione: slot e domanda scalano oltre la soglia 80.
+
+### Fixed
+
+- Hardening runtime (rate limit, clamp sulle run) e UX F24/collection.
+
+[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Never-lab/liquidazi/releases/tag/v1.0.0
