@@ -6,6 +6,7 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
 
 concurrency:
   group: deploy-production
@@ -38,4 +39,12 @@ jobs:
       - name: Require production project token
         run: test -n "$RAILWAY_TOKEN" || { echo "Missing GitHub secret RAILWAY_TOKEN (Railway production project token)."; exit 1; }
       - name: Deploy to Railway production
-        run: railway up --ci --detach
+        env:
+          RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
+        run: |
+          set -eu
+          extra=""
+          if [ -n "${RAILWAY_SERVICE:-}" ]; then
+            extra="--service $RAILWAY_SERVICE"
+          fi
+          railway up --ci --detach --environment production $extra
