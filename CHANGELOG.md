@@ -8,6 +8,10 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-08-18
+
+Patch playtest dopo il freeze 1.0.0: fix piccoli e rivisitazioni HUD/scrivania. Primo tag GitHub SemVer dopo `v0.1.0-mvp`.
+
 ### Added
 - Upgrade **Magazzino scorte** (4 livelli, cap 8/10/12/14 mesi; base 6).
 - Bilancio: riga **Interessi tesoreria** (attivi; i passivi restano mutuo/fido).
@@ -49,5 +53,6 @@ Sim educativo di SRL semplificata (cassa, IVA, F24, personale, prestiti). Non è
 
 - Hardening runtime (rate limit, clamp sulle run) e UX F24/collection.
 
-[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/Never-lab/liquidazi/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Never-lab/liquidazi/releases/tag/v1.0.0
