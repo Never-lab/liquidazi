@@ -2,7 +2,7 @@
  * Floatdesk API — auth + leaderboard runs + cloud saves.
  * Zero deps: node:http, crypto, fs.
  */
-import { randomBytes, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import {
   mkdirSync,
   readFileSync,
@@ -18,6 +18,11 @@ import { computeBalance } from "./balance.mjs";
 import { clientIp, createRateLimiter } from "./rateLimit.mjs";
 import { extractRunFromGame, syncRunsFromSaves, upsertRun } from "./runSync.mjs";
 import { robotsTxt, siteOrigin, sitemapXml } from "./seo.mjs";
+import {
+  makeSessionToken,
+  readSessionToken,
+  refreshSessionToken,
+} from "./sessionToken.mjs";
 
 const MAX_SAVE_BYTES = 1_000_000;
 const MAX_BODY_BYTES = 64_000;
@@ -220,29 +225,14 @@ export function createHandler({
     return h.length === expected.length && timingSafeEqual(h, expected);
   };
 
-  const makeToken = (userId) => {
-    const exp = Date.now() + 30 * 24 * 60 * 60 * 1000;
-    const body = `${userId}.${exp}`;
-    const sig = createHmac("sha256", secret).update(body).digest("hex");
-    return `${body}.${sig}`;
-  };
-
-  const parseToken = (header) => {
+  const authorize = (req) => {
+    const header = req.headers.authorization;
     if (!header?.startsWith("Bearer ")) return null;
-    const token = header.slice(7);
-    const [userId, expStr, sig] = token.split(".");
-    if (!userId || !expStr || !sig || !/^[0-9a-f]+$/i.test(sig)) return null;
-    const body = `${userId}.${expStr}`;
-    const expect = createHmac("sha256", secret).update(body).digest("hex");
-    try {
-      const a = Buffer.from(sig, "hex");
-      const b = Buffer.from(expect, "hex");
-      if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
-    } catch {
-      return null;
-    }
-    if (Date.now() > Number(expStr)) return null;
-    return users.find((u) => u.id === userId) ?? null;
+    const session = readSessionToken(header.slice(7), secret);
+    if (!session) return null;
+    const user = users.find((u) => u.id === session.userId) ?? null;
+    if (!user) return null;
+    return { user, session };
   };
 
   const SECURITY_HEADERS = {
@@ -257,10 +247,19 @@ export function createHandler({
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Expose-Headers": "X-Session-Token",
       ...SECURITY_HEADERS,
       ...extraHeaders,
     });
     res.end(JSON.stringify(data));
+  };
+
+  const jsonAuthed = (res, status, data, session, extraHeaders = {}) => {
+    const token = refreshSessionToken(session, secret);
+    return json(res, status, data, {
+      ...(token ? { "X-Session-Token": token } : {}),
+      ...extraHeaders,
+    });
   };
 
   const readBodyLimited = (req, maxBytes) =>
@@ -348,7 +347,7 @@ export function createHandler({
         users.push(user);
         save("users.json", users);
         return json(res, 201, {
-          token: makeToken(user.id),
+          token: makeSessionToken(user.id, secret),
           username: user.username,
           admin: isAdmin(user),
         });
@@ -382,25 +381,27 @@ export function createHandler({
           return json(res, 401, { error: "Credenziali non valide" });
         }
         return json(res, 200, {
-          token: makeToken(user.id),
+          token: makeSessionToken(user.id, secret),
           username: user.username,
           admin: isAdmin(user),
         });
       }
 
       if (req.method === "GET" && path === "/api/auth/me") {
-        const user = parseToken(req.headers.authorization);
-        if (!user) return json(res, 401, { error: "Non autenticato" });
-        return json(res, 200, {
+        const authz = authorize(req);
+        if (!authz) return json(res, 401, { error: "Non autenticato" });
+        const { user, session } = authz;
+        return jsonAuthed(res, 200, {
           username: user.username,
           admin: isAdmin(user),
           achievements: Array.isArray(user.achievements) ? user.achievements : [],
-        });
+        }, session);
       }
 
       if (req.method === "POST" && path === "/api/auth/achievements") {
-        const user = parseToken(req.headers.authorization);
-        if (!user) return json(res, 401, { error: "Non autenticato" });
+        const authz = authorize(req);
+        if (!authz) return json(res, 401, { error: "Non autenticato" });
+        const { user, session } = authz;
         let body;
         try {
           body = await readBodyLimited(req, MAX_BODY_BYTES);
@@ -419,13 +420,14 @@ export function createHandler({
         const idx = users.findIndex((u) => u.id === user.id);
         if (idx >= 0) users[idx] = user;
         save("users.json", users);
-        return json(res, 200, { achievements: merged });
+        return jsonAuthed(res, 200, { achievements: merged }, session);
       }
 
       if (req.method === "GET" && path === "/api/admin/stats") {
-        const user = parseToken(req.headers.authorization);
-        if (!user) return json(res, 401, { error: "Non autenticato" });
-        if (!isAdmin(user)) return json(res, 403, { error: "Solo admin" });
+        const authz = authorize(req);
+        if (!authz) return json(res, 401, { error: "Non autenticato" });
+        const { user, session } = authz;
+        if (!isAdmin(user)) return jsonAuthed(res, 403, { error: "Solo admin" }, session);
 
         const now = Date.now();
         const dayMs = 86_400_000;
@@ -478,7 +480,7 @@ export function createHandler({
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
           .slice(0, 10);
 
-        return json(res, 200, {
+        return jsonAuthed(res, 200, {
           users: users.length,
           runs: runs.length,
           runs24h,
@@ -492,13 +494,14 @@ export function createHandler({
           feedbackCount: feedback.length,
           recentFeedback,
           balance: computeBalance(runs),
-        });
+        }, session);
       }
 
       if (req.method === "DELETE" && path.startsWith("/api/admin/runs/")) {
-        const user = parseToken(req.headers.authorization);
-        if (!user) return json(res, 401, { error: "Non autenticato" });
-        if (!isAdmin(user)) return json(res, 403, { error: "Solo admin" });
+        const authz = authorize(req);
+        if (!authz) return json(res, 401, { error: "Non autenticato" });
+        const { user, session } = authz;
+        if (!isAdmin(user)) return jsonAuthed(res, 403, { error: "Solo admin" }, session);
         const runId = decodeURIComponent(path.slice("/api/admin/runs/".length)).trim();
         if (!runId || runId.includes("/")) {
           return json(res, 400, { error: "id run non valido" });
@@ -509,7 +512,7 @@ export function createHandler({
           return json(res, 404, { error: "Run non trovata" });
         }
         save("runs.json", runs);
-        return json(res, 200, { ok: true, id: runId, runs: runs.length });
+        return jsonAuthed(res, 200, { ok: true, id: runId, runs: runs.length }, session);
       }
 
       if (req.method === "POST" && path === "/api/feedback") {
@@ -523,7 +526,9 @@ export function createHandler({
             { "Retry-After": String(rl.retryAfterSec) },
           );
         }
-        const user = parseToken(req.headers.authorization);
+        const authz = req.headers.authorization ? authorize(req) : null;
+        const user = authz?.user ?? null;
+        const session = authz?.session ?? null;
         let body;
         try {
           body = await readBodyLimited(req, MAX_BODY_BYTES);
@@ -559,18 +564,21 @@ export function createHandler({
           feedback = feedback.slice(-MAX_FEEDBACK);
         }
         save("feedback.json", feedback);
+        if (session) return jsonAuthed(res, 201, { id: entry.id }, session);
         return json(res, 201, { id: entry.id });
       }
 
       if (req.method === "GET" && path === "/api/saves") {
-        const user = parseToken(req.headers.authorization);
-        if (!user) return json(res, 401, { error: "Non autenticato" });
-        return json(res, 200, loadUserSaves(user.id));
+        const authz = authorize(req);
+        if (!authz) return json(res, 401, { error: "Non autenticato" });
+        const { user, session } = authz;
+        return jsonAuthed(res, 200, loadUserSaves(user.id), session);
       }
 
       if (req.method === "PUT" && path === "/api/saves") {
-        const user = parseToken(req.headers.authorization);
-        if (!user) return json(res, 401, { error: "Non autenticato" });
+        const authz = authorize(req);
+        if (!authz) return json(res, 401, { error: "Non autenticato" });
+        const { user, session } = authz;
         let body;
         try {
           body = await readBodyLimited(req, MAX_SAVE_BYTES);
@@ -606,24 +614,26 @@ export function createHandler({
           if (result.upserted) changed = true;
         }
         if (changed) save("runs.json", runs);
-        return json(res, 200, payload);
+        return jsonAuthed(res, 200, payload, session);
       }
 
       if (req.method === "POST" && path === "/api/admin/resync-runs") {
-        const user = parseToken(req.headers.authorization);
-        if (!user) return json(res, 401, { error: "Non autenticato" });
-        if (!isAdmin(user)) return json(res, 403, { error: "Solo admin" });
+        const authz = authorize(req);
+        if (!authz) return json(res, 401, { error: "Non autenticato" });
+        const { user, session } = authz;
+        if (!isAdmin(user)) return jsonAuthed(res, 403, { error: "Solo admin" }, session);
         const result = realignRunsFromSaves();
-        return json(res, 200, {
+        return jsonAuthed(res, 200, {
           synced: result.synced,
           touchedUsers: result.touchedUsers,
           runs: runs.length,
-        });
+        }, session);
       }
 
       if (req.method === "POST" && path === "/api/runs") {
-        const user = parseToken(req.headers.authorization);
-        if (!user) return json(res, 401, { error: "Login richiesto" });
+        const authz = authorize(req);
+        if (!authz) return json(res, 401, { error: "Login richiesto" });
+        const { user, session } = authz;
         let body;
         try {
           body = await readBodyLimited(req, MAX_BODY_BYTES);
@@ -685,7 +695,7 @@ export function createHandler({
         const result = upsertRun(runs, candidate, newRunId);
         runs = result.runs;
         save("runs.json", runs);
-        return json(res, result.upserted ? 201 : 200, { id: result.id, upserted: result.upserted });
+        return jsonAuthed(res, result.upserted ? 201 : 200, { id: result.id, upserted: result.upserted }, session);
       }
 
       if (req.method === "GET" && path === "/api/leaderboard") {

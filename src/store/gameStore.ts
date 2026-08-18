@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
   ApiError,
+  bindSessionToken,
   fetchMe,
   fetchSaves,
   login as apiLogin,
@@ -65,6 +66,12 @@ import { sfxBad, sfxGood, sfxMonthClose, sfxPay } from "../ui/sfx";
 import { formatCash } from "../components/formatCash";
 import { coerceScreenIfSignedOut, SIGNED_OUT_DOOR } from "../ui/entryScreen";
 import { markIntroSeen, screenAfterAuth } from "../ui/introGate";
+import {
+  SESSION_EXPIRED_TOAST,
+  clearActivity,
+  isIdleExpired,
+  recordActivity,
+} from "../ui/sessionIdle";
 import {
   FIRST_WIN_TOAST_AR,
   FIRST_WIN_TOAST_DONE,
@@ -210,6 +217,7 @@ export const useGameStore = create<GameStore>()(
       setScreen: (screen) => set({ screen }),
       login: async (username, password) => {
         const session = await apiLogin(username, password);
+        recordActivity();
         const saves = await fetchSaves(session.token);
         const slots = saves.slots as SaveSlot[];
         let activeSlot = saves.activeSlot ?? 0;
@@ -249,6 +257,7 @@ export const useGameStore = create<GameStore>()(
       },
       register: async (username, password) => {
         const session = await apiRegister(username, password);
+        recordActivity();
         const localSaves = {
           slots: get().slots,
           activeSlot: get().activeSlot,
@@ -287,6 +296,7 @@ export const useGameStore = create<GameStore>()(
         set({ screen: "setup" });
       },
       logout: () => {
+        clearActivity();
         void (async () => {
           try {
             await cloudQueue.flush({ force: true });
@@ -329,7 +339,7 @@ export const useGameStore = create<GameStore>()(
         void postAchievements(token, unlocked)
           .then((res) => {
             const current = get();
-            if (current.auth?.token !== token) return;
+            if (!current.auth) return;
             set({
               accountAchievements: res.achievements as MilestoneId[],
             });
@@ -841,11 +851,17 @@ export const useGameStore = create<GameStore>()(
           ) as Screen;
         }
         if (!state?.auth) return;
+        if (isIdleExpired()) {
+          state.flashToast(SESSION_EXPIRED_TOAST, "bad");
+          state.logout();
+          return;
+        }
+        recordActivity();
         const { token } = state.auth;
         void fetchMe(token)
           .then((me) => {
             const current = useGameStore.getState();
-            if (current.auth?.token !== token) return;
+            if (!current.auth) return;
             useGameStore.setState({
               auth: {
                 ...current.auth,
@@ -857,15 +873,16 @@ export const useGameStore = create<GameStore>()(
           })
           .catch((error: unknown) => {
             const current = useGameStore.getState();
-            if (current.auth?.token !== token) return;
+            if (!current.auth) return;
             if (error instanceof ApiError && error.status === 401) {
+              current.flashToast(SESSION_EXPIRED_TOAST, "bad");
               current.logout();
             }
           });
         void fetchSaves(token)
           .then((saves) => {
             const current = useGameStore.getState();
-            if (current.auth?.token !== token) return;
+            if (!current.auth) return;
             const slots = saves.slots as SaveSlot[];
             const activeSlot = saves.activeSlot ?? 0;
             const active = slots[activeSlot] ?? slots[0];
@@ -881,8 +898,9 @@ export const useGameStore = create<GameStore>()(
           })
           .catch((error: unknown) => {
             const current = useGameStore.getState();
-            if (current.auth?.token !== token) return;
+            if (!current.auth) return;
             if (error instanceof ApiError && error.status === 401) {
+              current.flashToast(SESSION_EXPIRED_TOAST, "bad");
               current.logout();
               return;
             }
@@ -892,6 +910,12 @@ export const useGameStore = create<GameStore>()(
     },
   ),
 );
+
+bindSessionToken((token) => {
+  const { auth } = useGameStore.getState();
+  if (!auth || auth.token === token) return;
+  useGameStore.setState({ auth: { ...auth, token } });
+});
 
 const cloudQueue = createCloudSaveQueue({
   put: putSaves,

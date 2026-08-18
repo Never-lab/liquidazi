@@ -1,3 +1,5 @@
+import { writePersistedAuthToken } from "../ops/readPersistedAuth";
+import { recordActivity } from "../ui/sessionIdle";
 import type { DifficultyId } from "../config/difficulty";
 
 export type AuthSession = {
@@ -118,6 +120,21 @@ export class ApiError extends Error {
   }
 }
 
+const tokenListeners = new Set<(token: string) => void>();
+
+export const bindSessionToken = (fn: (token: string) => void): (() => void) => {
+  tokenListeners.add(fn);
+  return () => {
+    tokenListeners.delete(fn);
+  };
+};
+
+const applyRefreshedToken = (token: string) => {
+  writePersistedAuthToken(token);
+  recordActivity();
+  for (const fn of tokenListeners) fn(token);
+};
+
 const api = async <T>(
   path: string,
   opts: RequestInit & { token?: string } = {},
@@ -128,6 +145,9 @@ const api = async <T>(
   };
   if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
   const res = await fetch(path, { ...opts, headers });
+  const refreshed = res.headers?.get("X-Session-Token");
+  if (res.ok && refreshed) applyRefreshedToken(refreshed);
+  else if (res.ok && opts.token) recordActivity();
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok) throw new ApiError(data.error || `Errore ${res.status}`, res.status);
   return data;

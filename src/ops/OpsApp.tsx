@@ -1,19 +1,42 @@
 import { useEffect, useState } from "react";
-import { fetchMe, type AuthSession } from "../api/client";
+import { bindSessionToken, fetchMe, type AuthSession } from "../api/client";
 import styles from "../screens/MenuScreen.module.css";
 import { OpsDashboard } from "./OpsDashboard";
 import { readPersistedAuth } from "./readPersistedAuth";
+import {
+  SESSION_EXPIRED_TOAST,
+  clearActivity,
+  isIdleExpired,
+  recordActivity,
+  watchSessionIdle,
+} from "../ui/sessionIdle";
 
 export const OpsApp = () => {
-  const [auth, setAuth] = useState<AuthSession | null>(() => readPersistedAuth());
+  const [auth, setAuth] = useState<AuthSession | null>(() => {
+    const persisted = readPersistedAuth();
+    if (!persisted) return null;
+    return isIdleExpired() ? null : persisted;
+  });
   const [checking, setChecking] = useState(Boolean(auth?.token));
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    return bindSessionToken((token) => {
+      setAuth((prev) => (prev ? { ...prev, token } : prev));
+    });
+  }, []);
 
   useEffect(() => {
     const session = readPersistedAuth();
     if (!session?.token) {
       setAuth(null);
       setChecking(false);
+      return;
+    }
+    if (isIdleExpired()) {
+      setAuth(null);
+      setChecking(false);
+      setError(SESSION_EXPIRED_TOAST);
       return;
     }
     setChecking(true);
@@ -24,11 +47,12 @@ export const OpsApp = () => {
           setError("Solo admin");
           return;
         }
-        setAuth({
-          token: session.token,
+        recordActivity();
+        setAuth((prev) => ({
+          token: prev?.token ?? session.token,
           username: me.username,
           admin: true,
-        });
+        }));
         setError("");
       })
       .catch(() => {
@@ -37,6 +61,15 @@ export const OpsApp = () => {
       })
       .finally(() => setChecking(false));
   }, []);
+
+  useEffect(() => {
+    if (!auth?.admin) return;
+    return watchSessionIdle(() => {
+      clearActivity();
+      setAuth(null);
+      setError(SESSION_EXPIRED_TOAST);
+    });
+  }, [auth]);
 
   if (checking) {
     return (

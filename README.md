@@ -78,7 +78,7 @@ Crea un account (username + password), gioca, al KO la run va in classifica.
 
 Dati in `server/data/` (gitignored). Secret: `LIQUIDAZI_SECRET`.
 
-`localStorage` (`liquidazi-save`) conserva una cache locale e la sessione utente. Per gli account,
+`localStorage` (`liquidazi-save`) conserva una cache locale e la sessione utente (logout dopo 2 ore di inattività, massimo 7 giorni dal login). Per gli account,
 i tre slot e le preferenze vengono sincronizzati con il cloud.
 
 ## Cosa è semplificato (di proposito)
