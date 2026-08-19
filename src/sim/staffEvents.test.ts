@@ -130,17 +130,17 @@ describe("staffEvents", () => {
     expect(s.employees[0]!.absence?.kind).toBe("permesso");
   });
 
-  it("malattia rispetta tetto annuo per dipendente", () => {
+  it("malattia non viene proposta oltre il tetto annuo", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s = hireEmployee(s, "Operaio");
-    s.employees[0]!.sickMonthsYtd = SICK_LEAVE_MAX_MONTHS_PER_YEAR;
+    s = hireEmployee(s, "Operaio");
+    for (const emp of s.employees) {
+      emp.sickMonthsYtd = SICK_LEAVE_MAX_MONTHS_PER_YEAR;
+    }
     s.quietMode = false;
     const rand = () => 0;
-    const hadMalattia = tryQueueStaffEvent(s, rand);
-    if (hadMalattia && s.pendingEvent?.staffTarget?.kind === "malattia") {
-      expect.fail("malattia non doveva essere proposta oltre il tetto");
-    }
-    expect(true).toBe(true);
+    expect(tryQueueStaffEvent(s, rand)).toBe(true);
+    expect(s.pendingEvent?.staffTarget?.kind).not.toBe("malattia");
   });
 
   it("reset sickMonthsYtd a gennaio", () => {

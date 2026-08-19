@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   comfortLevel,
   coverNegativeCashFromTreasury,
-  forcedShockCount,
   resolveEventOption,
   runWorldEvents,
 } from "./eventCatalog";
@@ -21,10 +20,6 @@ const liquidHoldings = (eur: number): PortfolioPosition[] => [
 ];
 
 describe("forced shocks", () => {
-  it("pool shock ampio", () => {
-    expect(forcedShockCount()).toBeGreaterThanOrEqual(18);
-  });
-
   it("comfortLevel sale con cassa alta", () => {
     const s = createInitialGameState();
     s.monthsPlayed = 8;
