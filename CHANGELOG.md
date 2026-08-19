@@ -8,6 +8,18 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-08-19
+
+Persistenza Postgres su Railway per salvataggi e classifica.
+
+### Added
+- Storage layer server: **Postgres** quando `DATABASE_URL` è impostato; file JSON locale in dev.
+- Script one-shot `npm run db:migrate-from-volume` per importare `/data` legacy nel DB.
+
+### Changed
+- PUT salvataggi cloud + sync run in **transazione** (niente più riscrittura monolitica di `runs.json`).
+- Health `/api/health`: `storage` può essere `postgres` | `volume` | `local`.
+
 ## [1.2.0] — 2026-08-19
 
 Scorte per qualità, chiarezza tabellone commesse e rebalance early game.
