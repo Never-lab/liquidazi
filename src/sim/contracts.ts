@@ -45,38 +45,65 @@ export const maybeMakeContract = (
   return op;
 };
 
-export const acceptAsContract = (
+export const computeContractTerms = (
   state: GameState,
   op: Opportunity,
-): GameState | null => {
+): {
+  netPerMonth: number;
+  workforceLock: number;
+  workforceAcceptCost: number;
+  months: number;
+  qualityUsed: number | null;
+  applyRepPenalty: boolean;
+} | null => {
   if (!op.contractMonths || op.contractMonths < 2) return null;
-  const active = state.activeContracts ?? [];
-  if (active.length >= 2) return null;
-
-  const next = structuredClone(state);
   const months = op.contractMonths;
   let baseNet = round2(op.net / months);
   let qualityUsed: number | null = null;
+  let applyRepPenalty = false;
   if (op.qualityRequired && !meetsQualityDemand(state, op.qualityRequired)) {
-    applyHighQualityRepPenalty(next);
+    applyRepPenalty = true;
   } else if (bestWarehouseQuality(state) != null) {
     qualityUsed = bestWarehouseQuality(state);
     baseNet = applySupplyToSaleNet(state, baseNet).net;
   }
-  const netPerMonth = baseNet;
   const fl =
     op.workforceRequired ??
     workforceRequiredForSale(op.net, {
       marketLayer: op.marketLayer,
       termMonths: op.termMonths ?? op.contractMonths ?? months,
     });
+  return {
+    netPerMonth: baseNet,
+    workforceLock: Math.max(CONTRACT_WORKFORCE_LOCK, Math.round(fl * 0.6)),
+    workforceAcceptCost: fl,
+    months,
+    qualityUsed,
+    applyRepPenalty,
+  };
+};
+
+export const acceptAsContract = (
+  state: GameState,
+  op: Opportunity,
+): GameState | null => {
+  const terms = computeContractTerms(state, op);
+  if (!terms) return null;
+  const active = state.activeContracts ?? [];
+  if (active.length >= 2) return null;
+
+  const next = structuredClone(state);
+  if (terms.applyRepPenalty) {
+    applyHighQualityRepPenalty(next);
+  }
+  const { netPerMonth, workforceLock, workforceAcceptCost, months, qualityUsed } = terms;
   const contract: ActiveContract = {
     id: next.nextId++,
     title: op.title,
     netPerMonth,
     monthsLeft: months,
-    workforceLock: Math.max(CONTRACT_WORKFORCE_LOCK, Math.round(fl * 0.6)),
-    workforceAcceptCost: fl,
+    workforceLock,
+    workforceAcceptCost,
     acceptedMonthIdx: toMonthIndex(next.calendar),
     clientType: op.clientType ?? "private",
   };

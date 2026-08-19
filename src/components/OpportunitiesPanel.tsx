@@ -2,11 +2,14 @@ import { useState } from "react";
 import {
   BOARD_FILTER_LABEL,
   MARKET_FILTER_LABEL,
+  OFFER_KIND_FILTER_LABEL,
   nextBoardFilter,
   nextMarketFilter,
+  nextOfferKindFilter,
   visibleOpportunities,
   type BoardFilter,
   type MarketFilter,
+  type OfferKindFilter,
 } from "../sim/boardView";
 import {
   emergencySupplyNet,
@@ -21,10 +24,25 @@ import {
   workforceUsedThisMonth,
 } from "../sim/workforce";
 import { repDefaultMult } from "../sim/reputation";
+import {
+  OFFER_KIND_BADGE,
+  OFFER_KIND_TITLE,
+  classifyOffer,
+  formatAcceptPreview,
+  formatOfferMoneyLine,
+  formatOfferTimingLine,
+  type OfferKind,
+} from "../ui/opportunityCopy";
 import { formatCash } from "./formatCash";
 import { useGameStore } from "../store/gameStore";
 import { Icon } from "../ui/icons";
 import styles from "./panels.module.css";
+
+const DEAL_BADGE_CLASS: Record<OfferKind, string> = {
+  single: styles.dealBadgeSingle,
+  tender: styles.dealBadgeTender,
+  contract: styles.dealBadgeContract,
+};
 
 export const OpportunitiesPanel = () => {
   const game = useGameStore((s) => s.game);
@@ -33,6 +51,7 @@ export const OpportunitiesPanel = () => {
   const emergency = useGameStore((s) => s.orderEmergencySupply);
   const [filter, setFilter] = useState<BoardFilter>("in");
   const [market, setMarket] = useState<MarketFilter>("all");
+  const [offerKind, setOfferKind] = useState<OfferKindFilter>("all");
   const cap = maxDealNet(game);
   const flAvail = availableWorkforce(game);
   const flUsed = workforceUsedThisMonth(game);
@@ -41,13 +60,14 @@ export const OpportunitiesPanel = () => {
   const arrivingMonths = pendingMonths(game);
   const emptyStock = stockMonths <= 0 && arrivingMonths <= 0;
   const boardHasSupply = game.opportunities.some((o) => o.kind === "supply");
-  const visible = visibleOpportunities(game.opportunities, filter, market);
+  const visible = visibleOpportunities(game.opportunities, filter, market, offerKind);
   const hidden = game.opportunities.length - visible.length;
   const loc = Math.round(game.company.reputation);
   const mun = Math.round(game.company.repMunicipal ?? 0);
   const nat = Math.round(game.company.repNational ?? 0);
   const insolutiMult = repDefaultMult(game.company.reputation);
   const emergencyCost = emergencySupplyNet(game);
+  const activeContracts = game.activeContracts ?? [];
 
   return (
     <section className={styles.panelWide}>
@@ -71,6 +91,20 @@ export const OpportunitiesPanel = () => {
           aria-label={`Filtro mercato: ${MARKET_FILTER_LABEL[market]}`}
         >
           {MARKET_FILTER_LABEL[market]}
+        </button>
+        <button
+          type="button"
+          className={styles.iconBtn}
+          onClick={() => setOfferKind((f) => nextOfferKindFilter(f))}
+          title={
+            filter === "out"
+              ? "Filtro tipo offerta: solo vendite (disattivo su forniture)"
+              : `Tipo: ${OFFER_KIND_FILTER_LABEL[offerKind]}. Tocca per cambiare.`
+          }
+          aria-label={`Filtro tipo offerta: ${OFFER_KIND_FILTER_LABEL[offerKind]}`}
+          disabled={filter === "out"}
+        >
+          {OFFER_KIND_FILTER_LABEL[offerKind]}
         </button>
       </div>
       <div className={styles.statChips} aria-label="Indicatori commesse">
@@ -108,14 +142,29 @@ export const OpportunitiesPanel = () => {
         >
           Loc {loc} · Com {mun} · Naz {nat}
         </span>
-        {(game.activeContracts?.length ?? 0) > 0 ? (
-          <span
-            className={styles.statChip}
-            title="Contratti multi-mese attivi: bloccano FL finché aperti"
-          >
-            Contratti {game.activeContracts!.length}
-          </span>
-        ) : null}
+        <span
+          className={styles.statChip}
+          title="Contratti multi-mese attivi: bloccano FL finché aperti. Vedi elenco sotto."
+        >
+          Contratti {activeContracts.length}/2
+        </span>
+      </div>
+      <div className={styles.contractList} aria-label="Contratti in corso">
+        <p className={styles.contractListTitle}>
+          Contratti in corso ({activeContracts.length}/2)
+        </p>
+        {activeContracts.length === 0 ? (
+          <p className={styles.muted}>
+            Nessun contratto attivo. I contratti bloccano FL finché non scadono.
+          </p>
+        ) : (
+          activeContracts.map((c) => (
+            <p key={c.id} className={styles.contractRow}>
+              {c.title} · {formatCash(c.netPerMonth)}/mese · {c.monthsLeft} mesi rimasti · −
+              {c.workforceLock} FL bloccate
+            </p>
+          ))
+        )}
       </div>
       <p className={styles.muted}>
         {emptyStock
@@ -146,27 +195,35 @@ export const OpportunitiesPanel = () => {
             </p>
           )}
           <div className={styles.cards}>
-            {visible.map((op) => (
+            {visible.map((op) => {
+              const saleKind = op.kind === "sale" ? classifyOffer(op) : null;
+              return (
               <article key={op.id} className={styles.deal}>
                 <div>
-                  <h3 className={styles.dealTitle}>{op.title}</h3>
-                  <p className={styles.dealMeta}>
-                    {op.kind === "sale" ? "Entrata" : "Uscita"} · {formatCash(op.net)} + IVA
-                    {op.kind === "supply"
-                      ? ` · +${supplyMonthsFromNet(op.net)} mesi · arrivo mese prossimo`
-                      : op.qualityRequired
-                        ? ` · richiede scorte ≥${op.qualityRequired}`
-                        : ""}
-                    {op.kind === "sale" && op.clientType === "pa" ? " · PA" : ""}
-                    {op.kind === "sale" && op.workforceRequired
-                      ? ` · ${op.workforceRequired} FL`
-                      : ""}
-                    {op.contractMonths
-                      ? ` · Contratto ${op.contractMonths} mesi`
-                      : op.kind === "sale" && op.termMonths > 1
-                        ? ` · ${op.termMonths} mesi`
-                        : ""}
-                  </p>
+                  {op.kind === "sale" && saleKind ? (
+                    <>
+                      <div className={styles.dealHead}>
+                        <h3 className={styles.dealTitle}>{op.title}</h3>
+                        <span
+                          className={`${styles.dealBadge} ${DEAL_BADGE_CLASS[saleKind]}`}
+                          title={OFFER_KIND_TITLE[saleKind]}
+                        >
+                          {OFFER_KIND_BADGE[saleKind]}
+                        </span>
+                      </div>
+                      <p className={styles.dealMeta}>{formatOfferMoneyLine(op, game)}</p>
+                      <p className={styles.dealMeta}>{formatOfferTimingLine(op)}</p>
+                      <p className={styles.dealOutcome}>{formatAcceptPreview(op, game)}</p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className={styles.dealTitle}>{op.title}</h3>
+                      <p className={styles.dealMeta}>
+                        Uscita · {formatCash(op.net)} + IVA · +{supplyMonthsFromNet(op.net)} mesi ·
+                        arrivo mese prossimo
+                      </p>
+                    </>
+                  )}
                 </div>
                 <div className={styles.dealActions}>
                   <button className={styles.button} onClick={() => accept(op.id)}>
@@ -177,7 +234,8 @@ export const OpportunitiesPanel = () => {
                   </button>
                 </div>
               </article>
-            ))}
+            );
+            })}
           </div>
         </>
       )}

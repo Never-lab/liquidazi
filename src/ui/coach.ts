@@ -47,11 +47,21 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
       body: "Usa il banner giallo «Paga F24» (o Fisco nelle operazioni). Saltare costa sanzione + compliance peggiore sul credito.",
     };
   }
+  const hasContractOffer = game.opportunities.some(
+    (o) => o.kind === "sale" && (o.contractMonths ?? 0) >= 2,
+  );
+  if (game.monthsPlayed >= 2 && game.monthsPlayed <= 4 && hasContractOffer) {
+    return {
+      id: "offer-types",
+      title: "Tre tipi di offerta",
+      body: "Singola = una fattura e incasso tra pochi mesi. Appalto PA = una fattura grossa ma incasso lento. Contratto = fatture ogni mese per più mesi e FL bloccata: guarda il badge e la riga «Se accetti».",
+    };
+  }
   if (game.monthsPlayed >= 1 && game.monthsPlayed < 3) {
     return {
       id: "commesse-legend",
       title: "Cosa significano i numeri sopra le commesse",
-      body: "FL = forza lavoro usata / disponibile nel mese; Tetto max = limite per una singola vendita; Scorte = mesi di magazzino. Su desktop, passa sui chip per il dettaglio.",
+      body: "FL = forza lavoro usata / disponibile; Tetto max = limite per una vendita; Scorte = mesi di magazzino; Contratti n/2 = multi-mese attivi (vedi elenco sotto). Su desktop, passa sui chip e sui badge delle card.",
     };
   }
   if (

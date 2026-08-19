@@ -16,6 +16,16 @@ La **pressione rivale** (Calma / Tesa / Guerra) può farti rubare lead; rispondi
 
 La reputazione è a tre layer: **locale** (privati, insoluti e qualità commesse), **comunale** e **nazionale** (appalti più grossi e pagamenti lunghi). I punti arrivano quando incassi, non quando accetti. Sul tabellone puoi filtrare per mercato.
 
+## Tipi di offerta
+
+Sul tabellone ogni vendita ha un **badge**:
+
+- **Singola** — una fattura; incassi tra pochi mesi; FL solo nel mese in cui accetti.
+- **Appalto PA** — una fattura grande; incassi tardi (6–36 mesi); serve reputazione comunale/nazionale.
+- **Contratto** — fattura ogni mese per 3 mesi; parte della FL resta **bloccata** fino alla chiusura (max 2 attivi). Leggi la riga «Se accetti» sulla card.
+
+Sotto i numeri vedi **Contratti in corso (n/2)** con cosa hai già firmato. «Incasso tra ~12 mesi» e «Contratto 3 mesi» non sono la stessa cosa: il primo è quando arriva il pagamento, il secondo quanto dura il lavoro ricorrente.
+
 ## Obiettivo
 
 Tieni la cassa in piedi. **Dodici mesi di seguito in rosso** = fine partita. Ignorare a lungo le tasse può finire in **insolvenza fiscale**. In difficoltà la banca può offrirti un prestito di salvataggio.
