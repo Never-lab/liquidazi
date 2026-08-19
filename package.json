@@ -16,7 +16,8 @@
     "preview": "vite preview",
     "wiki:sync-help": "node scripts/sync-guide-pages.mjs",
     "wiki:sync-github": "node scripts/sync-github-wiki.mjs",
-    "db:migrate-from-volume": "node scripts/migrate-volume-to-pg.mjs"
+    "db:migrate-from-volume": "node scripts/migrate-volume-to-pg.mjs",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "pg": "^8.23.0",

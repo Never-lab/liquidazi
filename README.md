@@ -51,7 +51,15 @@ Checklist una tantum (dashboard Railway + GitHub):
 6. Health: `GET /api/health` → `"storage":"postgres"` (o `"volume"` se legacy file mode).
 7. **Migrazione da volume:** con volume montato e Postgres attivo, una tantum: `DATA_DIR=/data npm run db:migrate-from-volume` (Railway shell o job locale con `DATABASE_URL` prod). Poi puoi rimuovere il volume dal servizio web.
 8. **AdSense / SEO** restano override di build (`VITE_ADSENSE_*`, `VITE_PLAUSIBLE_*`, `VITE_ADS_STUB=0`). Su staging puoi lasciare ads spente. **Ops:** `/ops` con gli admin di quell’ambiente (log richieste rotante, niente IP).
-9. Release: `git tag -a vX.Y.Z` **dopo** il merge su `main`, poi `git push origin vX.Y.Z` → CI + deploy prod.
+9. Release: merge bump PR su `main`, poi da macchina con `gh` autenticato:
+
+```bash
+git checkout main && git pull
+npm run release          # tag vX.Y.Z + GitHub Release + deploy production
+npm run release -- --dry-run   # anteprima senza tag/push
+```
+
+Richiede sezione `## [X.Y.Z]` in `CHANGELOG.md` allineata a `package.json`.
 
 Node **22** (`nixpacks.toml`). Persistenza: **Postgres** via `DATABASE_URL` (consigliato). Legacy: volume su `/data` (`RAILWAY_VOLUME_MOUNT_PATH` o `DATA_DIR`).
 
