@@ -63,28 +63,29 @@ export const MenuScreen = () => {
 
   return (
     <div className={styles.shell}>
-      <div className={styles.heroBlock}>
-        <p className={styles.brandMark}>{BRAND_NAME}</p>
-        <h2 className={styles.headline}>Tieni in piedi la cassa della tua SRL.</h2>
-        <p className={styles.lede}>
-          Ciao <strong>{auth?.username ?? "ospite"}</strong> · {slotLabel}. Sopravvivi 24 mesi;
-          12 mesi in rosso e sei KO.
-        </p>
-        <div className={styles.ctaRow}>
-          <Button onClick={() => setScreen("setup")}>
-            <Icon name="play" size={18} />
-            Nuova partita
-          </Button>
-          {canResume && (
-            <Button variant="secondary" onClick={resume}>
-              <Icon name="resume" size={18} />
-              Riprendi
+      <div className={styles.menuLayout}>
+        <div className={styles.heroBlock}>
+          <p className={styles.brandMark}>{BRAND_NAME}</p>
+          <h2 className={styles.headline}>Tieni in piedi la cassa della tua SRL.</h2>
+          <p className={styles.lede}>
+            Ciao <strong>{auth?.username ?? "ospite"}</strong> · {slotLabel}. Sopravvivi 24 mesi;
+            12 mesi in rosso e sei KO.
+          </p>
+          <div className={styles.ctaRow}>
+            <Button onClick={() => setScreen("setup")}>
+              <Icon name="play" size={18} />
+              Nuova partita
             </Button>
-          )}
+            {canResume && (
+              <Button variant="secondary" onClick={resume}>
+                <Icon name="resume" size={18} />
+                Riprendi
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
 
-      <nav className={styles.secondaryNav} aria-label="Altro">
+        <nav className={styles.secondaryNav} aria-label="Altro">
         <NavItem icon="save" label="Salvataggi" onClick={() => setScreen("saves")} />
         <NavItem icon="trophy" label="Classifiche" onClick={() => setScreen("leaderboard")} />
         {auth && (
@@ -111,7 +112,8 @@ export const MenuScreen = () => {
         ) : (
           <NavItem icon="login" label="Accedi (cloud + classifica)" onClick={() => setScreen("auth")} />
         )}
-      </nav>
+        </nav>
+      </div>
     </div>
   );
 };
