@@ -215,11 +215,21 @@ describe("fiscal rateazione and enforcement", () => {
     expect(s.company.cash).toBe(0);
   });
 
-  it("enforcement preleva cassa poi tesoreria + aggio", () => {
+  it("enforcement preleva cassa poi liquidità portafoglio + aggio", () => {
     let s = createInitialGameState();
     s.quietMode = true;
     s.company.cash = 300;
-    s.treasury = 500;
+    s.portfolio = [
+      {
+        symbol: "XEON.MI",
+        label: "Liquidità",
+        shares: 5,
+        avgCostEur: 100,
+        assetClass: "etf",
+        liquid: true,
+        lastPriceEur: 100,
+      },
+    ];
     s.collectionCase = {
       stage: "enforcement",
       principal: 600,
@@ -230,7 +240,11 @@ describe("fiscal rateazione and enforcement", () => {
     expect(s.company.cash).toBe(0);
     const gross = 600;
     const aggio = round2(gross * ENFORCEMENT_AGGIO);
-    expect(s.treasury).toBeCloseTo(500 - 300 - aggio);
+    const liquidLeft = (s.portfolio ?? []).reduce(
+      (n, p) => n + p.shares * (p.lastPriceEur ?? p.avgCostEur),
+      0,
+    );
+    expect(liquidLeft).toBeCloseTo(500 - 300 - aggio);
     expect(s.collectionCase).toBeNull();
   });
 

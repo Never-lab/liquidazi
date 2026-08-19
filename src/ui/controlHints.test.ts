@@ -13,17 +13,10 @@ import {
 
 describe("monthCloseHint", () => {
   it("null when free", () => {
-    expect(monthCloseHint({ pendingEvent: false, pendingProjectOffer: false })).toBeNull();
+    expect(monthCloseHint({ pendingEvent: false })).toBeNull();
   });
-  it("event first", () => {
-    expect(
-      monthCloseHint({ pendingEvent: true, pendingProjectOffer: true }),
-    ).toMatch(/evento/i);
-  });
-  it("project when only offer", () => {
-    expect(
-      monthCloseHint({ pendingEvent: false, pendingProjectOffer: true }),
-    ).toMatch(/progetto|investimenti/i);
+  it("event blocks close", () => {
+    expect(monthCloseHint({ pendingEvent: true })).toMatch(/evento/i);
   });
 });
 

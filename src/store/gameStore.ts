@@ -23,17 +23,15 @@ import {
   acceptLoanOffer,
   buyUpgrade,
   declineLoanOffer,
-  depositTreasury,
   drawFido,
   fireEmployee,
   hireEmployee,
-  investGrowth,
   payF24,
   requestFido,
   requestLoan,
-  withdrawTreasury,
   type LoanRequest,
 } from "../sim/actions";
+import { buyPortfolio, sellPortfolio } from "../sim/portfolio";
 import {
   acceptSaleOffer,
   buyAcquisition,
@@ -58,10 +56,8 @@ import {
   type NewGameOptions,
 } from "../sim/types";
 import type { UpgradeId } from "../config/upgrades";
-import { getProjectDef, type ProjectId } from "../config/projects";
 import { upgradeLevel } from "../config/upgrades";
 import { migrateUpgradeState } from "../sim/migrateUpgrades";
-import { acceptProject, skipProjectOffer } from "../sim/projects";
 import { sfxBad, sfxGood, sfxMonthClose, sfxPay } from "../ui/sfx";
 import { formatCash } from "../components/formatCash";
 import { coerceScreenIfSignedOut, SIGNED_OUT_DOOR } from "../ui/entryScreen";
@@ -160,16 +156,20 @@ interface GameStore {
   drawFido: (amount: number) => void;
   buyUpgrade: (id: UpgradeId) => void;
   resolveEvent: (optionId: string) => void;
-  depositTreasury: (amount: number) => void;
-  withdrawTreasury: (amount: number) => void;
-  investGrowth: (amount: number) => void;
+  buyPortfolio: (opts: {
+    symbol: string;
+    label: string;
+    amountEur: number;
+    priceEur: number;
+    quoteType?: string;
+    liquid?: boolean;
+  }) => void;
+  sellPortfolio: (symbol: string, shares: number, priceEur: number) => void;
   buyAcquisition: (id: number) => void;
   investSubsidiaryCapex: (id: number) => void;
   listSubsidiaryForSale: (id: number) => void;
   acceptSaleOffer: (id: number) => void;
   rejectSaleOffer: (id: number) => void;
-  acceptProject: (id: ProjectId) => void;
-  skipProjectOffer: () => void;
   markRunSubmitted: () => void;
   markInboxRead: () => void;
   /** Admin only: overwrite slot 1 with mid-game tester save and enter game. */
@@ -369,11 +369,6 @@ export const useGameStore = create<GameStore>()(
       advanceMonth: () => {
         if (get().game.pendingEvent) {
           get().flashToast("Risolvi prima l'evento in corso", "bad");
-          sfxBad();
-          return;
-        }
-        if (get().game.projectOffer) {
-          get().flashToast("Scegli o salta il piano investimenti", "bad");
           sfxBad();
           return;
         }
@@ -616,42 +611,31 @@ export const useGameStore = create<GameStore>()(
         get().flashToast("Decisione presa", "neutral");
         sfxGood();
       },
-      depositTreasury: (amount) => {
-        const before = get().game.treasury ?? 0;
-        let game = depositTreasury(get().game, amount);
-        if ((game.treasury ?? 0) > before) {
+      buyPortfolio: (opts) => {
+        const beforeOps = get().game.portfolioOpsUsedThisMonth ?? 0;
+        let game = buyPortfolio(get().game, opts);
+        if ((game.portfolioOpsUsedThisMonth ?? 0) > beforeOps) {
           const mil = unlockMilestones(game);
           game = mil.state;
           set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
           get().noteMilestoneUnlocks(mil.unlocked);
-          get().flashToast("Depositato in tesoreria", "good");
+          get().flashToast(`Acquisto ${opts.symbol}`, "good");
           sfxGood();
         } else {
           set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-          get().flashToast("Deposito non riuscito", "bad");
+          get().flashToast("Ordine non eseguito", "bad");
+          sfxBad();
         }
       },
-      withdrawTreasury: (amount) => {
-        const before = get().game.treasury ?? 0;
-        const game = withdrawTreasury(get().game, amount);
+      sellPortfolio: (symbol, shares, priceEur) => {
+        const beforeOps = get().game.portfolioOpsUsedThisMonth ?? 0;
+        const game = sellPortfolio(get().game, symbol, shares, priceEur);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-        if ((game.treasury ?? 0) < before) {
-          get().flashToast("Prelievo tesoreria", "neutral");
-        }
-      },
-      investGrowth: (amount) => {
-        const before = get().game.growthInvested ?? 0;
-        let game = investGrowth(get().game, amount);
-        if ((game.growthInvested ?? 0) > before) {
-          const mil = unlockMilestones(game);
-          game = mil.state;
-          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-          get().noteMilestoneUnlocks(mil.unlocked);
-          get().flashToast("Reinvestimento crescita", "good");
-          sfxGood();
+        if ((game.portfolioOpsUsedThisMonth ?? 0) > beforeOps) {
+          get().flashToast(`Vendita ${symbol}`, "neutral");
         } else {
-          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-          get().flashToast("Investimento non riuscito", "bad");
+          get().flashToast("Vendita non eseguita", "bad");
+          sfxBad();
         }
       },
       buyAcquisition: (id) => {
@@ -717,29 +701,6 @@ export const useGameStore = create<GameStore>()(
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
         if (game.saleOffers.length < before) {
           get().flashToast("Offerta rifiutata", "neutral");
-        }
-      },
-      acceptProject: (id) => {
-        const before = get().game;
-        let game = acceptProject(before, id);
-        if (game.activeProject && !before.activeProject) {
-          const mil = unlockMilestones(game);
-          game = mil.state;
-          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-          get().noteMilestoneUnlocks(mil.unlocked);
-          get().flashToast(`Progetto avviato: ${getProjectDef(id).label}`, "good");
-          sfxGood();
-        } else {
-          set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-          get().flashToast("Progetto non avviato", "bad");
-          sfxBad();
-        }
-      },
-      skipProjectOffer: () => {
-        const game = skipProjectOffer(get().game);
-        set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
-        if (!game.projectOffer) {
-          get().flashToast("Piano investimenti saltato", "neutral");
         }
       },
       markRunSubmitted: () => {

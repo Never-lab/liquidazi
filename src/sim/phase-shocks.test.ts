@@ -6,7 +6,19 @@ import {
   resolveEventOption,
   runWorldEvents,
 } from "./eventCatalog";
-import { createInitialGameState } from "./types";
+import { createInitialGameState, type PortfolioPosition } from "./types";
+
+const liquidHoldings = (eur: number): PortfolioPosition[] => [
+  {
+    symbol: "XEON.MI",
+    label: "Liquidità",
+    shares: eur / 100,
+    avgCostEur: 100,
+    assetClass: "etf",
+    liquid: true,
+    lastPriceEur: 100,
+  },
+];
 
 describe("forced shocks", () => {
   it("pool shock ampio", () => {
@@ -138,6 +150,7 @@ describe("forced shocks", () => {
       s.quietMode = false;
       s.company.cash = 25000;
       s.treasury = 0;
+      s.portfolio = [];
       s.monthsPlayed = m;
       s.lastShockAt = null;
       s.calendar = { month: 3, year: 2024 };
@@ -154,13 +167,13 @@ describe("forced shocks", () => {
     expect(hit).toBe(true);
   });
 
-  it("shock pesca tesoreria se cassa va sotto zero", () => {
+  it("shock pesca liquidità portafoglio se cassa va sotto zero", () => {
     let s = createInitialGameState();
     s.supplyStock = [];
     s.pendingSupply = [];
     s.supplyMonths = 0;
     s.company.cash = 100;
-    s.treasury = 2000;
+    s.portfolio = liquidHoldings(2000);
     s.pendingEvent = {
       id: "shock_fire",
       title: "Incendio",
@@ -168,15 +181,15 @@ describe("forced shocks", () => {
       options: [{ id: "ok", label: "Ok" }],
     };
     s = resolveEventOption(s, "ok");
-    // base 500 + stockout max(1600, ~12) = 2100 → cash −2000 covered by treasury
+    // base 500 + stockout max(1600, ~12) = 2100 → cash coperta da liquidità
     expect(s.company.cash).toBe(0);
-    expect(s.treasury).toBe(0);
+    expect((s.portfolio ?? []).reduce((n, p) => n + p.shares * 100, 0)).toBe(0);
   });
 
-  it("una scelta ordinaria non pesca dalla tesoreria", () => {
+  it("una scelta ordinaria non pesca dal portafoglio", () => {
     let s = createInitialGameState();
     s.company.cash = 100;
-    s.treasury = 2000;
+    s.portfolio = liquidHoldings(2000);
     s.pendingEvent = {
       id: "consultant",
       title: "Consulente",
@@ -185,37 +198,37 @@ describe("forced shocks", () => {
     };
     s = resolveEventOption(s, "hire");
     expect(s.company.cash).toBe(-1100);
-    expect(s.treasury).toBe(2000);
+    expect((s.portfolio ?? []).reduce((n, p) => n + p.shares * 100, 0)).toBe(2000);
   });
 });
 
 describe("coverNegativeCashFromTreasury", () => {
-  it("copre cassa negativa dalla tesoreria fino a zero", () => {
+  it("copre cassa negativa dalla liquidità portafoglio fino a zero", () => {
     const s = createInitialGameState();
     s.company.cash = -400;
-    s.treasury = 1000;
+    s.portfolio = liquidHoldings(1000);
     const taken = coverNegativeCashFromTreasury(s);
     expect(taken).toBe(400);
     expect(s.company.cash).toBe(0);
-    expect(s.treasury).toBe(600);
-    expect(s.log[0]?.text).toMatch(/Fondo emergenza/);
+    expect((s.portfolio ?? []).reduce((n, p) => n + p.shares * 100, 0)).toBe(600);
+    expect(s.log[0]?.text).toMatch(/Liquidità portafoglio/);
   });
 
-  it("non tocca tesoreria se cassa non negativa", () => {
+  it("non tocca portafoglio se cassa non negativa", () => {
     const s = createInitialGameState();
     s.company.cash = 100;
-    s.treasury = 500;
+    s.portfolio = liquidHoldings(500);
     expect(coverNegativeCashFromTreasury(s)).toBe(0);
-    expect(s.treasury).toBe(500);
+    expect((s.portfolio ?? []).reduce((n, p) => n + p.shares * 100, 0)).toBe(500);
     expect(s.company.cash).toBe(100);
   });
 
-  it("esauri tesoreria se insufficiente", () => {
+  it("esaurisce liquidità se insufficiente", () => {
     const s = createInitialGameState();
     s.company.cash = -800;
-    s.treasury = 300;
+    s.portfolio = liquidHoldings(300);
     expect(coverNegativeCashFromTreasury(s)).toBe(300);
     expect(s.company.cash).toBe(-500);
-    expect(s.treasury).toBe(0);
+    expect(s.portfolio ?? []).toHaveLength(0);
   });
 });

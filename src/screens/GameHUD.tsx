@@ -2,12 +2,11 @@ import { useEffect, useState } from "react";
 import { AdSlot } from "../components/AdSlot";
 import { CashSparkline, ChartsPanel } from "../components/Charts";
 import { CoachBanner } from "../components/CoachBanner";
-import { ProjectOfferBanner } from "../components/ProjectOfferBanner";
+import { PortfolioNav } from "../components/PortfolioNav";
 import { NotificationInbox } from "../components/NotificationInbox";
 import { ObjectivesInbox } from "../components/ObjectivesInbox";
 import { SuppliesInbox } from "../components/SuppliesInbox";
 import { HoldingPanel } from "../components/HoldingPanel";
-import { InvestmentsPanel } from "../components/InvestmentsPanel";
 import { LoanPanel } from "../components/LoanPanel";
 import { SchedulePanel } from "../components/SchedulePanel";
 import { OpportunitiesPanel } from "../components/OpportunitiesPanel";
@@ -81,11 +80,9 @@ export const GameHUD = () => {
   const closeInvoiceTot = scheduleTotals(thisCloseRows(openInvoiceSchedule(game)));
   const offer = game.loanOffer;
   const pending = game.pendingEvent;
-  const pendingProjectOffer = game.projectOffer;
-  const monthBlocked = Boolean(pending || pendingProjectOffer);
+  const monthBlocked = Boolean(pending);
   const closeHint = monthCloseHint({
     pendingEvent: Boolean(pending),
-    pendingProjectOffer: Boolean(pendingProjectOffer),
   });
   const summary = game.lastCloseSummary;
   const diffLabel = DIFFICULTIES[game.difficulty ?? "normal"].label;
@@ -180,11 +177,7 @@ export const GameHUD = () => {
                   disabled={monthBlocked}
                 >
                   <Icon name="calendar" size={18} />
-                  {pending
-                    ? "Risolvi evento…"
-                    : pendingProjectOffer
-                      ? "Scegli progetto…"
-                      : "Chiudi mese"}
+                  {pending ? "Risolvi evento…" : "Chiudi mese"}
                 </Button>
               </Hint>
             ) : (
@@ -201,16 +194,16 @@ export const GameHUD = () => {
             )}
           </div>
         </div>
-        <nav className={styles.iconNav} aria-label="Posta, obiettivi e scorte">
+        <nav className={styles.iconNav} aria-label="Posta, obiettivi, scorte e portafoglio">
           <NotificationInbox />
           <ObjectivesInbox />
           <SuppliesInbox />
+          <PortfolioNav />
         </nav>
       </header>
 
       <div className={styles.alerts}>
         <CoachBanner />
-        <ProjectOfferBanner />
 
         {summary && game.monthsPlayed > 0 && (
           <div
@@ -362,12 +355,7 @@ export const GameHUD = () => {
             </>
           )}
           {opsTab === "credito" && <LoanPanel />}
-          {opsTab === "crescita" && (
-            <>
-              <InvestmentsPanel />
-              <UpgradesPanel />
-            </>
-          )}
+          {opsTab === "crescita" && <UpgradesPanel />}
           {opsTab === "holding" && <HoldingPanel />}
           {opsTab === "altro" && <ReportPanel />}
         </div>

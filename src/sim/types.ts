@@ -278,9 +278,26 @@ export interface YearToDate {
   interest: number;
   otherCosts: number;
   capitalGains: number;
-  /** Rendimento tesoreria (interessi attivi), 0 se assenti. */
+  /** @deprecated Legacy treasury interest; new games use portfolio only. */
   treasuryInterest?: number;
 }
+
+export type PortfolioAssetClass = "equity" | "bond" | "etf" | "fund" | "other";
+
+export type PortfolioPosition = {
+  symbol: string;
+  label: string;
+  shares: number;
+  avgCostEur: number;
+  assetClass: PortfolioAssetClass;
+  liquid?: boolean;
+  lastPriceEur?: number;
+};
+
+export type PortfolioHistoryPoint = {
+  monthIdx: number;
+  valueEur: number;
+};
 
 export interface YearReport extends YearToDate {
   year: number;
@@ -452,12 +469,20 @@ export interface GameState {
   pendingEvent: PendingEvent | null;
   /** Remaining months of +1 capacity from temp hire event */
   tempCapacityMonths: number;
-  /** Cash parked in educational deposit */
+  /** Cash parked in educational deposit (@deprecated — migrated to portfolio) */
   treasury: number;
-  /** Cumulative growth reinvestment */
+  /** Cumulative growth reinvestment (@deprecated — migrated to portfolio) */
   growthInvested: number;
   /** Permanent capacity from growth invest (cap 3) */
   growthCapacityBonus: number;
+  /** Listed market holdings (ETF, bonds, equities). */
+  portfolio: PortfolioPosition[];
+  /** Buy/sell operations used this calendar month. */
+  portfolioOpsUsedThisMonth: number;
+  /** End-of-month portfolio value series for charts. */
+  portfolioHistory: PortfolioHistoryPoint[];
+  /** One-time legacy conversion flag. */
+  portfolioLegacyMigrated?: boolean;
   /** Owned portfolio companies (cap from holdingSlotCap) */
   subsidiaries: Subsidiary[];
   /** Max subsidiaries in portfolio (4–8) */
@@ -707,6 +732,10 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     treasury: 0,
     growthInvested: 0,
     growthCapacityBonus: 0,
+    portfolio: [],
+    portfolioOpsUsedThisMonth: 0,
+    portfolioHistory: [],
+    portfolioLegacyMigrated: true,
     subsidiaries: [],
     holdingSlotCap: HOLDING_SLOT_BASE,
     saleOffers: [],

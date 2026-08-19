@@ -31,6 +31,7 @@ import {
   readSessionToken,
   refreshSessionToken,
 } from "./sessionToken.mjs";
+import { historyMarket, quoteMarket, searchMarkets } from "./markets.mjs";
 
 const MAX_SAVE_BYTES = 1_000_000;
 const MAX_BODY_BYTES = 64_000;
@@ -386,6 +387,37 @@ export function createHandler({
     try {
       if (req.method === "GET" && path === "/api/health") {
         return json(res, 200, { ok: true, storage });
+      }
+
+      if (req.method === "GET" && path === "/api/markets/search") {
+        const q = url.searchParams.get("q") ?? "";
+        try {
+          const data = await searchMarkets(q);
+          return json(res, 200, data);
+        } catch {
+          return json(res, 502, { error: "Mercati non disponibili. Riprova tra poco." });
+        }
+      }
+
+      if (req.method === "GET" && path.startsWith("/api/markets/quote/")) {
+        const symbol = decodeURIComponent(path.slice("/api/markets/quote/".length)).trim();
+        try {
+          const data = await quoteMarket(symbol);
+          return json(res, 200, data);
+        } catch {
+          return json(res, 502, { error: "Quotazione non disponibile." });
+        }
+      }
+
+      if (req.method === "GET" && path.startsWith("/api/markets/history/")) {
+        const symbol = decodeURIComponent(path.slice("/api/markets/history/".length)).trim();
+        const range = url.searchParams.get("range") ?? "6mo";
+        try {
+          const data = await historyMarket(symbol, range);
+          return json(res, 200, data);
+        } catch {
+          return json(res, 502, { error: "Storico non disponibile." });
+        }
       }
 
       if (req.method === "POST" && path === "/api/auth/register") {

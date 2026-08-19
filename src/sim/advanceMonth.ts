@@ -9,7 +9,6 @@ import {
   euriborAt,
   FIDO_SPREAD_BPS,
   complianceSpreadPenaltyBps,
-  treasuryAnnualRate,
 } from "./actions";
 import { applySubsidiaryMonth, advanceHoldingSales, refreshAcquisitionBoard } from "./acquisitions";
 import { applyMonthlyMora, f24BlockedByCollection, maybeOpenCartella, tickCollectionCase, updateMonthsTaxOverdue } from "./collection";
@@ -22,11 +21,8 @@ import { monthlyCapacity } from "./workforce";
 import { tickStaffEvents } from "./staffEvents";
 import { applyMoraleDrift, clampMorale, rollStaffResignation } from "./morale";
 import { milestoneLabel, unlockMilestones } from "./milestones";
-import { drawProjectOptions } from "../config/projects";
-import {
-  effectiveMonthlyRent,
-  processActiveProjectForMonth,
-} from "./projects";
+import { portfolioTotalValue } from "./portfolio";
+import { effectiveMonthlyRent, processActiveProjectForMonth } from "./projects";
 import {
   defaultFactorFromPressure,
   inspectionMalusMult,
@@ -152,7 +148,6 @@ export const advanceMonth = (state: GameState): GameState => {
 
   if (state.status !== "running") return next;
   if (state.pendingEvent) return next;
-  if (state.projectOffer) return next;
   migrateGameState(next);
   const cashBefore = next.company.cash;
   let monthRentCharged = 0;
@@ -254,23 +249,7 @@ export const advanceMonth = (state: GameState): GameState => {
     note("Affitto", b);
   }
 
-  // 1c. treasury interest + subsidiary portfolio drip
-  if (next.treasury > 0) {
-    const b = next.company.cash;
-    const interest = round2((next.treasury * treasuryAnnualRate(next.monthsPlayed)) / 12);
-    if (interest > 0) {
-      next.treasury = round2(next.treasury + interest);
-      next.ytd.treasuryInterest = round2((next.ytd.treasuryInterest ?? 0) + interest);
-      next.log.unshift({
-        id: next.nextId++,
-        monthIdx: idx,
-        tone: "good",
-        text: `Interessi tesoreria: +${interest.toLocaleString("it-IT")} €.`,
-      });
-      next.log = next.log.slice(0, 12);
-    }
-    void b;
-  }
+  // 1c. subsidiary portfolio drip
   {
     const b = next.company.cash;
     applySubsidiaryMonth(next, rand);
@@ -337,9 +316,9 @@ export const advanceMonth = (state: GameState): GameState => {
     }
   }
 
-  // 2d. active annual project: compliance + duration tick
+  // 2d. legacy annual project tick (pre-migration saves only)
   const hadFormazione = next.activeProject?.id === "formazione";
-  {
+  if (next.activeProject) {
     const ticked = processActiveProjectForMonth(next, idx);
     next.compliance = ticked.compliance;
     next.activeProject = ticked.activeProject;
@@ -533,14 +512,7 @@ export const advanceMonth = (state: GameState): GameState => {
     year: isDecember ? next.calendar.year + 1 : next.calendar.year,
   };
 
-  if (isDecember && !next.activeProject && next.projectOfferYear !== next.calendar.year) {
-    const offerRand = rng(closedIdx * 31 + next.calendar.year * 17);
-    next.projectOffer = {
-      year: next.calendar.year,
-      options: drawProjectOptions(offerRand),
-    };
-    next.projectOfferYear = next.calendar.year;
-  }
+  next.portfolioOpsUsedThisMonth = 0;
 
   // 8. lose: 12 mesi consecutivi in rosso; in difficoltà proponi prestito
   next.monthsPlayed += 1;
@@ -617,6 +589,12 @@ export const advanceMonth = (state: GameState): GameState => {
     hist.push(point);
   }
   next.history = hist.slice(-36);
+
+  const pv = portfolioTotalValue(next);
+  if (pv > 0) {
+    const ph = [...(next.portfolioHistory ?? []), { monthIdx: closedIdx, valueEur: pv }];
+    next.portfolioHistory = ph.slice(-36);
+  }
 
   if (next.tempCapacityMonths > 0) {
     next.tempCapacityMonths -= 1;

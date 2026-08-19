@@ -1,6 +1,7 @@
 import { HOLDING_SLOT_BASE, HOLDING_SLOT_MAX } from "../config/holding";
 import { UPGRADE_LIST, upgradeLevel, type UpgradeId } from "../config/upgrades";
 import { migrateUpgradeState } from "./migrateUpgrades";
+import { portfolioInvestedCost, portfolioTotalValue } from "./portfolio";
 import { warehouseMonths } from "./supplies";
 import { pressureBand } from "./rival";
 import type { GameState, MilestoneId, MonthCloseSummary } from "./types";
@@ -138,8 +139,8 @@ export const unlockMilestones = (
   const nSub = (next.subsidiaries ?? []).length;
   const peak = next.career.peakCash;
   const rev = next.career.lifetimeRevenue;
-  const growth = next.growthInvested ?? 0;
-  const treasury = next.treasury ?? 0;
+  const growth = portfolioInvestedCost(next);
+  const treasury = portfolioTotalValue(next);
   const loans = next.loans?.length ?? (next.loan ? 1 : 0);
   const rivalHeat = next.rival?.heat ?? 0;
   const band = pressureBand(rivalHeat);

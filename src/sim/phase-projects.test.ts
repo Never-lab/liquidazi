@@ -22,29 +22,24 @@ const decState = () => {
 };
 
 describe("annual project offer on Dec→Jan", () => {
-  it("creates projectOffer with 2–3 options after closing December", () => {
+  it("does not create projectOffer after December close (legacy removed)", () => {
     const s = advanceMonth(decState());
     expect(s.calendar).toEqual({ month: 1, year: 2025 });
-    expect(s.projectOffer).not.toBeNull();
-    expect(s.projectOffer!.year).toBe(2025);
-    expect(s.projectOffer!.options.length).toBeGreaterThanOrEqual(2);
-    expect(s.projectOffer!.options.length).toBeLessThanOrEqual(3);
-    expect(new Set(s.projectOffer!.options).size).toBe(s.projectOffer!.options.length);
-    expect(s.projectOfferYear).toBe(2025);
+    expect(s.projectOffer).toBeNull();
   });
 
-  it("projectOffer blocks advanceMonth until resolved", () => {
+  it("advanceMonth is not blocked by projectOffer", () => {
     let s = advanceMonth(decState());
-    expect(s.projectOffer).not.toBeNull();
     const played = s.monthsPlayed;
     s = advanceMonth(s);
-    expect(s.monthsPlayed).toBe(played);
-    expect(s.projectOffer).not.toBeNull();
+    expect(s.monthsPlayed).toBe(played + 1);
+    expect(s.projectOffer).toBeNull();
   });
 
-  it("accept sets active project, clears offer, deducts cash", () => {
-    let s = advanceMonth(decState());
-    const id = s.projectOffer!.options[0]!;
+  it("accept sets active project, deducts cash (legacy helper)", () => {
+    let s = decState();
+    s.projectOffer = { year: 2025, options: ["magazzino", "formazione"] };
+    const id = "magazzino";
     const def = PROJECTS[id];
     const cashBefore = s.company.cash;
     s = acceptProject(s, id);
@@ -57,9 +52,9 @@ describe("annual project offer on Dec→Jan", () => {
     expect(s.company.cash).toBe(cashBefore - def.cost - def.frozenCash);
   });
 
-  it("skip clears offer without starting a project", () => {
-    let s = advanceMonth(decState());
-    expect(s.projectOffer).not.toBeNull();
+  it("skip clears offer without starting a project (legacy helper)", () => {
+    let s = decState();
+    s.projectOffer = { year: 2025, options: ["magazzino"] };
     s = skipProjectOffer(s);
     expect(s.projectOffer).toBeNull();
     expect(s.activeProject).toBeNull();

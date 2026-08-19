@@ -3,6 +3,7 @@ import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { CARTELLA_EVENT_ID } from "./collection";
 import { maxDealNet, rng } from "./events";
 import { rivalCampaignCost } from "./rival";
+import { coverNegativeCashFromPortfolio } from "./portfolio";
 import {
   applyChains,
   chainKeyId,
@@ -52,21 +53,9 @@ const applyRivalAnchorClear = (s: GameState): void => {
   }
 };
 
-/** If cash went negative, pull from treasury (emergency fund). Returns amount taken. */
-export const coverNegativeCashFromTreasury = (s: GameState): number => {
-  s.treasury ??= 0;
-  if (s.company.cash >= 0 || s.treasury <= 0) return 0;
-  const need = round2(-s.company.cash);
-  const take = round2(Math.min(s.treasury, need));
-  s.treasury = round2(s.treasury - take);
-  s.company.cash = round2(s.company.cash + take);
-  pushLog(
-    s,
-    "neutral",
-    `Fondo emergenza: −${take.toLocaleString("it-IT")} € dalla tesoreria per coprire la cassa.`,
-  );
-  return take;
-};
+/** If cash went negative, pull from liquid portfolio. Returns amount taken. */
+export const coverNegativeCashFromTreasury = (s: GameState): number =>
+  coverNegativeCashFromPortfolio(s);
 
 type ChoiceDef = {
   kind: "choice";

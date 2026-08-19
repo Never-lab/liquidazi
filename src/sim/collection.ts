@@ -15,6 +15,7 @@ import {
   TERMINAL_MONTHS_TO_LOST,
 } from "../config/collection";
 import { moraIncrement } from "./worldEvents";
+import { availablePortfolioForEnforcement, drainCashThenPortfolioLiquid, drainPortfolioLiquid } from "./portfolio";
 import { round2, toMonthIndex, type GameState, type TaxLiability } from "./types";
 
 export const CARTELLA_EVENT_ID = "fiscal_cartella";
@@ -67,23 +68,9 @@ export const f24BlockedByCollection = (state: GameState): boolean => {
   return stage === "cartella" || stage === "enforcement" || stage === "terminal";
 };
 
-/** Drains cash first, then treasury; returns amount actually taken. */
-export const drainCashThenTreasury = (state: GameState, amount: number): number => {
-  if (amount <= 0) return 0;
-  state.treasury ??= 0;
-  let taken = 0;
-  let remaining = amount;
-  const fromCash = round2(Math.min(state.company.cash, remaining));
-  state.company.cash = round2(state.company.cash - fromCash);
-  taken = round2(taken + fromCash);
-  remaining = round2(remaining - fromCash);
-  if (remaining > 0) {
-    const fromTreasury = round2(Math.min(state.treasury, remaining));
-    state.treasury = round2(state.treasury - fromTreasury);
-    taken = round2(taken + fromTreasury);
-  }
-  return taken;
-};
+/** Drains cash first, then liquid portfolio; returns amount actually taken. */
+export const drainCashThenTreasury = (state: GameState, amount: number): number =>
+  drainCashThenPortfolioLiquid(state, amount);
 
 const closeCollectionCase = (state: GameState, complianceBonus: number): void => {
   markOverdueLiabilitiesPaid(state);
@@ -93,17 +80,15 @@ const closeCollectionCase = (state: GameState, complianceBonus: number): void =>
 };
 
 const applyEnforcementDrain = (state: GameState, c: NonNullable<GameState["collectionCase"]>): void => {
-  const fromCash = round2(Math.min(state.company.cash, c.principal));
+  const fromCash = round2(Math.min(Math.max(0, state.company.cash), c.principal));
   state.company.cash = round2(state.company.cash - fromCash);
   let remaining = round2(c.principal - fromCash);
-  state.treasury ??= 0;
-  let fromTreasury = 0;
+  let fromPortfolio = 0;
   if (remaining > 0) {
-    fromTreasury = round2(Math.min(state.treasury, remaining));
-    state.treasury = round2(state.treasury - fromTreasury);
-    remaining = round2(remaining - fromTreasury);
+    fromPortfolio = drainPortfolioLiquid(state, remaining);
+    remaining = round2(remaining - fromPortfolio);
   }
-  const gross = round2(fromCash + fromTreasury);
+  const gross = round2(fromCash + fromPortfolio);
   c.principal = remaining;
 
   const aggio = round2(gross * ENFORCEMENT_AGGIO);
@@ -122,8 +107,7 @@ export const tickCollectionCase = (state: GameState): void => {
 
   if (c.stage === "rateazione" && c.plan) {
     const { installment } = c.plan;
-    state.treasury ??= 0;
-    const available = round2(state.company.cash + state.treasury);
+    const available = availablePortfolioForEnforcement(state);
     if (available < installment) {
       c.stage = "enforcement";
       c.monthsInStage = 0;
