@@ -1,8 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from "react";
-import {
-  getAdsConsentSnapshot,
-  subscribeAdsConsent,
-} from "../ui/adsConsent";
+import { useEffect, useRef } from "react";
 import {
   adsenseConfig,
   adsenseFullWidth,
@@ -39,15 +35,10 @@ const StubBody = () => {
 
 export const AdSlot = ({ placement }: Props) => {
   const visible = shouldRenderAdSlot(placement);
-  const consent = useSyncExternalStore(
-    subscribeAdsConsent,
-    getAdsConsentSnapshot,
-    () => null,
-  );
   const config = adsenseConfig();
   const client = config?.client;
   const slot = config?.slot;
-  const live = Boolean(visible && client && slot && consent === "accepted");
+  const live = Boolean(visible && client && slot);
   const insRef = useRef<HTMLModElement>(null);
   const pushed = useRef(false);
 

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { AdsConsentBanner } from "./components/AdsConsentBanner";
 import { CloudSavePill } from "./components/CloudSavePill";
 import { DisclaimerFooter } from "./components/DisclaimerFooter";
+import { GoogleAdSenseBootstrap } from "./components/GoogleAdSenseBootstrap";
 import { PlausibleAnalytics } from "./components/PlausibleAnalytics";
 import { ToastHost } from "./components/Toast";
 import { DemandPopupHost } from "./components/DemandPopup";
@@ -108,7 +108,7 @@ function App() {
       <EventChoiceBanner />
       <AchievementPopupHost />
       <CloudSavePill />
-      <AdsConsentBanner />
+      <GoogleAdSenseBootstrap />
       <PlausibleAnalytics />
       <DisclaimerFooter />
     </div>
