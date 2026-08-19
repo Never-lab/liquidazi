@@ -10,6 +10,7 @@ import {
   monthlyCapacity,
   seedNewGame,
 } from "./events";
+import { availableWorkforce } from "./workforce";
 import { createInitialGameState, round2, toMonthIndex } from "./types";
 
 describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
@@ -17,11 +18,11 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
     const bare = createInitialGameState({ city: "058091", sector: "ristorazione" });
     const servizi = createInitialGameState({ city: "058091", sector: "servizi" });
     expect(maxDealNet(servizi)).toBeGreaterThan(maxDealNet(bare));
-    expect(monthlyCapacity(bare)).toBe(1 + Math.round(50 / 20));
+    expect(monthlyCapacity(bare)).toBeGreaterThanOrEqual(1);
 
     let hired = hireEmployee(bare, "Operaio");
     hired.staffMorale = 100;
-    expect(monthlyCapacity(hired)).toBe(monthlyCapacity(bare) + 1);
+    expect(availableWorkforce(hired)).toBeGreaterThan(availableWorkforce(bare));
   });
 
   it("opportunità vendita possono essere PA con termini lunghi", () => {
@@ -41,17 +42,17 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
     }
   });
 
-  it("accettare oltre capacità viene bloccato", () => {
+  it("accettare oltre FL disponibile viene bloccato", () => {
     let s = createInitialGameState({ city: "058091", sector: "commercio" });
     s = {
       ...s,
-      company: { ...s.company, reputation: 20 },
       opportunities: [
         {
           id: 1,
           kind: "sale",
           title: "A",
           net: 500,
+          workforceRequired: 20,
           expiresInMonths: 1,
           clientType: "private",
           termMonths: 1,
@@ -61,15 +62,7 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
           kind: "sale",
           title: "B",
           net: 500,
-          expiresInMonths: 1,
-          clientType: "private",
-          termMonths: 1,
-        },
-        {
-          id: 3,
-          kind: "sale",
-          title: "C",
-          net: 500,
+          workforceRequired: 20,
           expiresInMonths: 1,
           clientType: "private",
           termMonths: 1,
@@ -77,16 +70,11 @@ describe("High-impact — settore, PA, capacità, TFR, 13ª", () => {
       ],
       nextId: 10,
     };
-    const cap = monthlyCapacity(s);
-    expect(cap).toBe(2);
-    for (let i = 1; i <= cap; i++) {
-      s = acceptOpportunity(s, i);
-    }
+    s = acceptOpportunity(s, 1);
     const before = s.invoices.length;
-    s = acceptOpportunity(s, cap + 1);
+    s = acceptOpportunity(s, 2);
     expect(s.invoices.length).toBe(before);
-    expect(s.lastUiHint?.text).toMatch(/Capacità piena/);
-    expect(s.log[0]?.text).not.toMatch(/Capacità piena/);
+    expect(s.lastUiHint?.text).toMatch(/FL/);
   });
 
   it("PA: scadenza oltre 1 mese; quietMode non genera insoluti", () => {

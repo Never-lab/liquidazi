@@ -1,6 +1,6 @@
 import { baseGrossFor } from "../config/staffPay";
 import { DEFAULT_CITY_ID } from "../config/market";
-import { refreshMarketBoard, seedNewGame } from "./events";
+import { generateOpportunities, seedNewGame } from "./events";
 import { createInitialGameState, toMonthIndex, type GameState } from "./types";
 
 /**
@@ -58,6 +58,7 @@ export const createTesterGameState = (): GameState => {
       hireMonthIdx: hireIdx,
       tfrAccrued: 800,
       senioritySteps: 0,
+      gender: "M",
     },
     {
       id: g.nextId++,
@@ -66,6 +67,7 @@ export const createTesterGameState = (): GameState => {
       hireMonthIdx: hireIdx,
       tfrAccrued: 750,
       senioritySteps: 0,
+      gender: "M",
     },
     {
       id: g.nextId++,
@@ -74,6 +76,7 @@ export const createTesterGameState = (): GameState => {
       hireMonthIdx: hireIdx + 2,
       tfrAccrued: 400,
       senioritySteps: 0,
+      gender: "F",
     },
   ];
 
@@ -101,7 +104,10 @@ export const createTesterGameState = (): GameState => {
     },
   ];
 
-  g = refreshMarketBoard(g);
+  const board = generateOpportunities(g, { forceRegime: "normale" });
+  g.opportunities = board.ops;
+  g.nextId = Math.max(g.nextId, board.nextId);
+  g.demandRegime = board.demandRegime;
   g.log.unshift({
     id: g.nextId++,
     monthIdx: idx,

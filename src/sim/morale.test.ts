@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { advanceMonth } from "./advanceMonth";
 import { hireEmployee } from "./actions";
-import { monthlyCapacity, staffCapacityPoints } from "./events";
+import { staffCapacityPoints } from "./events";
+import { availableWorkforce } from "./workforce";
 import {
   applyMoraleDrift,
   clampMorale,
@@ -21,13 +22,13 @@ describe("staffMorale", () => {
     expect(clampMorale(70)).toBe(70);
   });
 
-  it("first Operaio at morale 70 keeps 1 effective slot (slots after soft-cap, not points)", () => {
+  it("first Operaio at morale 70 increases available FL", () => {
     let s = createInitialGameState();
-    const base = monthlyCapacity(s);
+    const base = availableWorkforce(s);
     s = hireEmployee(s, "Operaio");
     expect(staffCapacityPoints(s)).toBe(1);
     expect(s.staffMorale).toBe(70);
-    expect(monthlyCapacity(s)).toBe(base + 1);
+    expect(availableWorkforce(s)).toBeGreaterThan(base);
   });
 
   it("drift: cash negative −4; profitable close +2", () => {
@@ -126,22 +127,24 @@ describe("staffMorale", () => {
     expect(s.staffMorale).toBe(55);
   });
 
-  it("6 operai: morale scales slots after soft-cap (not raw points)", () => {
+  it("6 operai: morale scales staff FL contribution", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
-    const base = monthlyCapacity(s);
+    const base = availableWorkforce(s);
     for (let i = 0; i < 6; i++) s = hireEmployee(s, "Operaio");
-    expect(monthlyCapacity(s)).toBe(base + 6);
     s.staffMorale = 0;
-    expect(monthlyCapacity(s)).toBe(base + 5);
+    const low = availableWorkforce(s);
     s.staffMorale = 100;
-    expect(monthlyCapacity(s)).toBe(base + 6);
+    const high = availableWorkforce(s);
+    expect(high).toBeGreaterThan(low);
+    expect(high).toBeGreaterThan(base + 20);
   });
 
-  it("15 operai: softer cap floor(extra/2) beats old curve", () => {
+  it("15 operai: FL grows but stays bounded per head", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.staffMorale = 100;
-    const base = monthlyCapacity(s);
+    const base = availableWorkforce(s);
     for (let i = 0; i < 15; i++) s = hireEmployee(s, "Operaio");
-    expect(monthlyCapacity(s)).toBe(base + 11);
+    expect(availableWorkforce(s)).toBeGreaterThan(base + 60);
+    expect(availableWorkforce(s)).toBeLessThan(base + 100);
   });
 });

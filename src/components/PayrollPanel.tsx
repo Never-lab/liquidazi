@@ -1,9 +1,11 @@
 import {
   STAFF_ROLES,
   baseGrossFor,
-  capacityPointsFor,
   employerCostMonthly,
 } from "../config/staffPay";
+import { workforceForRole } from "../config/workforce";
+import { absenceLabel } from "../sim/staffEvents";
+import { employeeWorkforceContribution, availableWorkforce } from "../sim/workforce";
 import { sectorById } from "../config/market";
 import { DEFAULT_STAFF_MORALE } from "../sim/morale";
 import { useGameStore } from "../store/gameStore";
@@ -17,7 +19,7 @@ export const staffMoraleBand = (morale: number): "basso" | "medio" | "alto" => {
 };
 
 export const staffMoraleEffectCopy = (morale: number): string | null => {
-  if (morale < 40) return "Rischio dimissioni; capacità staff ridotta";
+  if (morale < 40) return "Rischio dimissioni; forza lavoro ridotta";
   if (morale >= 70) return "Team efficace";
   return null;
 };
@@ -48,6 +50,10 @@ export const PayrollPanel = () => {
         <span className={styles.badge}>CCNL {sectorLabel}</span>
       </div>
       {climaEffect && <p className={styles.muted}>{climaEffect}</p>}
+
+      <p className={styles.muted}>
+        Forza lavoro disponibile: {availableWorkforce(game)} FL (base 30 + personale − assenze).
+      </p>
 
       <div className={styles.cards}>
         {STAFF_ROLES.map((r) => {
@@ -82,11 +88,15 @@ export const PayrollPanel = () => {
         <p className={styles.muted}>Nessun dipendente.</p>
       ) : (
         <ul className={styles.list}>
-          {employees.map((e) => (
+          {employees.map((e) => {
+            const absent = absenceLabel(e);
+            const flNow = employeeWorkforceContribution(e);
+            return (
             <li key={e.id}>
               <span>
-                {e.role} · {formatCash(e.grossMonthly)} lordo ·{" "}
-                {capacityPointsFor(e.role)} pt · {e.senioritySteps}{" "}
+                {e.role} ({e.gender === "F" ? "F" : "M"}) · {formatCash(e.grossMonthly)} lordo ·{" "}
+                {flNow}/{workforceForRole(e.role)} FL
+                {absent ? ` · ${absent}` : ""} · {e.senioritySteps}{" "}
                 {e.senioritySteps === 1 ? "scatto" : "scatti"}
               </span>
               <button
@@ -103,7 +113,8 @@ export const PayrollPanel = () => {
                 {e.tfrAccrued > 0 ? ` (−${formatCash(e.tfrAccrued)} TFR)` : ""}
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 

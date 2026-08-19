@@ -10,7 +10,8 @@ import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { round2 } from "./types";
 import { hireEmployee } from "./actions";
 import { advanceMonth } from "./advanceMonth";
-import { generateOpportunities, monthlyCapacity, staffCapacityPoints } from "./events";
+import { generateOpportunities, staffCapacityPoints } from "./events";
+import { availableWorkforce } from "./workforce";
 import { createInitialGameState, toMonthIndex } from "./types";
 
 describe("staffPay config", () => {
@@ -46,23 +47,22 @@ describe("ruoli differenziati", () => {
     expect(s.employees[0]!.senioritySteps).toBe(0);
   });
 
-  it("1 Operaio dà più capacità di 1 Impiegato", () => {
+  it("1 Operaio aumenta la forza lavoro rispetto al solo titolare", () => {
     const base = createInitialGameState({ city: "058091", sector: "servizi" });
     base.staffMorale = 100;
     const withOp = hireEmployee(base, "Operaio");
     const withImp = hireEmployee(base, "Impiegato");
-    expect(monthlyCapacity(withOp)).toBeGreaterThan(monthlyCapacity(withImp));
+    expect(availableWorkforce(withOp)).toBeGreaterThan(availableWorkforce(base));
+    expect(availableWorkforce(withImp)).toBeGreaterThan(availableWorkforce(withOp));
     expect(staffCapacityPoints(withOp)).toBe(1);
     expect(staffCapacityPoints(withImp)).toBe(0.35);
   });
 
-  it("1 Impiegato solo non aumenta monthlyCapacity (floor 0.35 → 0 slot)", () => {
+  it("1 Impiegato aggiunge FL ma meno di un Operaio", () => {
     const base = createInitialGameState({ city: "058091", sector: "servizi" });
-    const cap0 = monthlyCapacity(base);
     const withImp = hireEmployee(base, "Impiegato");
+    expect(availableWorkforce(withImp)).toBeGreaterThan(availableWorkforce(base));
     expect(staffCapacityPoints(withImp)).toBe(0.35);
-    expect(monthlyCapacity(withImp)).toBe(cap0);
-    expect(monthlyCapacity(withImp) - cap0).toBe(0);
   });
 
   it("Impiegato alza i lead sale vs baseline zero-staff a parità di seed", () => {
@@ -75,7 +75,6 @@ describe("ruoli differenziati", () => {
     // Force same board seed inputs (nextId/monthsPlayed feed the RNG seed).
     const baseSeeded = { ...base, nextId: 50, monthsPlayed: 2 };
     const impSeeded = { ...imp, nextId: 50, monthsPlayed: 2 };
-    expect(monthlyCapacity(impSeeded)).toBe(monthlyCapacity(baseSeeded));
     const salesBase = generateOpportunities(baseSeeded, { forceRegime: "normale" }).ops.filter(
       (o) => o.kind === "sale",
     ).length;

@@ -9,19 +9,18 @@ import {
   maxDealNet,
   monthlyCapacity,
 } from "./events";
+import { availableWorkforce } from "./workforce";
 import { createInitialGameState, round2 } from "./types";
 
 describe("Staff board + upgrades lite", () => {
-  it("capacity: primi 8 full at morale 100, poi 1/2; 100 dipendenti non = 100 slot", () => {
+  it("FL cresce con staff; tabellone non esplode con 100 dipendenti", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.staffMorale = 100;
-    const base = monthlyCapacity(s);
+    const base = availableWorkforce(s);
     for (let i = 0; i < 8; i++) s = hireEmployee(s, "Operaio");
-    expect(monthlyCapacity(s)).toBe(base + 8);
-    for (let i = 0; i < 6; i++) s = hireEmployee(s, "Operaio");
-    // +6 extra pts → floor(6/2)=3, not +6
-    expect(monthlyCapacity(s)).toBe(base + 8 + 3);
-    for (let i = 0; i < 86; i++) s = hireEmployee(s, "Operaio");
+    expect(availableWorkforce(s)).toBe(base + 40);
+    for (let i = 0; i < 92; i++) s = hireEmployee(s, "Operaio");
+    expect(availableWorkforce(s)).toBeLessThan(600);
     expect(monthlyCapacity(s)).toBeLessThan(60);
   });
 
@@ -127,28 +126,28 @@ describe("Staff board + upgrades lite", () => {
     expect(s.compliance).toBe(55); // +2 gestionale +3 in regola
   });
 
-  it("sede riduce affitto; processi alza capacity", () => {
+  it("sede riduce affitto; processi alza FL", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.company.cash = 50000;
     const rent0 = s.company.monthlyRent;
     expect(rent0).toBeGreaterThan(0);
-    const cap0 = monthlyCapacity(s);
+    const cap0 = availableWorkforce(s);
     s = buyUpgrade(s, "sede");
     expect(s.company.monthlyRent).toBeCloseTo(rent0 * 0.85);
     s = buyUpgrade(s, "processi");
-    expect(monthlyCapacity(s)).toBe(cap0 + 1);
+    expect(availableWorkforce(s)).toBe(cap0 + 8);
   });
 
-  it("processi levels stack capacity 1 then 2 then 3", () => {
+  it("processi levels stack +8 FL each", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.company.cash = 100000;
-    const cap0 = monthlyCapacity(s);
+    const cap0 = availableWorkforce(s);
     s = buyUpgrade(s, "processi");
-    expect(monthlyCapacity(s)).toBe(cap0 + 1);
+    expect(availableWorkforce(s)).toBe(cap0 + 8);
     s = buyUpgrade(s, "processi");
-    expect(monthlyCapacity(s)).toBe(cap0 + 2);
+    expect(availableWorkforce(s)).toBe(cap0 + 16);
     s = buyUpgrade(s, "processi");
-    expect(monthlyCapacity(s)).toBe(cap0 + 3);
+    expect(availableWorkforce(s)).toBe(cap0 + 24);
     const frozen = buyUpgrade(s, "processi");
     expect(frozen.upgradeLevels?.processi).toBe(3);
     expect(frozen.company.cash).toBe(s.company.cash);

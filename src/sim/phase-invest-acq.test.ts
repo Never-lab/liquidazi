@@ -13,7 +13,8 @@ import {
   refreshAcquisitionBoard,
 } from "./acquisitions";
 import { advanceMonth } from "./advanceMonth";
-import { monthlyCapacity, rng } from "./events";
+import { rng } from "./events";
+import { availableWorkforce } from "./workforce";
 import { createInitialGameState, round2 } from "./types";
 
 describe("Investimenti + acquisizioni lite", () => {
@@ -31,13 +32,13 @@ describe("Investimenti + acquisizioni lite", () => {
     expect(s.company.cash + s.treasury).toBe(total0);
   });
 
-  it("growth: GROWTH_PER_SLOT € → +1 capacity", () => {
+  it("growth: GROWTH_PER_SLOT € → +8 FL", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.company.cash = 20000;
-    const cap0 = monthlyCapacity(s);
+    const cap0 = availableWorkforce(s);
     s = investGrowth(s, GROWTH_PER_SLOT);
     expect(s.growthCapacityBonus).toBe(1);
-    expect(monthlyCapacity(s)).toBe(cap0 + 1);
+    expect(availableWorkforce(s)).toBe(cap0 + 8);
   });
 
   it("buy acquisition: paga, max slots, drip in mese", () => {

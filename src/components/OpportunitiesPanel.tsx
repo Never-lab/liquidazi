@@ -11,11 +11,15 @@ import {
 import {
   emergencySupplyNet,
   maxDealNet,
-  monthlyCapacity,
   salesAcceptedThisMonth,
   supplyMonthsFromNet,
 } from "../sim/events";
-import { repDefaultMult, repSlotBonus } from "../sim/reputation";
+import {
+  availableWorkforce,
+  workforceRemaining,
+  workforceUsedThisMonth,
+} from "../sim/workforce";
+import { repDefaultMult } from "../sim/reputation";
 import { formatCash } from "./formatCash";
 import { useGameStore } from "../store/gameStore";
 import { Icon } from "../ui/icons";
@@ -29,8 +33,9 @@ export const OpportunitiesPanel = () => {
   const [filter, setFilter] = useState<BoardFilter>("in");
   const [market, setMarket] = useState<MarketFilter>("all");
   const cap = maxDealNet(game);
-  const capacity = monthlyCapacity(game);
-  const taken = salesAcceptedThisMonth(game);
+  const flAvail = availableWorkforce(game);
+  const flUsed = workforceUsedThisMonth(game);
+  const flLeft = workforceRemaining(game);
   const stockMonths = game.supplyMonths ?? 0;
   const emptyStock = stockMonths <= 0;
   const boardHasSupply = game.opportunities.some((o) => o.kind === "supply");
@@ -39,7 +44,6 @@ export const OpportunitiesPanel = () => {
   const loc = Math.round(game.company.reputation);
   const mun = Math.round(game.company.repMunicipal ?? 0);
   const nat = Math.round(game.company.repNational ?? 0);
-  const repSlots = repSlotBonus(game.company.reputation);
   const insolutiMult = repDefaultMult(game.company.reputation);
   const emergencyCost = emergencySupplyNet(game);
 
@@ -76,9 +80,15 @@ export const OpportunitiesPanel = () => {
         </span>
         <span
           className={styles.statChip}
-          title="Vendite accettate / slot disponibili questo mese"
+          title="Forza lavoro usata / disponibile nel mese (base 30 senza dipendenti)"
         >
-          Capacità {taken}/{capacity}
+          FL {flUsed}/{flAvail} ({flLeft} libere)
+        </span>
+        <span
+          className={styles.statChip}
+          title="Commesse vendita accettate questo mese"
+        >
+          Commesse {salesAcceptedThisMonth(game)}
         </span>
         <span
           className={styles.statChip}
@@ -92,14 +102,14 @@ export const OpportunitiesPanel = () => {
         </span>
         <span
           className={styles.statChip}
-          title={`Locale ${loc} → +${repSlots} slot · insoluti ×${insolutiMult.toFixed(2)}. Comunale ${mun} / nazionale ${nat}: più punti → più appalti di quel tipo.`}
+          title={`Locale ${loc} → bonus FL · insoluti ×${insolutiMult.toFixed(2)}. Comunale ${mun} / nazionale ${nat}: più punti → più appalti di quel tipo.`}
         >
           Loc {loc} · Com {mun} · Naz {nat}
         </span>
         {(game.activeContracts?.length ?? 0) > 0 ? (
           <span
             className={styles.statChip}
-            title="Contratti multi-mese attivi: ognuno blocca 1 slot"
+            title="Contratti multi-mese attivi: bloccano FL finché aperti"
           >
             Contratti {game.activeContracts!.length}
           </span>
@@ -144,8 +154,11 @@ export const OpportunitiesPanel = () => {
                       ? ` · +${supplyMonthsFromNet(op.net)} mesi scorte`
                       : ""}
                     {op.kind === "sale" && op.clientType === "pa" ? " · PA" : ""}
+                    {op.kind === "sale" && op.workforceRequired
+                      ? ` · ${op.workforceRequired} FL`
+                      : ""}
                     {op.contractMonths
-                      ? ` · Contratto ${op.contractMonths} mesi (−1 slot)`
+                      ? ` · Contratto ${op.contractMonths} mesi`
                       : op.kind === "sale" && op.termMonths > 1
                         ? ` · ${op.termMonths} mesi`
                         : ""}

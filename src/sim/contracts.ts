@@ -1,4 +1,5 @@
 import { issueCustomerInvoice } from "./actions";
+import { workforceRequiredForNet } from "../config/workforce";
 import {
   round2,
   toMonthIndex,
@@ -8,8 +9,7 @@ import {
 } from "./types";
 import { repContractMult } from "./reputation";
 
-export const contractSlotsUsed = (state: GameState): number =>
-  (state.activeContracts ?? []).reduce((s, c) => s + c.slotCost, 0);
+export const CONTRACT_WORKFORCE_LOCK = 15;
 
 export const maybeMakeContract = (
   op: Opportunity,
@@ -51,12 +51,15 @@ export const acceptAsContract = (
   const baseNet = round2(op.net / months);
   const netPerMonth =
     (state.supplyMonths ?? 0) > 0 ? round2(baseNet * 1.08) : baseNet;
+  const fl = op.workforceRequired ?? workforceRequiredForNet(op.net);
   const contract: ActiveContract = {
     id: next.nextId++,
     title: op.title,
     netPerMonth,
     monthsLeft: months,
-    slotCost: 1,
+    workforceLock: Math.max(CONTRACT_WORKFORCE_LOCK, Math.round(fl * 0.6)),
+    workforceAcceptCost: fl,
+    acceptedMonthIdx: toMonthIndex(next.calendar),
     clientType: op.clientType ?? "private",
   };
   next.activeContracts = [...active, contract];
@@ -65,7 +68,7 @@ export const acceptAsContract = (
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),
     tone: "good",
-    text: `${op.title}: contratto ${months} mesi · ${netPerMonth.toLocaleString("it-IT")} €/mese · −1 slot.`,
+    text: `${op.title}: contratto ${months} mesi · ${netPerMonth.toLocaleString("it-IT")} €/mese · −${contract.workforceLock} FL.`,
   });
   next.log = next.log.slice(0, 12);
   return next;
@@ -90,7 +93,7 @@ export const tickContracts = (state: GameState): GameState => {
         id: next.nextId++,
         monthIdx: toMonthIndex(next.calendar),
         tone: "neutral",
-        text: `Contratto chiuso: ${c.title}. Slot liberato.`,
+        text: `Contratto chiuso: ${c.title}. Forza lavoro liberata.`,
       });
       next.log = next.log.slice(0, 12);
     }

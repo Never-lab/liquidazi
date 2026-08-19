@@ -54,7 +54,14 @@ export const migrateGameState = (state: GameState): GameState => {
   }
   for (const emp of next.employees) {
     emp.senioritySteps ??= 0;
+    emp.gender ??= emp.id % 2 === 0 ? "F" : "M";
   }
+  for (const c of next.activeContracts ?? []) {
+    if (c.workforceLock == null) {
+      c.workforceLock = (c.slotCost ?? 1) * 15;
+    }
+  }
+  next.workforceMalattiaMonthIdx ??= null;
   if (next.fido) {
     next.fido.lastInterest ??= 0;
   }
