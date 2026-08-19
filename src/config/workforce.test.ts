@@ -5,6 +5,7 @@ import {
   NATIONAL_NET_MAX,
 } from "../sim/reputation";
 import {
+  maxNetForWorkforceBudget,
   workforceRequiredForNet,
   workforceRequiredForSale,
   WORKFORCE_BASE,
@@ -44,11 +45,12 @@ describe("workforceRequiredForSale", () => {
     expect(national).toBeGreaterThan(municipal);
   });
 
-  it("early game: base 30 può avvicinarsi a un comunale lungo", () => {
-    const fl = workforceRequiredForSale(MUNICIPAL_NET_MIN, {
-      marketLayer: "municipal",
-      termMonths: 12,
-    });
-    expect(fl).toBeLessThan(WORKFORCE_BASE + 25);
+  it("early game: base 30 accetta commesse locali fino ~1,8k net", () => {
+    const fl = workforceRequiredForNet(1800);
+    expect(fl).toBeLessThanOrEqual(WORKFORCE_BASE);
+  });
+
+  it("maxNetForWorkforceBudget inverte la curva locale", () => {
+    expect(maxNetForWorkforceBudget(27)).toBe(1710);
   });
 });

@@ -21,7 +21,7 @@ describe("emergency / guaranteed supply", () => {
     expect(ops.some((o) => o.kind === "supply")).toBe(true);
   });
 
-  it("emergency scales with cash at 10%, floor 1500", () => {
+  it("emergency scales with cash at 10%, floor dipende dai mesi", () => {
     const s = createInitialGameState();
     s.supplyStock = [];
     s.pendingSupply = [];
@@ -29,6 +29,9 @@ describe("emergency / guaranteed supply", () => {
     s.company.cash = 50000;
     expect(emergencySupplyNet(s)).toBe(5000);
     s.company.cash = 10000;
+    s.monthsPlayed = 0;
+    expect(emergencySupplyNet(s)).toBe(1000);
+    s.monthsPlayed = 10;
     expect(emergencySupplyNet(s)).toBe(1500);
   });
 

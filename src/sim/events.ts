@@ -3,7 +3,10 @@ import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
 import { getProjectDef } from "../config/projects";
 import { capacityPointsFor } from "../config/staffPay";
-import { workforceRequiredForSale } from "../config/workforce";
+import {
+  maxNetForWorkforceBudget,
+  workforceRequiredForSale,
+} from "../config/workforce";
 import { supplyCapMonths, upgradeLevel } from "../config/upgrades";
 import {
   HIGH_QUALITY_DEMAND_MIN,
@@ -22,6 +25,7 @@ import {
 import { issueCustomerInvoice, recordSupplierCost } from "./actions";
 import { acceptAsContract, maybeMakeContract } from "./contracts";
 import {
+  availableWorkforce,
   canAcceptWorkforce,
   countRole,
   monthlyCapacity,
@@ -47,6 +51,7 @@ import {
   bestWarehouseQuality,
   canAddSupplyMonths,
   consumeSupplyAfterSale,
+  earlySupplyPriceCap,
   hasWarehouseStock,
   meetsQualityDemand,
   pendingMonths,
@@ -75,6 +80,14 @@ export const BOARD_MAX_OPS_BOOM = 12;
 
 /** Full-value staff capacity points before diminishing returns. */
 export const STAFF_FULL_VALUE = 8;
+
+/** Mesi con ramp ticket più dolce (prima della crescita piena). */
+export const EARLY_GAME_MONTHS = 12;
+/** Ticket × supplyMult quando magazzino vuoto (primi mesi vs dopo). */
+export const SUPPLY_EMPTY_TICKET_MULT_EARLY = 0.88;
+export const SUPPLY_EMPTY_TICKET_MULT = 0.82;
+/** Primi mesi: almeno una commessa locale entro ~90% FL disponibile. */
+export const EARLY_FL_BOARD_MONTHS = 8;
 
 export const rollDemandRegime = (rand: () => number): DemandRegime => {
   const u = rand();
@@ -155,15 +168,22 @@ export const maxDealNet = (state: GameState): number => {
   const staff = state.employees.length;
   const dens = state.company.densityIndex;
   const rep = 0.85 + (state.company.reputation / 100) * 0.35;
+  const earlyMonths = Math.min(months, EARLY_GAME_MONTHS);
+  const lateMonths = Math.max(0, months - EARLY_GAME_MONTHS);
   const growth =
     1 +
-    months * 0.04 +
-    Math.min(staff, STAFF_FULL_VALUE) * 0.16 +
+    earlyMonths * 0.025 +
+    lateMonths * 0.04 +
+    Math.min(staff, STAFF_FULL_VALUE) * 0.14 +
     Math.max(0, staff - STAFF_FULL_VALUE) * 0.05;
   const competition = dens > 1 ? Math.max(0.7, 1 - (dens - 1) * 0.12) : 1 + (1 - dens) * 0.08;
   const ticketMult = DIFFICULTIES[state.difficulty ?? "normal"].ticketMult;
   const commercialeMult = [1, 1.08, 1.12, 1.16][upgradeLevel(upgradeLevels, "commerciale")]!;
-  const supplyMult = hasWarehouseStock(state) ? 1 : 0.72;
+  const supplyMult = hasWarehouseStock(state)
+    ? 1
+    : months < EARLY_GAME_MONTHS
+      ? SUPPLY_EMPTY_TICKET_MULT_EARLY
+      : SUPPLY_EMPTY_TICKET_MULT;
   const pressureTicket = ticketFactorFromPressure(state);
   const capped = round2(
     Math.min(
@@ -245,7 +265,11 @@ const pushSale = (
   }
 
   const sizeFactor = 0.35 + rand() * 0.65;
-  const net = round2(Math.max(300, Math.min(cap, cap * sizeFactor)));
+  let net = round2(Math.max(300, Math.min(cap, cap * sizeFactor)));
+  if (state.monthsPlayed < EARLY_FL_BOARD_MONTHS) {
+    const flCap = Math.floor(availableWorkforce(state) * 0.9);
+    net = Math.min(net, maxNetForWorkforceBudget(flCap));
+  }
   const termMonths = Math.min(3, pick(profile.privateTerms, rand));
   const home = cityById(state.company.city);
   const raw: Opportunity = {
@@ -268,12 +292,15 @@ const pushSale = (
 
 const pushSupply = (
   ops: Opportunity[],
+  state: GameState,
   _cap: number,
   rand: () => number,
   id: number,
 ): number => {
-  const tier = pickSupplyTier(rand);
-  const net = rollSupplyNet(tier, rand);
+  const tier = pickSupplyTier(rand, { earlyGame: state.monthsPlayed < EARLY_FL_BOARD_MONTHS });
+  let net = rollSupplyNet(tier, rand, {
+    maxNet: earlySupplyPriceCap(state),
+  });
   const quality = rollSupplyQuality(net, rand);
   const months = supplyMonthsFromNet(net);
   ops.push({
@@ -337,17 +364,20 @@ export const generateOpportunities = (
     id = pushSale(ops, state, profile, cap, rand, id);
   }
   for (let i = 0; i < supplyTarget; i++) {
-    id = pushSupply(ops, cap, rand, id);
+    id = pushSupply(ops, state, cap, rand, id);
   }
   return { ops, nextId: id, demandRegime: regime };
 };
 
 /** Floor for emergency restock net (early-game). */
-export const EMERGENCY_SUPPLY_FLOOR = 1500;
+export const EMERGENCY_SUPPLY_FLOOR = 900;
 
 /** Emergency restock cost: 10% of cash, never below floor. */
 export const emergencySupplyNet = (state: GameState): number =>
-  Math.max(EMERGENCY_SUPPLY_FLOOR, Math.round(state.company.cash * 0.1));
+  Math.max(
+    state.monthsPlayed < EARLY_FL_BOARD_MONTHS ? EMERGENCY_SUPPLY_FLOOR : 1500,
+    Math.round(state.company.cash * 0.1),
+  );
 
 export const orderEmergencySupply = (state: GameState): GameState => {
   if (hasWarehouseStock(state) || pendingMonths(state) > 0) return state;
