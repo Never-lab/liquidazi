@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, submitFeedback, submitRun } from "../api/client";
 import { AdSlot } from "../components/AdSlot";
 import { formatCash } from "../components/formatCash";
@@ -25,6 +25,7 @@ export const EndScreen = () => {
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "err">("idle");
   const [msg, setMsg] = useState("");
   const won = game.status === "won";
+  const submitting = useRef(false);
 
   const [unclear, setUnclear] = useState("");
   const [secondRun, setSecondRun] = useState<SecondRun | "">("");
@@ -33,13 +34,11 @@ export const EndScreen = () => {
   const [pmDone, setPmDone] = useState(false);
   const [pmSkipped, setPmSkipped] = useState(false);
 
-  useEffect(() => {
-    if (!auth || game.monthsPlayed < 1) return;
-    if (game.status !== "lost" && game.status !== "won") return;
-    const submittedMonths = game.career.submittedMonths ?? (game.career.submitted ? game.monthsPlayed : 0);
-    if (game.career.submitted && submittedMonths >= game.monthsPlayed) return;
-    let cancelled = false;
+  const doSubmit = () => {
+    if (!auth || submitting.current) return;
+    submitting.current = true;
     setStatus("sending");
+    setMsg("");
     void submitRun(auth.token, {
       companyName: game.company.name,
       city: game.company.city,
@@ -54,7 +53,6 @@ export const EndScreen = () => {
       slotIndex: useGameStore.getState().activeSlot,
     })
       .then(() => {
-        if (cancelled) return;
         markRunSubmitted();
         setStatus("ok");
         setMsg(
@@ -64,14 +62,25 @@ export const EndScreen = () => {
         );
       })
       .catch((e) => {
-        if (cancelled) return;
+        submitting.current = false;
         setStatus("err");
         setMsg(e instanceof Error ? e.message : "Invio fallito");
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [auth, game, markRunSubmitted]);
+  };
+
+  const retrySubmit = () => {
+    submitting.current = false;
+    doSubmit();
+  };
+
+  useEffect(() => {
+    if (!auth || game.monthsPlayed < 1) return;
+    if (game.status !== "lost" && game.status !== "won") return;
+    const submittedMonths = game.career.submittedMonths ?? (game.career.submitted ? game.monthsPlayed : 0);
+    if (game.career.submitted && submittedMonths >= game.monthsPlayed) return;
+    doSubmit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth, game.status, game.career.submitted, game.career.submittedMonths, game.monthsPlayed]);
 
   const sendPostmortem = async (e: FormEvent) => {
     e.preventDefault();
@@ -125,7 +134,14 @@ export const EndScreen = () => {
           {formatCash(game.career.lifetimeRevenue)}
         </p>
         {status === "ok" && <p className={styles.ok}>{msg}</p>}
-        {status === "err" && <p className={styles.error}>{msg}</p>}
+        {status === "err" && (
+          <>
+            <p className={styles.error}>{msg}</p>
+            <button type="button" className={styles.secondary} onClick={retrySubmit}>
+              Riprova pubblicazione
+            </button>
+          </>
+        )}
         <AdSlot placement="end-banner" />
         <div className={styles.ctaRow}>
           <button type="button" className={styles.primary} onClick={continueAfterWin}>
@@ -172,8 +188,20 @@ export const EndScreen = () => {
         )}
       </p>
       {status === "ok" && <p className={styles.ok}>{msg}</p>}
-      {status === "err" && <p className={styles.error}>{msg}</p>}
+      {status === "err" && (
+        <>
+          <p className={styles.error}>{msg}</p>
+          <button type="button" className={styles.secondary} onClick={retrySubmit}>
+            Riprova pubblicazione
+          </button>
+        </>
+      )}
       {status === "sending" && <p className={styles.lede}>Pubblicazione in corso…</p>}
+      {status === "idle" && auth && game.career.submitted && (
+        <button type="button" className={styles.secondary} onClick={retrySubmit}>
+          Ripubblica in classifica
+        </button>
+      )}
 
       <AdSlot placement="end-banner" />
 
