@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { robotsTxt, siteOrigin, sitemapXml } from "./seo.mjs";
+import {
+  adsTxt,
+  DEFAULT_ADSENSE_PUBLISHER,
+  GOOGLE_ADS_CERT_ID,
+  normalizeAdsPublisher,
+  robotsTxt,
+  siteOrigin,
+  sitemapXml,
+} from "./seo.mjs";
 
 describe("siteOrigin", () => {
   it("prefers PUBLIC_SITE_URL", () => {
@@ -19,6 +27,32 @@ describe("siteOrigin", () => {
 
   it("returns null without env or host", () => {
     expect(siteOrigin({ publicSiteUrl: "", host: "" })).toBe(null);
+  });
+});
+
+describe("adsTxt", () => {
+  it("emits the standard Google AdSense line with default publisher", () => {
+    expect(adsTxt()).toBe(
+      `google.com, ${DEFAULT_ADSENSE_PUBLISHER}, DIRECT, ${GOOGLE_ADS_CERT_ID}\n`,
+    );
+  });
+
+  it("strips ca- prefix from client id", () => {
+    expect(adsTxt({ adsenseClient: "ca-pub-9163410629777799" })).toBe(
+      `google.com, pub-9163410629777799, DIRECT, ${GOOGLE_ADS_CERT_ID}\n`,
+    );
+  });
+});
+
+describe("normalizeAdsPublisher", () => {
+  it("accepts pub-* and ca-pub-*", () => {
+    expect(normalizeAdsPublisher("ca-pub-111")).toBe("pub-111");
+    expect(normalizeAdsPublisher("pub-111")).toBe("pub-111");
+  });
+
+  it("rejects invalid ids", () => {
+    expect(normalizeAdsPublisher("")).toBe(null);
+    expect(normalizeAdsPublisher("nope")).toBe(null);
   });
 });
 
