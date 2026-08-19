@@ -69,3 +69,42 @@ describe("coachTipFor commesse-legend", () => {
     expect(coachTipFor(s)?.id).toBe("staff-clima");
   });
 });
+
+describe("coachTipFor offer-types", () => {
+  it("shows when board has contract and monthsPlayed 2–4", () => {
+    const s = createInitialGameState();
+    s.monthsPlayed = 2;
+    s.liabilities = [];
+    s.opportunities = [
+      {
+        id: 1,
+        kind: "sale",
+        title: "Contratto · Demo",
+        net: 3000,
+        expiresInMonths: 1,
+        termMonths: 1,
+        contractMonths: 3,
+        marketLayer: "local",
+      },
+    ];
+    expect(coachTipFor(s)?.id).toBe("offer-types");
+  });
+
+  it("does not override commesse-legend when no contract on board", () => {
+    const s = createInitialGameState();
+    s.monthsPlayed = 2;
+    s.liabilities = [];
+    s.opportunities = [
+      {
+        id: 1,
+        kind: "sale",
+        title: "Commessa · Demo",
+        net: 2000,
+        expiresInMonths: 1,
+        termMonths: 2,
+        marketLayer: "local",
+      },
+    ];
+    expect(coachTipFor(s)?.id).toBe("commesse-legend");
+  });
+});

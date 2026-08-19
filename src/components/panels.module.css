@@ -97,6 +97,69 @@
   color: var(--color-text);
 }
 
+.dealHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.dealBadge {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.dealBadgeSingle {
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-border) 40%, transparent);
+}
+
+.dealBadgeTender {
+  color: #b45309;
+  background: color-mix(in srgb, #b45309 12%, transparent);
+}
+
+.dealBadgeContract {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.dealOutcome {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.contractList {
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.contractListTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin: 0 0 6px;
+}
+
+.contractRow {
+  font-size: 13px;
+  color: var(--color-text);
+  margin: 4px 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 .dealMeta {
   margin: 4px 0 0;
   font-size: 13px;
