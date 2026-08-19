@@ -8,6 +8,14 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.1.9] — 2026-08-19
+
+Popup personale e taratura FL appalti PA.
+
+### Fixed
+- Eventi **Personale**: overlay a schermo intero (livello App) e roll prioritario; effetti stagionali (ferie estive, malattie, natalizie) aprono popup come gli altri eventi mondo.
+- **FL appalti comunali/nazionali**: calcolo sulla fetta mensile (`net ÷ mesi`), cap 85/110 FL — niente più 400–550 FL in early game su importi 25–150k.
+
 ## [1.1.8] — 2026-08-19
 
 Forza lavoro (FL) al posto degli slot per commesse e personale, con catalogo eventi dipendenti a scelta.
