@@ -802,6 +802,7 @@ export function createHandler({
             peakDebt: r.peakDebt,
             lifetimeRevenue: r.lifetimeRevenue,
             finalCash: r.finalCash,
+            outcome: r.outcome ?? "lost",
             createdAt: r.createdAt,
           })),
         });

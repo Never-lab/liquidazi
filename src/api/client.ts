@@ -105,6 +105,7 @@ export type LeaderboardEntry = {
   peakDebt: number;
   lifetimeRevenue: number;
   finalCash: number;
+  outcome: "won" | "lost";
   createdAt: string;
 };
 

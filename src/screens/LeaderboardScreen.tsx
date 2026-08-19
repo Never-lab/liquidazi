@@ -47,7 +47,7 @@ export const LeaderboardScreen = () => {
     <div className={styles.menuWide}>
       <h2 className={styles.title}>Classifiche</h2>
       <p className={styles.subtitle}>
-        Run finite (KO). Più board: sopravvivenza, KO veloce, debito, cassa, fatturato.
+        Classifiche globali. <span style={{ color: "#22c55e" }}>●</span> = run ancora in corso.
       </p>
 
       <div className={styles.boardTabs}>
@@ -85,7 +85,12 @@ export const LeaderboardScreen = () => {
               <li key={`${e.username}-${e.createdAt}-${e.rank}`}>
                 <span className={styles.rank}>#{e.rank}</span>
                 <span className={styles.leaderMain}>
-                  <strong>{e.username}</strong>
+                  <strong>
+                    {e.outcome === "won" && (
+                      <span style={{ color: "#22c55e", marginRight: 4 }} title="Run in corso">●</span>
+                    )}
+                    {e.username}
+                  </strong>
                   <span className={styles.leaderMeta}>
                     {e.companyName} · {e.sector}
                   </span>
