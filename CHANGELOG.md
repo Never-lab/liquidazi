@@ -8,6 +8,11 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.3.1] — 2026-08-19
+
+### Fixed
+- Script `db:migrate-from-volume`: import path corretti (`../server/` da `scripts/`).
+
 ## [1.3.0] — 2026-08-19
 
 Persistenza Postgres su Railway per salvataggi e classifica.

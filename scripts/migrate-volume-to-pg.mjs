@@ -4,9 +4,9 @@
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { createPgStore } from "./server/pgStore.mjs";
-import { UPSERT_RUN_SQL, runToColumns } from "./server/pgSchema.mjs";
-import { resolvePersistence } from "./server/paths.mjs";
+import { createPgStore } from "../server/pgStore.mjs";
+import { UPSERT_RUN_SQL, runToColumns } from "../server/pgSchema.mjs";
+import { resolvePersistence } from "../server/paths.mjs";
 
 const loadJson = (path, fallback) => {
   if (!existsSync(path)) return fallback;
