@@ -16,7 +16,7 @@ import { dueF24Liabilities } from "./selectors";
 import { migrateLoansInPlace, openLoans } from "./loans";
 import { tickContracts } from "./contracts";
 import { runWorldEvents } from "./eventCatalog";
-import { refreshMarketBoard, rng } from "./events";
+import { ensureMinBoardSales, refreshMarketBoard, rng, tickBoardDryStreak } from "./events";
 import { monthlyCapacity } from "./workforce";
 import { tickStaffEvents } from "./staffEvents";
 import { applyMoraleDrift, clampMorale, rollStaffResignation } from "./morale";
@@ -683,6 +683,8 @@ export const advanceMonth = (state: GameState): GameState => {
     let s = refreshMarketBoard(next);
     s = refreshAcquisitionBoard(s);
     if (!next.quietMode) s = runWorldEvents(s);
+    s = ensureMinBoardSales(s);
+    s = tickBoardDryStreak(s);
     return s;
   }
 

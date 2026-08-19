@@ -74,6 +74,10 @@ export const applyRivalSteal = (state: GameState): GameState => {
       toMonthIndex(next.calendar) * 9091 + next.monthsPlayed * 7 + attempt * 17 + stolen * 31,
     );
     if (rand() > chance) continue;
+    const stealable = next.opportunities.filter(
+      (o) => o.kind === "sale" && !o.contractMonths,
+    ).length;
+    if (stealable <= 1) break;
     const saleIdx = next.opportunities.findIndex((o) => o.kind === "sale" && !o.contractMonths);
     if (saleIdx < 0) break;
     const taken = next.opportunities[saleIdx]!;

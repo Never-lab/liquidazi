@@ -88,6 +88,10 @@ export const SUPPLY_EMPTY_TICKET_MULT_EARLY = 0.88;
 export const SUPPLY_EMPTY_TICKET_MULT = 0.82;
 /** Primi mesi: almeno una commessa locale entro ~90% FL disponibile. */
 export const EARLY_FL_BOARD_MONTHS = 8;
+/** Mesi con almeno 1 commessa sul tabellone (anti dry streak early). */
+export const BOARD_MIN_SALES_EARLY_MONTHS = EARLY_GAME_MONTHS;
+/** Dopo N mesi consecutivi a zero commesse, forza almeno 1 offerta. */
+export const BOARD_DRY_STREAK_FORCE = 2;
 /** Netto minimo commesse locali/privati (early game più sostenibile). */
 export const LOCAL_SALE_NET_MIN = 1250;
 
@@ -122,6 +126,78 @@ export const clampSaleTarget = (raw: number, r: DemandRegime): number => {
 };
 
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
+
+export const boardSaleCount = (state: GameState): number =>
+  state.opportunities.filter((o) => o.kind === "sale").length;
+
+/** Min sale rows required on the board after refresh (early game + anti-streak). */
+export const minBoardSalesRequired = (state: GameState): number => {
+  if (state.monthsPlayed < BOARD_MIN_SALES_EARLY_MONTHS) return 1;
+  if ((state.boardDryStreak ?? 0) >= BOARD_DRY_STREAK_FORCE) return 1;
+  return 0;
+};
+
+const pushLocalSale = (
+  ops: Opportunity[],
+  state: GameState,
+  profile: (typeof SECTOR_PROFILES)[keyof typeof SECTOR_PROFILES],
+  cap: number,
+  rand: () => number,
+  id: number,
+): number => {
+  const sizeFactor = 0.35 + rand() * 0.65;
+  let net = round2(Math.max(LOCAL_SALE_NET_MIN, Math.min(cap, cap * sizeFactor)));
+  if (state.monthsPlayed < EARLY_FL_BOARD_MONTHS) {
+    const flCap = Math.floor(availableWorkforce(state) * 0.9);
+    net = Math.min(net, maxNetForWorkforceBudget(flCap));
+  }
+  const termMonths = Math.min(3, pick(profile.privateTerms, rand));
+  const home = cityById(state.company.city);
+  const raw: Opportunity = {
+    id,
+    kind: "sale",
+    title: `Commessa · ${pick(CLIENT_NAMES, rand)} · ${home.label}`,
+    net,
+    expiresInMonths: 1,
+    clientType: "private",
+    termMonths,
+    marketLayer: "local",
+  };
+  if ((state.highQualityExpectationMonths ?? 0) > 0 && rand() < HIGH_QUALITY_SALE_CHANCE) {
+    raw.qualityRequired = HIGH_QUALITY_DEMAND_MIN;
+    raw.title = `Commessa premium · ${pick(CLIENT_NAMES, rand)} · ${home.label}`;
+  }
+  ops.push(withWorkforceRequired(maybeMakeContract(raw, rand, state.company.reputation)));
+  return id + 1;
+};
+
+/** Inject local sales if board is below the required minimum (post-rival / events). */
+export const ensureMinBoardSales = (state: GameState): GameState => {
+  const min = minBoardSalesRequired(state);
+  const missing = min - boardSaleCount(state);
+  if (missing <= 0) return state;
+
+  const next = structuredClone(state);
+  const profile = SECTOR_PROFILES[next.company.sector];
+  const cap = maxDealNet(next);
+  const rand = rng(toMonthIndex(next.calendar) * 991 + next.nextId * 17 + next.monthsPlayed);
+  let id = next.nextId;
+  for (let i = 0; i < missing; i++) {
+    id = pushLocalSale(next.opportunities, next, profile, cap, rand, id);
+  }
+  next.nextId = id;
+  return next;
+};
+
+export const tickBoardDryStreak = (state: GameState): GameState => {
+  const next = structuredClone(state);
+  if (boardSaleCount(next) === 0) {
+    next.boardDryStreak = (next.boardDryStreak ?? 0) + 1;
+  } else {
+    next.boardDryStreak = 0;
+  }
+  return next;
+};
 
 const withWorkforceRequired = (op: Opportunity): Opportunity =>
   op.kind === "sale"
@@ -266,30 +342,7 @@ const pushSale = (
     return id + 1;
   }
 
-  const sizeFactor = 0.35 + rand() * 0.65;
-  let net = round2(Math.max(LOCAL_SALE_NET_MIN, Math.min(cap, cap * sizeFactor)));
-  if (state.monthsPlayed < EARLY_FL_BOARD_MONTHS) {
-    const flCap = Math.floor(availableWorkforce(state) * 0.9);
-    net = Math.min(net, maxNetForWorkforceBudget(flCap));
-  }
-  const termMonths = Math.min(3, pick(profile.privateTerms, rand));
-  const home = cityById(state.company.city);
-  const raw: Opportunity = {
-    id,
-    kind: "sale",
-    title: `Commessa · ${pick(CLIENT_NAMES, rand)} · ${home.label}`,
-    net,
-    expiresInMonths: 1,
-    clientType: "private",
-    termMonths,
-    marketLayer: "local",
-  };
-  if ((state.highQualityExpectationMonths ?? 0) > 0 && rand() < HIGH_QUALITY_SALE_CHANCE) {
-    raw.qualityRequired = HIGH_QUALITY_DEMAND_MIN;
-    raw.title = `Commessa premium · ${pick(CLIENT_NAMES, rand)} · ${home.label}`;
-  }
-  ops.push(withWorkforceRequired(maybeMakeContract(raw, rand, state.company.reputation)));
-  return id + 1;
+  return pushLocalSale(ops, state, profile, cap, rand, id);
 };
 
 const pushSupply = (
@@ -358,6 +411,11 @@ export const generateOpportunities = (
         saleTarget = Math.min(2, Math.max(0, saleTarget));
       }
     }
+  }
+
+  const minSales = minBoardSalesRequired(state);
+  if (minSales > 0) {
+    saleTarget = Math.max(minSales, saleTarget);
   }
 
   const ops: Opportunity[] = [];
@@ -553,6 +611,8 @@ export const seedNewGame = (state: GameState): GameState => {
   next.nextId = Math.max(next.nextId, nextId);
   next.demandRegime = demandRegime;
   next = applyRivalSteal(next);
+  next = ensureMinBoardSales(next);
+  next.boardDryStreak = 0;
   next.log = [
     {
       id: next.nextId++,
@@ -582,5 +642,7 @@ export const refreshMarketBoard = (state: GameState): GameState => {
   next.nextId = Math.max(next.nextId, nextId);
   next.demandRegime = demandRegime;
   next = applyRivalSteal(next);
+  next = ensureMinBoardSales(next);
+  next = tickBoardDryStreak(next);
   return next;
 };

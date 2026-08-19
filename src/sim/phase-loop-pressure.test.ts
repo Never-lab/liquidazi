@@ -81,52 +81,40 @@ describe("rival", () => {
     let s = base();
     s.quietMode = false;
     s.rival = { ...seedRival(s), heat: 90 };
-    s.opportunities = [
+    const salesBoard = [
       {
         id: 1,
-        kind: "sale",
+        kind: "sale" as const,
         title: "Commessa · Target",
         net: 1000,
         expiresInMonths: 1,
-        clientType: "private",
+        clientType: "private" as const,
+        termMonths: 1,
+      },
+      {
+        id: 3,
+        kind: "sale" as const,
+        title: "Commessa · Altra",
+        net: 1200,
+        expiresInMonths: 1,
+        clientType: "private" as const,
         termMonths: 1,
       },
       {
         id: 2,
-        kind: "supply",
+        kind: "supply" as const,
         title: "Fornitura · X",
         net: 500,
         expiresInMonths: 1,
         termMonths: 1,
       },
     ];
-    // Try several seeds via monthsPlayed until steal fires (deterministic)
     let stolen = false;
     for (let m = 0; m < 40; m++) {
       s.monthsPlayed = m;
-      const board = applyRivalSteal({
-        ...s,
-        opportunities: [
-          {
-            id: 1,
-            kind: "sale",
-            title: "Commessa · Target",
-            net: 1000,
-            expiresInMonths: 1,
-            clientType: "private",
-            termMonths: 1,
-          },
-          {
-            id: 2,
-            kind: "supply",
-            title: "Fornitura · X",
-            net: 500,
-            expiresInMonths: 1,
-            termMonths: 1,
-          },
-        ],
-      });
-      if (board.opportunities.every((o) => o.id !== 1)) {
+      const board = applyRivalSteal({ ...s, opportunities: salesBoard });
+      const salesLeft = board.opportunities.filter((o) => o.kind === "sale");
+      if (salesLeft.length === 1) {
         stolen = true;
         expect(board.log[0]?.text).toMatch(/preso/);
         break;

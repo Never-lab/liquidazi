@@ -52,14 +52,33 @@ describe("generateOpportunities demand regimes", () => {
       senioritySteps: 0,
     }));
 
-  it("secca yields 0–2 sale ops", () => {
+  it("secca yields 0–2 sale ops (mid/late game)", () => {
     const s = createInitialGameState();
     s.employees.push(...manyOperai(20, 1000));
+    s.monthsPlayed = 24;
     const { ops, demandRegime } = generateOpportunities(s, { forceRegime: "secca" });
     expect(demandRegime).toBe("secca");
     const sales = ops.filter((o) => o.kind === "sale");
     expect(sales.length).toBeGreaterThanOrEqual(0);
     expect(sales.length).toBeLessThanOrEqual(2);
+  });
+
+  it("early game secca always has at least one local sale", () => {
+    const s = createInitialGameState();
+    s.monthsPlayed = 3;
+    const { ops, demandRegime } = generateOpportunities(s, { forceRegime: "secca" });
+    expect(demandRegime).toBe("secca");
+    const sales = ops.filter((o) => o.kind === "sale");
+    expect(sales.length).toBeGreaterThanOrEqual(1);
+    expect(sales.every((o) => o.marketLayer === "local")).toBe(true);
+  });
+
+  it("dry streak forces a sale on the third empty month", () => {
+    const s = createInitialGameState();
+    s.monthsPlayed = 20;
+    s.boardDryStreak = 2;
+    const { ops } = generateOpportunities(s, { forceRegime: "secca" });
+    expect(ops.filter((o) => o.kind === "sale").length).toBeGreaterThanOrEqual(1);
   });
 
   it("boom fills boardCap 12 with high staff", () => {
