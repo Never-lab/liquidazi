@@ -1,9 +1,10 @@
-export type EventFamily = "ambientale" | "burocratico" | "logistico";
+export type EventFamily = "ambientale" | "burocratico" | "logistico" | "personale";
 
 export const FAMILY_LABEL: Record<EventFamily, string> = {
   ambientale: "Ambiente",
   burocratico: "Burocrazia",
   logistico: "Logistica",
+  personale: "Personale",
 };
 
 export type ChainLink = {

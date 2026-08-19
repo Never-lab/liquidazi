@@ -94,11 +94,25 @@ export interface TaxLiability {
 
 export type EmployeeGender = "M" | "F";
 
-export type StaffAbsenceKind = "maternita" | "paternita";
+export type StaffAbsenceKind =
+  | "malattia"
+  | "permesso"
+  | "ferie"
+  | "maternita"
+  | "paternita"
+  | "allattamento"
+  | "congedo_parentale"
+  | "permesso_104";
 
 export interface StaffAbsence {
   kind: StaffAbsenceKind;
   monthsLeft: number;
+}
+
+export interface StaffEventTarget {
+  employeeId: number;
+  kind: StaffAbsenceKind;
+  months: number;
 }
 
 export interface Employee {
@@ -112,8 +126,10 @@ export interface Employee {
   /** Scatti anzianità (ogni 24 mesi di servizio, cap 5). */
   senioritySteps: number;
   gender?: EmployeeGender;
-  /** Assenza individuale (maternità / paternità). */
+  /** Assenza individuale (malattia, ferie, congedi…). */
   absence?: StaffAbsence;
+  /** Mesi di malattia cumulati nell'anno solare corrente. */
+  sickMonthsYtd?: number;
 }
 
 /** Aggregated monthly payroll result (cedolino semplificato). */
@@ -285,6 +301,8 @@ export interface PendingEvent {
   body: string;
   options: PendingEventOption[];
   family?: EventFamily;
+  /** Target dipendente per eventi personale (apply on resolve). */
+  staffTarget?: StaffEventTarget;
 }
 
 /** One-shot overlay copy after an auto-applied world event (not persisted in UI store). */

@@ -55,6 +55,7 @@ export const migrateGameState = (state: GameState): GameState => {
   for (const emp of next.employees) {
     emp.senioritySteps ??= 0;
     emp.gender ??= emp.id % 2 === 0 ? "F" : "M";
+    emp.sickMonthsYtd ??= 0;
   }
   for (const c of next.activeContracts ?? []) {
     if (c.workforceLock == null) {

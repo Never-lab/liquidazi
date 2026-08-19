@@ -1,10 +1,19 @@
+import {
+  STAFF_EVENT_TEMPLATES,
+  type StaffEventTemplate,
+} from "../config/staffAbsences";
 import { rng } from "./rng";
-import { toMonthIndex, type Employee, type GameState } from "./types";
+import {
+  toMonthIndex,
+  type Employee,
+  type GameState,
+  type PendingEvent,
+  type StaffAbsenceKind,
+  type StaffEventTarget,
+} from "./types";
 
 const MALATTIA_MONTHS = new Set([10, 11, 12, 1, 2, 3]);
 const MALATTIA_CHANCE = 0.1;
-const MATERNITA_CHANCE = 0.02;
-const PATERNITA_CHANCE = 0.03;
 
 const pushLog = (state: GameState, tone: "good" | "bad" | "neutral", text: string): void => {
   state.log.unshift({
@@ -14,6 +23,13 @@ const pushLog = (state: GameState, tone: "good" | "bad" | "neutral", text: strin
     text,
   });
   state.log = state.log.slice(0, 12);
+};
+
+const resetSickYearIfNeeded = (state: GameState): void => {
+  if (state.calendar.month !== 1) return;
+  for (const emp of state.employees) {
+    emp.sickMonthsYtd = 0;
+  }
 };
 
 const tickAbsences = (employees: Employee[]): void => {
@@ -26,10 +42,93 @@ const tickAbsences = (employees: Employee[]): void => {
   }
 };
 
-/** Eventi personale + assenze: chiamare a fine mese prima del refresh tabellone. */
+const absenceLogLabel = (kind: StaffAbsenceKind, role: string, months: number): string => {
+  switch (kind) {
+    case "malattia":
+      return `${role} in malattia (${months} ${months === 1 ? "mese" : "mesi"}): 0 FL.`;
+    case "permesso":
+      return `${role} in permesso: FL −50% questo mese.`;
+    case "ferie":
+      return `${role} in ferie: 0 FL.`;
+    case "maternita":
+      return `${role} in maternità (${months} mesi): 0 FL.`;
+    case "paternita":
+      return `${role} in paternità: FL −50%.`;
+    case "allattamento":
+      return `${role} in allattamento (${months} mesi): FL −50%.`;
+    case "congedo_parentale":
+      return `${role} in congedo parentale (${months} mesi): FL −50%.`;
+    case "permesso_104":
+      return `${role} in permesso 104: 0 FL.`;
+  }
+};
+
+/** Applica assenza al dipendente (da evento scelta o test). */
+export const applyStaffAbsence = (state: GameState, target: StaffEventTarget): void => {
+  const emp = state.employees.find((e) => e.id === target.employeeId);
+  if (!emp || emp.absence) return;
+  emp.absence = { kind: target.kind, monthsLeft: target.months };
+  if (target.kind === "malattia") {
+    emp.sickMonthsYtd = (emp.sickMonthsYtd ?? 0) + target.months;
+  }
+  pushLog(state, "neutral", absenceLogLabel(target.kind, emp.role, target.months));
+};
+
+const resolveMonths = (tpl: StaffEventTemplate, rand: () => number): number =>
+  typeof tpl.months === "function" ? tpl.months(rand) : tpl.months;
+
+const eligibleEmployees = (
+  state: GameState,
+  tpl: StaffEventTemplate,
+  months: number,
+): Employee[] =>
+  state.employees.filter((emp) => {
+    if (emp.absence) return false;
+    emp.gender ??= emp.id % 2 === 0 ? "F" : "M";
+    if (tpl.gender && emp.gender !== tpl.gender) return false;
+    const sickMonthsYtd = emp.sickMonthsYtd ?? 0;
+    if (tpl.eligible && !tpl.eligible({ sickMonthsYtd, months })) return false;
+    return true;
+  });
+
+/** Roll weighted staff event; mutates state.pendingEvent when queued. */
+export const tryQueueStaffEvent = (state: GameState, rand: () => number): boolean => {
+  if (state.pendingEvent || state.quietMode) return false;
+  if (state.employees.length === 0) return false;
+
+  const head = state.employees.length;
+  const chance = Math.min(0.28, 0.12 + head * 0.02);
+  if (rand() > chance) return false;
+
+  const candidates: { tpl: StaffEventTemplate; emp: Employee; months: number }[] = [];
+  for (const tpl of STAFF_EVENT_TEMPLATES) {
+    const months = resolveMonths(tpl, rand);
+    for (const emp of eligibleEmployees(state, tpl, months)) {
+      candidates.push({ tpl, emp, months });
+    }
+  }
+  if (candidates.length === 0) return false;
+
+  const pick = candidates[Math.floor(rand() * candidates.length)]!;
+  const { tpl, emp, months } = pick;
+  const pending: PendingEvent = {
+    id: tpl.id,
+    title: tpl.title(emp.role),
+    body: tpl.body(emp.role, months),
+    family: "personale",
+    staffTarget: { employeeId: emp.id, kind: tpl.kind, months },
+    options: [{ id: "ok", label: tpl.optionLabel }],
+  };
+  state.pendingEvent = pending;
+  pushLog(state, "neutral", `Personale: ${pending.title}`);
+  return true;
+};
+
+/** Eventi personale + assenze stagionali: chiamare a fine mese prima del refresh tabellone. */
 export const tickStaffEvents = (state: GameState): GameState => {
   if (state.quietMode) return state;
   const next = structuredClone(state);
+  resetSickYearIfNeeded(next);
   tickAbsences(next.employees);
 
   const idx = toMonthIndex(next.calendar);
@@ -50,28 +149,6 @@ export const tickStaffEvents = (state: GameState): GameState => {
     pushLog(next, "neutral", "Festività natalizie: forza lavoro −10% (dicembre).");
   }
 
-  for (const emp of next.employees) {
-    if (emp.absence) continue;
-    const r = rand();
-    if (emp.gender === "F" && r < MATERNITA_CHANCE) {
-      emp.absence = { kind: "maternita", monthsLeft: 6 };
-      pushLog(
-        next,
-        "neutral",
-        `${emp.role} in maternità (6 mesi): percepisce stipendio ma 0 FL.`,
-      );
-      continue;
-    }
-    if (emp.gender === "M" && r < PATERNITA_CHANCE) {
-      emp.absence = { kind: "paternita", monthsLeft: 1 };
-      pushLog(
-        next,
-        "neutral",
-        `${emp.role} in paternità (1 mese): FL ridotta del 50%.`,
-      );
-    }
-  }
-
   return next;
 };
 
@@ -81,10 +158,30 @@ export const rollEmployeeGender = (state: GameState): "M" | "F" => {
   return u < 0.5 ? "M" : "F";
 };
 
+const ABSENCE_LABELS: Record<StaffAbsenceKind, (n: number) => string> = {
+  malattia: (n) => `malattia (${n} ${n === 1 ? "mese" : "mesi"})`,
+  permesso: (n) => `permesso (${n} mese/i)`,
+  ferie: (n) => `ferie (${n} mese/i)`,
+  maternita: (n) => `maternità (${n} mesi)`,
+  paternita: (n) => `paternità (${n} mese/i)`,
+  allattamento: (n) => `allattamento (${n} mesi)`,
+  congedo_parentale: (n) => `congedo parentale (${n} mesi)`,
+  permesso_104: (n) => `permesso 104 (${n} mese/i)`,
+};
+
 export const absenceLabel = (emp: Employee): string | null => {
   if (!emp.absence) return null;
-  if (emp.absence.kind === "maternita") {
-    return `maternità (${emp.absence.monthsLeft} mesi)`;
-  }
-  return `paternità (${emp.absence.monthsLeft} mese/i)`;
+  return ABSENCE_LABELS[emp.absence.kind](emp.absence.monthsLeft);
 };
+
+/** Stub apply for resolveEventOption lookup (real apply via staffTarget). */
+export const STAFF_CHOICE_STUBS = STAFF_EVENT_TEMPLATES.map((tpl) => ({
+  kind: "choice" as const,
+  id: tpl.id,
+  family: "personale" as const,
+  title: tpl.title("Dipendente"),
+  body: tpl.body("Dipendente", 1),
+  options: [{ id: "ok", label: tpl.optionLabel, apply: (_s: GameState) => {} }],
+}));
+
+export const staffEventIds = (): string[] => STAFF_EVENT_TEMPLATES.map((t) => t.id);
