@@ -4,6 +4,7 @@ import {
   workforceForRole,
   workforceRequiredForNet,
 } from "../config/workforce";
+import { absenceFlMult } from "../config/staffAbsences";
 import { getProjectDef } from "../config/projects";
 import { upgradeLevel } from "../config/upgrades";
 import { migrateUpgradeState } from "./migrateUpgrades";
@@ -37,9 +38,7 @@ const malattiaMult = (state: GameState): number => {
 export const employeeWorkforceContribution = (emp: Employee): number => {
   const base = workforceForRole(emp.role);
   if (!emp.absence) return base;
-  if (emp.absence.kind === "maternita") return 0;
-  if (emp.absence.kind === "paternita") return round2(base * 0.5);
-  return base;
+  return round2(base * absenceFlMult(emp.absence.kind));
 };
 
 const staffWorkforceRaw = (state: GameState): number =>

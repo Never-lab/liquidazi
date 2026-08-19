@@ -12,6 +12,7 @@ import {
   type EventFamily,
   type WorldEventMeta,
 } from "./worldEvents";
+import { applyStaffAbsence, STAFF_CHOICE_STUBS, tryQueueStaffEvent } from "./staffEvents";
 import {
   round2,
   toMonthIndex,
@@ -1089,7 +1090,9 @@ const SHOCK_POOL: ChoiceDef[] = [
 export const forcedShockCount = (): number => SHOCK_POOL.length;
 
 const findChoiceDef = (id: string): ChoiceDef | undefined =>
-  CHOICE_POOL.find((c) => c.id === id) ?? SHOCK_POOL.find((c) => c.id === id);
+  CHOICE_POOL.find((c) => c.id === id) ??
+  SHOCK_POOL.find((c) => c.id === id) ??
+  STAFF_CHOICE_STUBS.find((c) => c.id === id);
 
 const toMeta = (d: ChoiceDef): WorldEventMeta | undefined => {
   if (!d.family) return undefined;
@@ -1415,6 +1418,14 @@ export const runWorldEvents = (state: GameState): GameState => {
     }
   }
 
+  // Staff events when there is a team (choice popup, blocks month close)
+  if (
+    next.employees.length > 0 &&
+    tryQueueStaffEvent(next, rand)
+  ) {
+    return next;
+  }
+
   if (rand() < diff.choiceChance) {
     const pool = CHOICE_POOL.filter((c) => c.id !== "rival_push");
     const def = pool[Math.floor(rand() * pool.length)]!;
@@ -1461,6 +1472,9 @@ export const resolveEventOption = (state: GameState, optionId: string): GameStat
   const next = structuredClone(state);
   next.tempCapacityMonths ??= 0;
   next.chainBoosts ??= [];
+  if (pending.staffTarget) {
+    applyStaffAbsence(next, pending.staffTarget);
+  }
   opt.apply(next);
   if (SHOCK_POOL.includes(def)) coverNegativeCashFromTreasury(next);
   const meta = toMeta(def);
