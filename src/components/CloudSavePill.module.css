@@ -14,7 +14,7 @@
   color: var(--color-text-muted);
   font-size: 13px;
   font-weight: 500;
-  box-shadow: 0 4px 16px rgba(20, 26, 22, 0.1);
+  box-shadow: 0 4px 16px var(--color-shadow);
   pointer-events: none;
 }
 

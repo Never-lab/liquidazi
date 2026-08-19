@@ -47,7 +47,7 @@ export const LeaderboardScreen = () => {
     <div className={styles.menuWide}>
       <h2 className={styles.title}>Classifiche</h2>
       <p className={styles.subtitle}>
-        Classifiche globali. <span style={{ color: "#22c55e" }}>●</span> = run ancora in corso.
+        Classifiche globali. <span style={{ color: "var(--color-badge-good)" }}>●</span> = run ancora in corso.
       </p>
 
       <div className={styles.boardTabs}>
@@ -87,7 +87,7 @@ export const LeaderboardScreen = () => {
                 <span className={styles.leaderMain}>
                   <strong>
                     {e.outcome === "won" && (
-                      <span style={{ color: "#22c55e", marginRight: 4 }} title="Run in corso">●</span>
+                      <span style={{ color: "var(--color-badge-good)", marginRight: 4 }} title="Run in corso">●</span>
                     )}
                     {e.username}
                   </strong>

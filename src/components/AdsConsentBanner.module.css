@@ -59,7 +59,7 @@
 .accept {
   background: var(--color-accent);
   border-color: transparent;
-  color: #fff;
+  color: var(--color-on-filled);
 }
 
 .privacy {
