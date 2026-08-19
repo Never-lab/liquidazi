@@ -2,13 +2,31 @@
 
 export const monthCloseHint = (opts: {
   pendingEvent: boolean;
-  pendingProjectOffer: boolean;
+  pendingProjectOffer?: boolean;
 }): string | null => {
   if (opts.pendingEvent) return "Risolvi prima l'evento in corso, poi potrai chiudere il mese.";
-  if (opts.pendingProjectOffer) {
-    return "Scegli o salta il piano investimenti (offerta progetto), poi chiudi il mese.";
-  }
   return null;
+};
+
+export const portfolioBuyHint = (opts: {
+  noOps: boolean;
+  belowMin: boolean;
+  shortCash: boolean;
+  minLabel: string;
+}): string => {
+  if (opts.noOps) return "Hai esaurito le operazioni di portafoglio per questo mese.";
+  if (opts.belowMin) return `Ordine minimo ${opts.minLabel}.`;
+  if (opts.shortCash) return "Cassa insufficiente per questo acquisto.";
+  return "Acquista al prezzo di mercato corrente (1 operazione).";
+};
+
+export const portfolioSellHint = (opts: {
+  noOps: boolean;
+  invalidPct: boolean;
+}): string => {
+  if (opts.noOps) return "Hai esaurito le operazioni di portafoglio per questo mese.";
+  if (opts.invalidPct) return "Indica una percentuale tra 1 e 100.";
+  return "Vendi: l'eventuale plusvalenza confluisce nel bilancio (IRES).";
 };
 
 export const capexHint = (opts: {

@@ -22,7 +22,19 @@ export const createTesterGameState = (): GameState => {
 
   g.company.cash = 18_000;
   g.company.reputation = 72;
-  g.treasury = 4_000;
+  g.treasury = 0;
+  g.portfolio = [
+    {
+      symbol: "XEON.MI",
+      label: "Liquidità",
+      shares: 40,
+      avgCostEur: 100,
+      assetClass: "etf",
+      liquid: true,
+      lastPriceEur: 100,
+    },
+  ];
+  g.portfolioLegacyMigrated = true;
   g.supplyMonths = 2;
   g.supplyStock = [{ quality: 65, months: 2 }];
   g.compliance = 85;

@@ -1,5 +1,6 @@
 import { euriborAt, frenchPayment } from "./actions";
 import { migrateLoansInPlace } from "./loans";
+import { migratePortfolioLegacy } from "./migratePortfolio";
 import { migrateUpgradeState } from "./migrateUpgrades";
 import { migrateSupplyStock } from "./supplies";
 import { seedRival } from "./rival";
@@ -78,5 +79,8 @@ export const migrateGameState = (state: GameState): GameState => {
   }
   next.career.year2Reached ??= false;
   migrateSupplyStock(next);
-  return next;
+  next.portfolio ??= [];
+  next.portfolioOpsUsedThisMonth ??= 0;
+  next.portfolioHistory ??= [];
+  return migratePortfolioLegacy(next);
 };

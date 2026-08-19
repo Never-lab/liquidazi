@@ -18,13 +18,6 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
       body: "Scegli un'opzione nel banner blu prima di chiudere un altro mese.",
     };
   }
-  if (game.projectOffer) {
-    return {
-      id: "project-offer",
-      title: "Piano investimenti",
-      body: "A gennaio puoi scegliere un progetto annuale — nel banner o Salta, poi chiudi il mese.",
-    };
-  }
   if (game.monthsPlayed === 0 && game.invoices.filter((i) => i.kind === "AR").length === 0) {
     return {
       id: "first-deal",
@@ -95,13 +88,13 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
   }
   if (
     (game.lastYearReport?.profit ?? 0) > 0 &&
-    (game.treasury ?? 0) === 0 &&
+    (game.portfolio ?? []).length === 0 &&
     game.company.cash > 5000
   ) {
     return {
       id: "invest",
       title: "Investi l'utile",
-      body: "In Investimenti: parcheggia in tesoreria o reinvesti in crescita (+8 FL). In Holding: acquisisci partecipate.",
+      body: "Apri Portafoglio dalla barra in alto: ETF, obbligazioni o azioni con dati di mercato reali.",
     };
   }
   if (game.calendar.month === 5 || game.calendar.month === 10) {
