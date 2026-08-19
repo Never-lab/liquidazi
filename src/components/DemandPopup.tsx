@@ -10,7 +10,7 @@ const COPY = {
   },
   boom: {
     title: "Picco di domanda",
-    body: "Tabellone più pieno — attenzione alla capacità.",
+    body: "Tabellone più pieno — attenzione alla forza lavoro.",
   },
 } as const;
 

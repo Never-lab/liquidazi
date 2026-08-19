@@ -1,16 +1,18 @@
-# Personale e capacità
+# Personale e forza lavoro
 
 ## Assumere
 
-Ogni dipendente costa in busta e genera debiti (ritenute, contributi). Più gente = più slot sul tabellone, ma anche più uscite.
+Ogni dipendente costa in busta e genera debiti (ritenute, contributi). Più gente = più **forza lavoro (FL)** per accettare commesse, ma anche più uscite.
+
+Senza assunzioni parti da **30 FL** (titolare + collaborazioni occasionali). I ruoli contano diversamente: Operaio **+5**, Impiegato **+8**, Responsabile **+12**.
 
 ## Limiti tipici
 
-- **Capacità piena**: non puoi accettare altre commesse finché non liberi slot (chiudi lavori, gestisci contratti, scorte).
-- **Due contratti**: al massimo due contratti multi-mese attivi; chiudine uno prima di firmarne un altro.
-- Senza scorte o sotto pressione operativa gli slot si riducono.
+- **FL insufficiente**: ogni commessa richiede una FL indicata sulla card; se non basta, il toast spiega quanto serve e quanto hai libero.
+- **Due contratti**: al massimo due contratti multi-mese attivi; chiudine uno prima di firmarne un altro (bloccano FL finché aperti).
+- Assenze (ferie estive, malattie, maternità/paternità) e pressione operativa **riducono la FL disponibile**.
 
-I messaggi “capacità piena / già 2 contratti” sono avvisi rapidi (toast), non finiscono nella posta.
+I messaggi “FL insufficiente / già 2 contratti” sono avvisi rapidi (toast), non finiscono nella posta.
 
 ## Oneri di fine anno
 

@@ -23,7 +23,7 @@ export const pressureEffectBlurb = (id: PressureId): string => {
     case "cash_crunch":
       return "Affitto +15%";
     case "pa_wave":
-      return "Più PA; −1 slot se scorte 0";
+      return "Più PA; −8 FL se scorte 0";
     case "inspection":
       return "F24 saltati: compliance ×2";
     case "hiring_freeze":

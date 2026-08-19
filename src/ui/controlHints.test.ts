@@ -117,7 +117,7 @@ describe("growthInvestHint", () => {
         atCap: true,
         minLabel: "3.500 €",
       }),
-    ).toMatch(/tetto|slot/i);
+    ).toMatch(/tetto|FL/i);
   });
   it("below min", () => {
     expect(

@@ -41,7 +41,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   processi: {
     id: "processi",
     label: "Processi interni",
-    blurb: "+1 slot capacità senza assumere; cedolino −5% sul costo lordo didattico.",
+    blurb: "+8 FL senza assumere; cedolino −5% sul costo lordo didattico.",
     cost: 3000,
   },
   scorte: {
@@ -88,11 +88,11 @@ export const UPGRADE_LEVELS: Record<
     { costMult: 1.0, blurb: UPGRADES.processi.blurb },
     {
       costMult: 1.8,
-      blurb: "+2 slot capacità; cedolino −7% sul costo lordo didattico.",
+      blurb: "+16 FL; cedolino −7% sul costo lordo didattico.",
     },
     {
       costMult: 2.6,
-      blurb: "+3 slot capacità; cedolino −10% sul costo lordo didattico.",
+      blurb: "+24 FL; cedolino −10% sul costo lordo didattico.",
     },
   ],
   scorte: [

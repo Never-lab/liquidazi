@@ -17,7 +17,7 @@ Se paghi le tasse in tempo (niente cartella/pignoramento), la compliance **sale 
 Tre strumenti diversi:
 
 1. **Tesoreria** — parcheggio: rende (~0,55× Euribor) ma non è cassa “comoda”; può salvare se vai in rosso.
-2. **Reinvestimento crescita** — ogni **3 500 €** → +1 slot permanente (max 3).
+2. **Reinvestimento crescita** — ogni **3 500 €** → **+8 FL** permanenti (max 3 bonus = +24 FL).
 3. **Progetto annuale** — offerta a **gennaio**: un piano 6–12 mesi (o salta). Stato e mesi residui li vedi nel tab Investimenti.
 
 Holding (partecipate) è un tab separato.
