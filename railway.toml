@@ -1,6 +1,5 @@
-# Persistence: attach a Railway Volume with mount path /data (dashboard).
-# The app reads RAILWAY_VOLUME_MOUNT_PATH / DATA_DIR and refuses to boot on
-# Railway without one — otherwise each rebuild wipes users/saves.
+# Persistence: Postgres via DATABASE_URL (recommended), or legacy Railway Volume /data.
+# On Railway without either, the app refuses to boot — otherwise each rebuild wipes data.
 
 [build]
 builder = "NIXPACKS"

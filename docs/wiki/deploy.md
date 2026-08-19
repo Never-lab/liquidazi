@@ -19,9 +19,9 @@ Two environments, same Nixpacks build. Details and dashboard checklist: root [`R
 | **staging** | GitHub autodeploy on `main` (Wait for CI) |
 | **production** | GitHub Action [deploy-production.yml](../../.github/workflows/deploy-production.yml) on tag `v*.*.*` — **not** every `main` push |
 
-Each env: own volume `/data`, own `LIQUIDAZI_SECRET`, own public URL. Do not clone prod player data onto staging.
+Each env: own Postgres (or legacy volume `/data`), own `LIQUIDAZI_SECRET`, own public URL. Do not clone prod player data onto staging.
 
-Health: `GET /api/health` → `"storage":"volume"`. GitHub secret `RAILWAY_TOKEN` = Railway **production** project token. Il workflow fa `railway up --environment production`; se restano più servizi, variabile repo `RAILWAY_SERVICE`.
+Health: `GET /api/health` → `"storage":"postgres"` when `DATABASE_URL` is set. Migrate legacy volume: `npm run db:migrate-from-volume`.
 
 Auth: password min **8** chars; session token HMAC **2h idle** / **7 day** absolute cap (legacy 3-part tokens rejected). In-memory rate limits on register/login (20 / 15 min per IP) and feedback (8 / hour per IP). Self-reported runs clamp money stats and reject forged early `won` (&lt; 24 mesi). Ops `/ops` shows a rotating request log (`events.json`, last 2000; no IP, query, body, or token).
 

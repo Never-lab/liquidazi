@@ -38,23 +38,22 @@ Due ambienti nello **stesso progetto**, stessa build (`railway.toml`: `npm run b
 
 | Ambiente | Quando si aggiorna | Dati |
 |----------|--------------------|------|
-| **staging** | ogni push su `main` (autodeploy GitHub; abilita Wait for CI) | volume `/data` **suo**, secret **suo** |
-| **production** | solo tag SemVer `vX.Y.Z` (workflow [deploy-production.yml](.github/workflows/deploy-production.yml)) | volume e secret **prod** — non copiare i giocatori su staging |
+| **staging** | ogni push su `main` (autodeploy GitHub; abilita Wait for CI) | Postgres **suo** (o volume legacy), secret **suo** |
+| **production** | solo tag SemVer `vX.Y.Z` (workflow [deploy-production.yml](.github/workflows/deploy-production.yml)) | Postgres **prod** (o volume legacy) — non copiare i giocatori su staging |
 
 Checklist una tantum (dashboard Railway + GitHub):
 
 1. Duplica l’ambiente attuale in **`staging`**. Lascia **`production`** sul servizio live di oggi.
-2. **Staging:** Source → branch `main`, autodeploy ON, **Wait for CI**. Volume nuovo mount **`/data`** (vuoto, non il volume prod). Generate domain (URL diverso da prod).
-3. **Production:** **disattiva** l’autodeploy da GitHub (altrimenti ogni `main` rideploya anche i giocatori). Volume `/data` esistente invariato.
+2. **Staging:** Source → branch `main`, autodeploy ON, **Wait for CI**. Aggiungi **Postgres** (Railway → Add plugin → PostgreSQL). Il servizio web riceve `DATABASE_URL` automaticamente. Generate domain (URL diverso da prod).
+3. **Production:** **disattiva** l’autodeploy da GitHub. Postgres **prod** separato (non condividere DB con staging).
 4. Variabili **per ambiente** (valori diversi): `LIQUIDAZI_SECRET` (obbligatorio, non il default dev). Optional: `LIQUIDAZI_ADMIN_USERNAMES`. Staging: `PUBLIC_SITE_URL` / `VITE_SITE_URL` = URL staging. Prod: URL pubblico / `floatdesk.app`.
 5. GitHub → Settings → Secrets: `RAILWAY_TOKEN` = **project token dell’ambiente production** (Railway → Project settings → Tokens). Senza questo secret il workflow sul tag fallisce. Se `railway up` dice “Multiple services found”, aggiungi la variabile di repo `RAILWAY_SERVICE` col nome del servizio **production** (dashboard Railway).
-6. Health: `GET /api/health` → `"storage":"volume"` su **entrambi** gli URL.
-7. **AdSense / SEO** restano override di build (`VITE_ADSENSE_*`, `VITE_PLAUSIBLE_*`, `VITE_ADS_STUB=0`). Su staging puoi lasciare ads spente. **Ops:** `/ops` con gli admin di quell’ambiente (log richieste rotante, niente IP).
-8. Release: `git tag -a vX.Y.Z` **dopo** il merge su `main`, poi `git push origin vX.Y.Z` → CI + deploy prod.
+6. Health: `GET /api/health` → `"storage":"postgres"` (o `"volume"` se legacy file mode).
+7. **Migrazione da volume:** con volume montato e Postgres attivo, una tantum: `DATA_DIR=/data npm run db:migrate-from-volume` (Railway shell o job locale con `DATABASE_URL` prod). Poi puoi rimuovere il volume dal servizio web.
+8. **AdSense / SEO** restano override di build (`VITE_ADSENSE_*`, `VITE_PLAUSIBLE_*`, `VITE_ADS_STUB=0`). Su staging puoi lasciare ads spente. **Ops:** `/ops` con gli admin di quell’ambiente (log richieste rotante, niente IP).
+9. Release: `git tag -a vX.Y.Z` **dopo** il merge su `main`, poi `git push origin vX.Y.Z` → CI + deploy prod.
 
-Node **22** (`nixpacks.toml`). Volume mai su `/app`. Se il volume è già altrove, `DATA_DIR` o `RAILWAY_VOLUME_MOUNT_PATH`.
-
-Se hai già un volume montato altrove (es. `/app/server/data`), va bene: l’app usa `RAILWAY_VOLUME_MOUNT_PATH`. In alternativa imposta `DATA_DIR` al path del mount.
+Node **22** (`nixpacks.toml`). Persistenza: **Postgres** via `DATABASE_URL` (consigliato). Legacy: volume su `/data` (`RAILWAY_VOLUME_MOUNT_PATH` o `DATA_DIR`).
 
 Local production-ish check:
 
@@ -99,7 +98,7 @@ Tutte le aliquote vivono in [`src/config/fiscalYearSnapshot.ts`](src/config/fisc
 - Vite + React + TypeScript
 - Zustand + persist (stato di gioco e salvataggio)
 - Motore di simulazione puro in `src/sim/` (testato con vitest, zero React)
-- API Node zero-dep in `server/` (auth, saves, leaderboard, admin stats)
+- API Node in `server/` (auth, saves, leaderboard, admin stats) — Postgres o file JSON locale
 
 ## Contribuire
 

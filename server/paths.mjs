@@ -2,22 +2,29 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
- * Resolve where users/runs/saves are stored.
+ * Resolve persistence backend and optional volume path (file store / migration source).
  *
- * On Railway every deploy replaces the container filesystem. Without a volume
- * (or DATA_DIR pointing at one), accounts and saves vanish on each build.
+ * Priority:
+ * - DATABASE_URL → Postgres (Railway plugin sets this automatically)
+ * - else DATA_DIR → RAILWAY_VOLUME_MOUNT_PATH → local server/data (dev)
  *
- * Prefer: DATA_DIR → RAILWAY_VOLUME_MOUNT_PATH → local server/data (dev only).
+ * On Railway without DATABASE_URL, a volume is still required (legacy file mode).
  *
  * @param {{
  *   dataDirEnv?: string | undefined,
  *   volumeMount?: string | undefined,
  *   railwayEnv?: string | undefined,
+ *   databaseUrl?: string | undefined,
  *   fallback?: string,
  * }} [opts]
- * @returns {{ dataDir: string, storage: "volume" | "local" }}
+ * @returns {{
+ *   dataDir: string,
+ *   storage: "volume" | "local" | "postgres",
+ *   databaseUrl: string | null,
+ * }}
  */
-export function resolveDataDir(opts = {}) {
+export function resolvePersistence(opts = {}) {
+  const databaseUrl = opts.databaseUrl ?? process.env.DATABASE_URL ?? null;
   const dataDirEnv = opts.dataDirEnv ?? process.env.DATA_DIR;
   const volumeMount = opts.volumeMount ?? process.env.RAILWAY_VOLUME_MOUNT_PATH;
   const railwayEnv = opts.railwayEnv ?? process.env.RAILWAY_ENVIRONMENT;
@@ -25,18 +32,34 @@ export function resolveDataDir(opts = {}) {
     opts.fallback ??
     join(dirname(fileURLToPath(import.meta.url)), "data");
 
+  if (databaseUrl) {
+    let dataDir = fallback;
+    if (dataDirEnv) dataDir = dataDirEnv;
+    else if (volumeMount) dataDir = volumeMount;
+    return { dataDir, storage: "postgres", databaseUrl };
+  }
+
   if (dataDirEnv) {
-    return { dataDir: dataDirEnv, storage: "volume" };
+    return { dataDir: dataDirEnv, storage: "volume", databaseUrl: null };
   }
   if (volumeMount) {
-    return { dataDir: volumeMount, storage: "volume" };
+    return { dataDir: volumeMount, storage: "volume", databaseUrl: null };
   }
   if (railwayEnv) {
     throw new Error(
-      "FATAL: Railway volume missing. Attach a volume with mount path /data " +
-        "(Service → Settings → Volumes). Railway sets RAILWAY_VOLUME_MOUNT_PATH; " +
-        "or set DATA_DIR to that mount path. Without it every deploy wipes users/saves.",
+      "FATAL: Railway persistence missing. Add a Postgres plugin (DATABASE_URL) " +
+        "or attach a volume at /data (RAILWAY_VOLUME_MOUNT_PATH). " +
+        "Without either, every deploy wipes users/saves.",
     );
   }
-  return { dataDir: fallback, storage: "local" };
+  return { dataDir: fallback, storage: "local", databaseUrl: null };
+}
+
+/** @deprecated use resolvePersistence */
+export function resolveDataDir(opts = {}) {
+  const { dataDir, storage, databaseUrl } = resolvePersistence(opts);
+  if (databaseUrl) {
+    return { dataDir, storage: "volume" };
+  }
+  return { dataDir, storage };
 }
