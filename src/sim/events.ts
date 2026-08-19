@@ -3,7 +3,7 @@ import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
 import { getProjectDef } from "../config/projects";
 import { capacityPointsFor } from "../config/staffPay";
-import { workforceRequiredForNet } from "../config/workforce";
+import { workforceRequiredForSale } from "../config/workforce";
 import { supplyCapMonths, upgradeLevel } from "../config/upgrades";
 import { migrateUpgradeState } from "./migrateUpgrades";
 import { rng } from "./rng";
@@ -90,7 +90,13 @@ const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * ar
 
 const withWorkforceRequired = (op: Opportunity): Opportunity =>
   op.kind === "sale"
-    ? { ...op, workforceRequired: workforceRequiredForNet(op.net) }
+    ? {
+        ...op,
+        workforceRequired: workforceRequiredForSale(op.net, {
+          marketLayer: op.marketLayer,
+          termMonths: op.termMonths ?? op.contractMonths,
+        }),
+      }
     : op;
 
 /** Sum of per-role capacity points across all employees (legacy). */
@@ -342,7 +348,13 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
   if (!op) return state;
 
   const saleFl =
-    op.kind === "sale" ? (op.workforceRequired ?? workforceRequiredForNet(op.net)) : 0;
+    op.kind === "sale"
+      ? (op.workforceRequired ??
+        workforceRequiredForSale(op.net, {
+          marketLayer: op.marketLayer,
+          termMonths: op.termMonths ?? op.contractMonths,
+        }))
+      : 0;
 
   if (op.kind === "sale" && op.contractMonths && op.contractMonths >= 2) {
     if ((state.activeContracts ?? []).length >= 2) {

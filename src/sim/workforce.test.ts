@@ -78,10 +78,15 @@ describe("accettazione commesse per FL", () => {
     expect(workforceRemaining(s)).toBe(0);
   });
 
-  it("genera workforceRequired sulle vendite", () => {
+  it("comunale generato ha FL umana (non centinaia)", () => {
     const s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.company.repMunicipal = 80;
     const { ops } = generateOpportunities(s, { forceRegime: "normale" });
-    const sale = ops.find((o) => o.kind === "sale");
-    expect(sale?.workforceRequired).toBeGreaterThan(0);
+    const municipal = ops.filter((o) => o.marketLayer === "municipal");
+    expect(municipal.length).toBeGreaterThan(0);
+    for (const op of municipal) {
+      expect(op.workforceRequired).toBeGreaterThan(0);
+      expect(op.workforceRequired).toBeLessThanOrEqual(90);
+    }
   });
 });
