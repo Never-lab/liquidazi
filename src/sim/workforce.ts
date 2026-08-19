@@ -3,6 +3,7 @@ import {
   WORKFORCE_PER_LEGACY_SLOT,
   workforceForRole,
   workforceRequiredForNet,
+  workforceRequiredForSale,
 } from "../config/workforce";
 import { absenceFlMult } from "../config/staffAbsences";
 import { getProjectDef } from "../config/projects";
@@ -11,7 +12,7 @@ import { migrateUpgradeState } from "./migrateUpgrades";
 import { capacityPressurePenalty } from "./pressures";
 import { round2, toMonthIndex, type Employee, type GameState } from "./types";
 
-export { workforceRequiredForNet };
+export { workforceRequiredForNet, workforceRequiredForSale };
 
 const DEFAULT_STAFF_MORALE = 70;
 

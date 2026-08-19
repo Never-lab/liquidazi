@@ -1,5 +1,5 @@
 import { issueCustomerInvoice } from "./actions";
-import { workforceRequiredForNet } from "../config/workforce";
+import { workforceRequiredForSale } from "../config/workforce";
 import {
   round2,
   toMonthIndex,
@@ -51,7 +51,12 @@ export const acceptAsContract = (
   const baseNet = round2(op.net / months);
   const netPerMonth =
     (state.supplyMonths ?? 0) > 0 ? round2(baseNet * 1.08) : baseNet;
-  const fl = op.workforceRequired ?? workforceRequiredForNet(op.net);
+  const fl =
+    op.workforceRequired ??
+    workforceRequiredForSale(op.net, {
+      marketLayer: op.marketLayer,
+      termMonths: op.termMonths ?? op.contractMonths ?? months,
+    });
   const contract: ActiveContract = {
     id: next.nextId++,
     title: op.title,
