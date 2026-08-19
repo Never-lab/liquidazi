@@ -16,6 +16,12 @@ export const absenceFlMult = (kind: StaffAbsenceKind): number => {
 /** Malattia individuale: max mesi cumulati per dipendente nell'anno solare. */
 export const SICK_LEAVE_MAX_MONTHS_PER_YEAR = 6;
 
+/** Eventi personale (assenze, stagionali, scelte) richiedono almeno N dipendenti. */
+export const MIN_EMPLOYEES_FOR_STAFF_EVENTS = 2;
+
+export const staffEventsEligible = (employeeCount: number): boolean =>
+  employeeCount >= MIN_EMPLOYEES_FOR_STAFF_EVENTS;
+
 export type StaffEventTemplate = {
   id: string;
   kind: StaffAbsenceKind;

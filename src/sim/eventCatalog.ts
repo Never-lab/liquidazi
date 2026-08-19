@@ -14,6 +14,7 @@ import {
   type WorldEventMeta,
 } from "./worldEvents";
 import { applyStaffAbsence, STAFF_CHOICE_STUBS, tryQueueStaffEvent } from "./staffEvents";
+import { staffEventsEligible } from "../config/staffAbsences";
 import {
   round2,
   toMonthIndex,
@@ -470,6 +471,8 @@ const applySupplyShock = (s: GameState, opts: SupplyShockOpts): void => {
     );
   }
 };
+
+const STAFF_GATED_SHOCK_IDS = new Set(["shock_injury", "shock_strike"]);
 
 const SHOCK_POOL: ChoiceDef[] = [
   {
@@ -1127,10 +1130,14 @@ const tryQueueShock = (state: GameState, rand: () => number): boolean => {
   const chance = 0.16 + comfort * 0.12; // ~0.28 / 0.40 / 0.52
   if (rand() > chance) return false;
 
+  const shockPool = staffEventsEligible(state.employees.length)
+    ? SHOCK_POOL
+    : SHOCK_POOL.filter((d) => !STAFF_GATED_SHOCK_IDS.has(d.id));
+
   state.chainBoosts ??= [];
   let def =
     pickWeighted(
-      SHOCK_POOL,
+      shockPool,
       (d) =>
         effectiveWeight(
           d.weight ?? 1,
@@ -1140,7 +1147,7 @@ const tryQueueShock = (state: GameState, rand: () => number): boolean => {
           state.monthsPlayed,
         ),
       rand,
-    ) ?? SHOCK_POOL[0]!;
+    ) ?? shockPool[0]!;
   if (state.rival && state.rival.heat >= 70 && rand() < 0.35) {
     def = findChoiceDef("shock_rival_raid") ?? def;
   }
@@ -1372,7 +1379,7 @@ export const runWorldEvents = (state: GameState): GameState => {
   if (next.pendingEvent) return next;
 
   // Personale (scelta): priorità prima di shock/auto — RNG dedicato
-  if (next.employees.length > 0) {
+  if (staffEventsEligible(next.employees.length)) {
     const staffRand = rng(toMonthIndex(next.calendar) * 9001 + next.monthsPlayed * 13 + next.employees.length);
     if (tryQueueStaffEvent(next, staffRand)) {
       return next;

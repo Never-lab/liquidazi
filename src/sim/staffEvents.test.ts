@@ -11,12 +11,33 @@ import { resolveEventOption } from "./eventCatalog";
 import { availableWorkforce } from "./workforce";
 
 describe("staffEvents", () => {
-  it("ferie estive riducono FL del 50% a luglio", () => {
+  it("senza dipendenti non scattano eventi stagionali personale a luglio", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.calendar.month = 7;
     s.quietMode = false;
     s = tickStaffEvents(s);
-    expect(availableWorkforce(s)).toBe(Math.round(30 * 0.5));
+    expect(availableWorkforce(s)).toBe(30);
+    expect(s.lastEventPopup).toBeNull();
+  });
+
+  it("con 1 dipendente non scattano eventi stagionali personale a luglio", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s = hireEmployee(s, "Operaio");
+    s.calendar.month = 7;
+    s.quietMode = false;
+    s = tickStaffEvents(s);
+    expect(availableWorkforce(s)).toBe(35);
+    expect(s.lastEventPopup).toBeNull();
+  });
+
+  it("con 2+ dipendenti ferie estive riducono FL del 50% a luglio", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s = hireEmployee(s, "Operaio");
+    s = hireEmployee(s, "Operaio");
+    s.calendar.month = 7;
+    s.quietMode = false;
+    s = tickStaffEvents(s);
+    expect(availableWorkforce(s)).toBe(Math.round((30 + 10) * 0.5));
     expect(s.lastEventPopup?.title).toBe("Ferie estive");
     expect(s.lastEventPopup?.family).toBe("personale");
   });
@@ -59,21 +80,34 @@ describe("staffEvents", () => {
     expect(s.employees[0]!.absence).toBeUndefined();
   });
 
-  it("malattia aziendale −15% nel mese attivo", () => {
+  it("malattia aziendale −15% nel mese attivo con almeno 2 dipendenti", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s = hireEmployee(s, "Operaio");
+    s = hireEmployee(s, "Operaio");
+    const baseFl = availableWorkforce(s);
     const idx = toMonthIndex(s.calendar);
     s.workforceMalattiaMonthIdx = idx;
-    expect(availableWorkforce(s)).toBe(Math.round(30 * 0.85));
+    expect(availableWorkforce(s)).toBe(Math.round(baseFl * 0.85));
+  });
+
+  it("tryQueueStaffEvent non accoda con meno di 2 dipendenti", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s = hireEmployee(s, "Operaio");
+    s.quietMode = false;
+    const rand = () => 0;
+    expect(tryQueueStaffEvent(s, rand)).toBe(false);
+    expect(s.pendingEvent).toBeNull();
   });
 
   it("tryQueueStaffEvent imposta pending personale con staffTarget", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
     s = hireEmployee(s, "Operaio");
+    s = hireEmployee(s, "Operaio");
     s.quietMode = false;
     const rand = () => 0;
     expect(tryQueueStaffEvent(s, rand)).toBe(true);
     expect(s.pendingEvent?.family).toBe("personale");
-    expect(s.pendingEvent?.staffTarget?.employeeId).toBe(s.employees[0]!.id);
+    expect(s.pendingEvent?.staffTarget?.employeeId).toBeDefined();
   });
 
   it("resolveEventOption applica assenza da staffTarget", () => {

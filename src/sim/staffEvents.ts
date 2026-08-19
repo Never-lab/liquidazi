@@ -1,5 +1,6 @@
 import {
   STAFF_EVENT_TEMPLATES,
+  staffEventsEligible,
   type StaffEventTemplate,
 } from "../config/staffAbsences";
 import { rng } from "./rng";
@@ -99,7 +100,7 @@ const setStaffPopup = (state: GameState, popup: EventPopup): void => {
 /** Roll weighted staff event; mutates state.pendingEvent when queued. */
 export const tryQueueStaffEvent = (state: GameState, rand?: () => number): boolean => {
   if (state.pendingEvent || state.quietMode) return false;
-  if (state.employees.length === 0) return false;
+  if (!staffEventsEligible(state.employees.length)) return false;
 
   const roll = rand ?? rng(toMonthIndex(state.calendar) * 9001 + state.monthsPlayed * 13 + state.employees.length);
   const head = state.employees.length;
@@ -140,10 +141,11 @@ export const tickStaffEvents = (state: GameState): GameState => {
   const idx = toMonthIndex(next.calendar);
   next.workforceMalattiaMonthIdx = null;
 
+  const staffEligible = staffEventsEligible(next.employees.length);
   const rand = rng(idx * 431 + next.monthsPlayed * 17 + next.employees.length);
   const month = next.calendar.month;
 
-  if (MALATTIA_MONTHS.has(month) && rand() < MALATTIA_CHANCE) {
+  if (staffEligible && MALATTIA_MONTHS.has(month) && rand() < MALATTIA_CHANCE) {
     next.workforceMalattiaMonthIdx = idx;
     pushLog(next, "bad", "Malattie in azienda: forza lavoro −15% questo mese.");
     setStaffPopup(next, {
@@ -154,7 +156,7 @@ export const tickStaffEvents = (state: GameState): GameState => {
     });
   }
 
-  if (month === 7 || month === 8) {
+  if (staffEligible && (month === 7 || month === 8)) {
     pushLog(next, "neutral", "Ferie estive: forza lavoro −50% (luglio–agosto).");
     setStaffPopup(next, {
       title: "Ferie estive",
@@ -163,7 +165,7 @@ export const tickStaffEvents = (state: GameState): GameState => {
       tone: "neutral",
     });
   }
-  if (month === 12) {
+  if (staffEligible && month === 12) {
     pushLog(next, "neutral", "Festività natalizie: forza lavoro −10% (dicembre).");
     setStaffPopup(next, {
       title: "Festività natalizie",
