@@ -26,7 +26,7 @@
   --desk-max: 1180px;
   --touch: 44px;
 
-  color-scheme: light;
+  color-scheme: light dark;
   color: var(--color-text);
   background-color: var(--color-bg);
   background-image:
@@ -36,6 +36,30 @@
   background-size: 24px 24px, 24px 24px, 100% 100%;
   font: 16px/1.45 var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #0f1210;
+  --color-bg-ink: #181d1a;
+  --color-surface: #1a201c;
+  --color-border: #2e3830;
+  --color-border-strong: #4a5a50;
+  --color-text: #e2e8e4;
+  --color-text-muted: #97a39b;
+  --color-accent: #4ade80;
+  --color-accent-soft: #1a2e22;
+  --color-accent-contrast: #0f1210;
+  --color-danger: #f87171;
+  --color-danger-soft: #2a1515;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #2a2410;
+  --color-info: #60a5fa;
+  --color-info-soft: #151f2e;
+
+  background-image:
+    linear-gradient(rgba(226, 232, 228, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 232, 228, 0.03) 1px, transparent 1px),
+    radial-gradient(ellipse at 12% 0%, var(--color-bg-ink) 0%, transparent 55%);
 }
 
 * {

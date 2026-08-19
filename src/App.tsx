@@ -26,7 +26,10 @@ import { BRAND_NAME } from "./config/brand";
 import { useGameStore } from "./store/gameStore";
 import { legalPageFromPath } from "./ui/legalPath";
 import { SESSION_EXPIRED_TOAST, isIdleExpired, watchSessionIdle } from "./ui/sessionIdle";
+import { initTheme } from "./ui/theme";
 import styles from "./App.module.css";
+
+initTheme();
 
 function App() {
   const screen = useGameStore((s) => s.screen);
