@@ -38,6 +38,12 @@ import {
 } from "./pressures";
 import { tickRivalHeat, tickRivalPayoff } from "./rival";
 import {
+  consumeSupplyMonthly,
+  deliverPendingSupply,
+  hasWarehouseStock,
+  tickHighQualityExpectations,
+} from "./supplies";
+import {
   CAMPAIGN_WIN_MONTHS,
   LOSE_MONTHS_BELOW_ZERO,
   round2,
@@ -158,7 +164,7 @@ export const advanceMonth = (state: GameState): GameState => {
   const idx = toMonthIndex(next.calendar);
   const profile = SECTOR_PROFILES[next.company.sector];
   const rand = rng(idx * 7919 + next.monthsPlayed * 31);
-  const supplyEmpty = (next.supplyMonths ?? 0) <= 0;
+  const supplyEmpty = !hasWarehouseStock(next);
   const defaultBoost =
     (supplyEmpty ? 1.45 : 0.85) * defaultFactorFromPressure(next);
 
@@ -538,6 +544,8 @@ export const advanceMonth = (state: GameState): GameState => {
 
   // 8. lose: 12 mesi consecutivi in rosso; in difficoltà proponi prestito
   next.monthsPlayed += 1;
+  deliverPendingSupply(next, toMonthIndex(next.calendar));
+  tickHighQualityExpectations(next);
 
   // career peaks for leaderboard
   if (!next.career) {
@@ -621,8 +629,8 @@ export const advanceMonth = (state: GameState): GameState => {
   const consume =
     (salesClosed > 0 || next.employees.length > 0 ? 1 : 0) + supplyConsumeExtra(next);
   if (consume > 0) {
-    if ((next.supplyMonths ?? 0) > 0) {
-      next.supplyMonths = Math.max(0, (next.supplyMonths ?? 0) - consume);
+    if (hasWarehouseStock(next)) {
+      consumeSupplyMonthly(next, consume);
     } else if (!next.quietMode) {
       next.log.unshift({
         id: next.nextId++,

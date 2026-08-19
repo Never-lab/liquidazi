@@ -90,7 +90,7 @@ export const recordSupplierCost = (
   net: number,
   termMonths = 1,
 ): GameState => {
-  if (!(net > 0) || net > 35000) return state;
+  if (!(net > 0) || net > 75000) return state;
   return addInvoice(state, "AP", net, { termMonths });
 };
 

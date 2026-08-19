@@ -181,6 +181,19 @@ export interface Fido {
 
 export type OpportunityKind = "sale" | "supply";
 
+/** Lot in magazzino with quality score 30–100. */
+export interface SupplyBatch {
+  quality: number;
+  months: number;
+}
+
+/** Ordered stock arriving next month (or later if delayed). */
+export interface PendingSupply {
+  quality: number;
+  months: number;
+  arrivesAtMonthIdx: number;
+}
+
 /** Monthly market lead — the only way to create invoices (no free typing). */
 export interface Opportunity {
   id: number;
@@ -197,6 +210,10 @@ export interface Opportunity {
   marketLayer?: MarketLayer;
   /** FL necessaria per accettare (solo sale). */
   workforceRequired?: number;
+  /** Supply lot quality 30–100 (fornitura board). */
+  supplyQuality?: number;
+  /** Client expects premium stock in magazzino (sale). */
+  qualityRequired?: number;
 }
 
 export type PressureId =
@@ -451,6 +468,14 @@ export interface GameState {
   acquisitionBoard: AcquisitionTarget[];
   /** Remaining months of supply coverage (0 = ticket/default penalty) */
   supplyMonths: number;
+  /** FIFO lots in magazzino (quality-aware). */
+  supplyStock?: SupplyBatch[];
+  /** Forniture ordinate, in arrivo mese successivo. */
+  pendingSupply?: PendingSupply[];
+  /** Month indices when excellent stock was used (abuse window). */
+  excellentSupplyLog?: number[];
+  /** Months left of elevated high-quality commessa demand. */
+  highQualityExpectationMonths?: number;
   /** Monthly board demand regime (sale offer count vs capacity). */
   demandRegime: DemandRegime;
   /** Breakdown of last month close for UI */
@@ -687,6 +712,8 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     saleOffers: [],
     acquisitionBoard: [],
     supplyMonths: 1,
+    supplyStock: [{ quality: 65, months: 1 }],
+    pendingSupply: [],
     demandRegime: "normale",
     lastCloseSummary: null,
     milestones: [],

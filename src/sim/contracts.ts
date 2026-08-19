@@ -1,6 +1,13 @@
 import { issueCustomerInvoice } from "./actions";
 import { workforceRequiredForSale } from "../config/workforce";
 import {
+  applyHighQualityRepPenalty,
+  applySupplyToSaleNet,
+  bestWarehouseQuality,
+  consumeSupplyAfterSale,
+  meetsQualityDemand,
+} from "./supplies";
+import {
   round2,
   toMonthIndex,
   type ActiveContract,
@@ -48,9 +55,15 @@ export const acceptAsContract = (
 
   const next = structuredClone(state);
   const months = op.contractMonths;
-  const baseNet = round2(op.net / months);
-  const netPerMonth =
-    (state.supplyMonths ?? 0) > 0 ? round2(baseNet * 1.08) : baseNet;
+  let baseNet = round2(op.net / months);
+  let qualityUsed: number | null = null;
+  if (op.qualityRequired && !meetsQualityDemand(state, op.qualityRequired)) {
+    applyHighQualityRepPenalty(next);
+  } else if (bestWarehouseQuality(state) != null) {
+    qualityUsed = bestWarehouseQuality(state);
+    baseNet = applySupplyToSaleNet(state, baseNet).net;
+  }
+  const netPerMonth = baseNet;
   const fl =
     op.workforceRequired ??
     workforceRequiredForSale(op.net, {
@@ -69,6 +82,7 @@ export const acceptAsContract = (
   };
   next.activeContracts = [...active, contract];
   next.opportunities = next.opportunities.filter((o) => o.id !== op.id);
+  consumeSupplyAfterSale(next, qualityUsed);
   next.log.unshift({
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),

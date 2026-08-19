@@ -9,8 +9,11 @@ import { createInitialGameState } from "./types";
 describe("Supplies + milestones", () => {
   it("fornitura alza supplyMonths; senza scorte ticket più basso", () => {
     let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.supplyStock = [];
+    s.pendingSupply = [];
     s.supplyMonths = 0;
     const low = maxDealNet(s);
+    s.supplyStock = [{ quality: 65, months: 3 }];
     s.supplyMonths = 3;
     const high = maxDealNet(s);
     expect(high).toBeGreaterThan(low);
@@ -23,9 +26,9 @@ describe("Supplies + milestones", () => {
         net: 400,
         expiresInMonths: 1,
         termMonths: 1,
+        supplyQuality: 45,
       },
     ];
-    s.supplyMonths = 3;
     s = acceptOpportunity(s, 1);
     expect(s.supplyMonths).toBe(4);
   });
@@ -133,6 +136,7 @@ describe("Supplies + milestones", () => {
 
   it("rifiuta fornitura se supera il cap magazzino", () => {
     let s = createInitialGameState();
+    s.supplyStock = [{ quality: 65, months: 6 }];
     s.supplyMonths = 6;
     s.opportunities = [
       {
@@ -153,6 +157,7 @@ describe("Supplies + milestones", () => {
   it("upgrade scorte lv4 alza il cap a 14 mesi", () => {
     let s = createInitialGameState();
     s.upgradeLevels = { scorte: 4 };
+    s.supplyStock = [{ quality: 65, months: 12 }];
     s.supplyMonths = 12;
     s.opportunities = [
       {

@@ -5,6 +5,7 @@ import {
   type PressureId,
   type QuarterPressure,
 } from "./types";
+import { hasWarehouseStock } from "./supplies";
 
 const PRESSURES: { id: PressureId; label: string }[] = [
   { id: "cash_crunch", label: "Stretta di cassa" },
@@ -107,6 +108,6 @@ export const paChanceBoost = (state: GameState): number =>
   hasPressure(state, "pa_wave") ? 0.25 : 0;
 
 export const capacityPressurePenalty = (state: GameState): number => {
-  if (hasPressure(state, "pa_wave") && (state.supplyMonths ?? 0) <= 0) return 1;
+  if (hasPressure(state, "pa_wave") && !hasWarehouseStock(state)) return 1;
   return 0;
 };

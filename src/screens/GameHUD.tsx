@@ -5,6 +5,7 @@ import { CoachBanner } from "../components/CoachBanner";
 import { ProjectOfferBanner } from "../components/ProjectOfferBanner";
 import { NotificationInbox } from "../components/NotificationInbox";
 import { ObjectivesInbox } from "../components/ObjectivesInbox";
+import { SuppliesInbox } from "../components/SuppliesInbox";
 import { HoldingPanel } from "../components/HoldingPanel";
 import { InvestmentsPanel } from "../components/InvestmentsPanel";
 import { LoanPanel } from "../components/LoanPanel";
@@ -26,6 +27,7 @@ import {
   pressureBandLabel,
   RIVAL_PRESSURE_TOOLTIP,
 } from "../sim/rival";
+import { pendingMonths, warehouseMonths } from "../sim/supplies";
 import { dueF24Total, openInvoiceSchedule, scheduleTotals, thisCloseRows } from "../sim/selectors";
 import { LOSE_MONTHS_BELOW_ZERO } from "../sim/types";
 import { useGameStore } from "../store/gameStore";
@@ -115,7 +117,8 @@ export const GameHUD = () => {
           <p className={styles.monthLine} title="Mese di gioco, scorte magazzino (mesi di copertura) e reputazione locale / comunale / nazionale.">
             {MESI[game.calendar.month - 1]} {game.calendar.year}
             {" · "}m{game.monthsPlayed + 1}
-            {" · "}scorte {game.supplyMonths ?? 0}m
+            {" · "}scorte {warehouseMonths(game)}m
+            {pendingMonths(game) > 0 ? ` (+${pendingMonths(game)} arr.)` : ""}
             {" · "}loc {Math.round(game.company.reputation)} · com {Math.round(game.company.repMunicipal ?? 0)} · naz {Math.round(game.company.repNational ?? 0)}
             {game.monthsBelowZero > 0
               ? ` · rosso ${game.monthsBelowZero}/${LOSE_MONTHS_BELOW_ZERO}`
@@ -201,17 +204,7 @@ export const GameHUD = () => {
         <nav className={styles.iconNav} aria-label="Posta, obiettivi e scorte">
           <NotificationInbox />
           <ObjectivesInbox />
-          <Hint text="Scorte: schermata in arrivo. Per ora guarda «scorte» nel rigo del mese e le forniture nelle commesse.">
-            <button
-              type="button"
-              className={styles.iconNavBtn}
-              disabled
-              aria-label="Scorte, in arrivo"
-              title="Scorte: in arrivo. Per ora usa il rigo del mese e le commesse."
-            >
-              <Icon name="crate" size={18} />
-            </button>
-          </Hint>
+          <SuppliesInbox />
         </nav>
       </header>
 

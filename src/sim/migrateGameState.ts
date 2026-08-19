@@ -1,6 +1,7 @@
 import { euriborAt, frenchPayment } from "./actions";
 import { migrateLoansInPlace } from "./loans";
 import { migrateUpgradeState } from "./migrateUpgrades";
+import { migrateSupplyStock } from "./supplies";
 import { seedRival } from "./rival";
 import type { GameState } from "./types";
 
@@ -76,5 +77,6 @@ export const migrateGameState = (state: GameState): GameState => {
     };
   }
   next.career.year2Reached ??= false;
+  migrateSupplyStock(next);
   return next;
 };

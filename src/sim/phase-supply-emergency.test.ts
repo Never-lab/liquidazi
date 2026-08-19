@@ -6,11 +6,15 @@ import {
   supplyMonthsFromNet,
 } from "./events";
 import { acceptAsContract } from "./contracts";
+import { advanceMonth } from "./advanceMonth";
+import { warehouseMonths } from "./supplies";
 import { createInitialGameState, round2 } from "./types";
 
 describe("emergency / guaranteed supply", () => {
   it("con scorte 0 il board ha almeno una fornitura", () => {
     const s = createInitialGameState();
+    s.supplyStock = [];
+    s.pendingSupply = [];
     s.supplyMonths = 0;
     s.monthsPlayed = 3;
     const { ops } = generateOpportunities(s);
@@ -19,6 +23,8 @@ describe("emergency / guaranteed supply", () => {
 
   it("emergency scales with cash at 10%, floor 1500", () => {
     const s = createInitialGameState();
+    s.supplyStock = [];
+    s.pendingSupply = [];
     s.supplyMonths = 0;
     s.company.cash = 50000;
     expect(emergencySupplyNet(s)).toBe(5000);
@@ -31,21 +37,27 @@ describe("emergency / guaranteed supply", () => {
     expect(supplyMonthsFromNet(1200)).toBe(2);
   });
 
-  it("ordine emergenza alza scorte e crea AP al prezzo scalato", () => {
+  it("ordine emergenza crea pending e consegna al mese dopo", () => {
     let s = createInitialGameState();
+    s.supplyStock = [];
+    s.pendingSupply = [];
     s.supplyMonths = 0;
+    s.quietMode = true;
     s.company.cash = 50000;
     const inv0 = s.invoices.length;
     const cost = emergencySupplyNet(s);
     s = orderEmergencySupply(s);
-    expect(s.supplyMonths).toBe(2);
+    expect(warehouseMonths(s)).toBe(0);
+    expect(s.pendingSupply?.length).toBe(1);
     expect(s.invoices.length).toBe(inv0 + 1);
     expect(s.invoices.at(-1)?.net).toBe(cost);
-    expect(cost).toBe(5000);
+    s = advanceMonth(s);
+    expect(warehouseMonths(s)).toBe(2);
   });
 
-  it("contratto con scorte: +8% netPerMonth", () => {
+  it("contratto con scorte medie: +5% netPerMonth", () => {
     let s = createInitialGameState();
+    s.supplyStock = [{ quality: 65, months: 2 }];
     s.supplyMonths = 2;
     const op = {
       id: 1,
@@ -58,11 +70,13 @@ describe("emergency / guaranteed supply", () => {
       contractMonths: 3,
     };
     const next = acceptAsContract(s, op)!;
-    expect(next.activeContracts![0]!.netPerMonth).toBe(round2((3000 / 3) * 1.08));
+    expect(next.activeContracts![0]!.netPerMonth).toBe(round2((3000 / 3) * 1.05));
   });
 
-  it("contratto senza scorte: nessun +8%", () => {
+  it("contratto senza scorte: nessun bonus qualità", () => {
     let s = createInitialGameState();
+    s.supplyStock = [];
+    s.pendingSupply = [];
     s.supplyMonths = 0;
     const op = {
       id: 1,
