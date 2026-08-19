@@ -12,6 +12,12 @@
   margin: 0;
 }
 
+.version {
+  margin: 4px 0 0;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
 .links {
   display: flex;
   justify-content: center;
