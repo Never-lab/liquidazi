@@ -8,6 +8,15 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.1.7] — 2026-08-19
+
+Home menu più largo e meno verticale per gli utenti loggati su desktop.
+
+### Changed
+- `MenuScreen` passa a un layout desktop a due colonne: hero e CTA a sinistra, navigazione secondaria a destra.
+- Larghezza massima della shell aumentata per sfruttare meglio lo spazio orizzontale disponibile.
+- Mobile invariato: layout a colonna singola sotto `720px`.
+
 ## [1.1.6] — 2026-08-19
 
 Palette dark theme rivista: da nero pece + neon a silver/antracite elegante.
@@ -102,7 +111,10 @@ Sim educativo di SRL semplificata (cassa, IVA, F24, personale, prestiti). Non è
 
 - Hardening runtime (rate limit, clamp sulle run) e UX F24/collection.
 
-[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.1.7...HEAD
+[1.1.7]: https://github.com/Never-lab/liquidazi/releases/tag/v1.1.7
+[1.1.6]: https://github.com/Never-lab/liquidazi/releases/tag/v1.1.6
+[1.1.5]: https://github.com/Never-lab/liquidazi/releases/tag/v1.1.5
 [1.1.1]: https://github.com/Never-lab/liquidazi/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Never-lab/liquidazi/releases/tag/v1.1.0
 [1.0.1]: https://github.com/Never-lab/liquidazi/releases/tag/v1.0.1
