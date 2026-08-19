@@ -36,7 +36,7 @@ Routing is a switch in `src/App.tsx` on `useGameStore.screen`. Public legal page
 
 ## Persistence
 
-Local slots in the store + optional cloud saves via API when authenticated. Volume-backed storage on Railway (`/data`). Loads run through `migrateGameState`. Logged-in session: **2 hours** idle (sliding) and **7 days** from login; guests stay local-only.
+Local slots in the store + optional cloud saves via API when authenticated. **Postgres** on Railway when `DATABASE_URL` is set; otherwise volume/file JSON (`/data` or `server/data`). Loads run through `migrateGameState`. Logged-in session: **2 hours** idle (sliding) and **7 days** from login; guests stay local-only.
 
 ## Disclaimer
 

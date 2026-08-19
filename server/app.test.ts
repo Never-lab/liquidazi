@@ -4,8 +4,29 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createHandler } from "./app.mjs";
+import { createFileStore } from "./fileStore.mjs";
 
 const SECRET = "test-secret-not-dev-default";
+
+const makeHandler = async (opts: {
+  dataDir: string;
+  secret?: string;
+  distDir?: string | null;
+  storage?: "local" | "volume";
+  adminUsernames?: string[];
+  eventLogLimit?: number;
+}) => {
+  const store = createFileStore(opts.dataDir, opts.storage ?? "local");
+  await store.ready();
+  return createHandler({
+    store,
+    secret: opts.secret ?? SECRET,
+    distDir: opts.distDir ?? null,
+    adminUsernames: opts.adminUsernames,
+    eventLogLimit: opts.eventLogLimit,
+  });
+};
+
 let dataDir: string;
 let base: string;
 let server: ReturnType<typeof createServer>;
@@ -18,7 +39,7 @@ const api = async (path: string, opts: RequestInit = {}) => {
 
 beforeAll(async () => {
   dataDir = mkdtempSync(join(tmpdir(), "liquidazi-"));
-  const handler = createHandler({ dataDir, secret: SECRET, distDir: null });
+  const handler = await makeHandler({ dataDir });
   server = createServer(handler);
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const addr = server.address();
@@ -38,7 +59,7 @@ describe("ops html", () => {
     writeFileSync(join(dist, "ops.html"), "<!doctype html><title>ops</title>");
     writeFileSync(join(dist, "index.html"), "<!doctype html><title>game</title>");
 
-    const handler = createHandler({ dataDir, secret: SECRET, distDir: dist });
+    const handler = await makeHandler({ dataDir, distDir: dist });
     const srv = createServer(handler);
     await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
     const addr = srv.address();
@@ -61,7 +82,7 @@ describe("ops html", () => {
     writeFileSync(join(dist, "favicon.svg"), "<svg xmlns='http://www.w3.org/2000/svg'></svg>");
     writeFileSync(join(dist, "assets", "main-abc123.js"), "console.log(1)");
 
-    const handler = createHandler({ dataDir, secret: SECRET, distDir: dist });
+    const handler = await makeHandler({ dataDir, distDir: dist });
     const srv = createServer(handler);
     await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
     const addr = srv.address();
@@ -408,9 +429,8 @@ describe("admin stats", () => {
 
   beforeAll(async () => {
     adminDataDir = mkdtempSync(join(tmpdir(), "liquidazi-admin-"));
-    const handler = createHandler({
+    const handler = await makeHandler({
       dataDir: adminDataDir,
-      secret: SECRET,
       distDir: null,
       storage: "volume",
       adminUsernames: ["boss"],
@@ -528,9 +548,8 @@ describe("admin stats", () => {
 describe("in-app feedback", () => {
   it("accepts guest feedback and shows it to admin", async () => {
     const adminDataDir = mkdtempSync(join(tmpdir(), "liquidazi-fb-"));
-    const handler = createHandler({
+    const handler = await makeHandler({
       dataDir: adminDataDir,
-      secret: SECRET,
       distDir: null,
       storage: "local",
       adminUsernames: ["boss"],
@@ -611,9 +630,8 @@ describe("static spa", () => {
     writeFileSync(join(staticDist, "index.html"), "<!doctype html><title>L</title>");
     mkdirSync(join(staticDist, "assets"), { recursive: true });
     writeFileSync(join(staticDist, "assets", "app.js"), "console.log(1)");
-    const handler = createHandler({
+    const handler = await makeHandler({
       dataDir: mkdtempSync(join(tmpdir(), "liquidazi-d2-")),
-      secret: SECRET,
       distDir: staticDist,
     });
     staticServer = createServer(handler);
@@ -703,9 +721,8 @@ describe("runs realign from existing cloud saves on boot", () => {
       }),
     );
 
-    const handler = createHandler({
+    const handler = await makeHandler({
       dataDir: dir,
-      secret: SECRET,
       distDir: null,
       storage: "local",
       adminUsernames: ["boss"],
@@ -796,7 +813,7 @@ describe("security hardening", () => {
 
   it("rate-limits auth after many attempts from same IP", async () => {
     const dir = mkdtempSync(join(tmpdir(), "liquidazi-rl-"));
-    const handler = createHandler({ dataDir: dir, secret: SECRET, distDir: null });
+    const handler = await makeHandler({ dataDir: dir, distDir: null });
     const srv = createServer(handler);
     await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
     const addr = srv.address();
@@ -826,9 +843,8 @@ describe("event log", () => {
     mkdirSync(join(dist, "assets"), { recursive: true });
     writeFileSync(join(dist, "index.html"), "<!doctype html><title>game</title>");
     writeFileSync(join(dist, "assets", "main-abc.js"), "console.log(1)");
-    const handler = createHandler({
+    const handler = await makeHandler({
       dataDir: dir,
-      secret: SECRET,
       distDir: dist,
       adminUsernames: ["boss"],
       ...(limit != null ? { eventLogLimit: limit } : {}),

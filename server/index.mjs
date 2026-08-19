@@ -6,7 +6,8 @@ import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHandler } from "./app.mjs";
-import { resolveDataDir } from "./paths.mjs";
+import { resolvePersistence } from "./paths.mjs";
+import { createStore } from "./store.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -23,14 +24,15 @@ if (isProd && (!process.env.LIQUIDAZI_SECRET || SECRET === DEV_SECRET)) {
   process.exit(1);
 }
 
-let dataDir;
-let storage;
+let persistence;
 try {
-  ({ dataDir, storage } = resolveDataDir());
+  persistence = resolvePersistence();
 } catch (err) {
   console.error(err instanceof Error ? err.message : err);
   process.exit(1);
 }
+
+const { dataDir, storage, databaseUrl } = persistence;
 
 const adminUsernames = (process.env.LIQUIDAZI_ADMIN_USERNAMES || "")
   .split(",")
@@ -38,17 +40,31 @@ const adminUsernames = (process.env.LIQUIDAZI_ADMIN_USERNAMES || "")
   .filter(Boolean);
 
 const distDir = join(__dir, "..", "dist");
+
+const store = await createStore({ dataDir, databaseUrl, storage });
+await store.ready();
+
 const handler = createHandler({
-  dataDir,
+  store,
   secret: SECRET,
   distDir,
-  storage,
   adminUsernames,
 });
-createServer(handler).listen(PORT, HOST, () => {
+
+const server = createServer(handler);
+server.listen(PORT, HOST, () => {
   console.log(`Floatdesk listening on http://${HOST}:${PORT}`);
-  console.log(`dataDir=${dataDir} storage=${storage}`);
+  console.log(`storage=${store.storage}${databaseUrl ? " (DATABASE_URL)" : ` dataDir=${dataDir}`}`);
   if (adminUsernames.length) {
     console.log(`adminUsernames=${adminUsernames.length} configured`);
   }
 });
+
+const shutdown = async () => {
+  server.close();
+  await store.close();
+  process.exit(0);
+};
+
+process.on("SIGTERM", () => void shutdown());
+process.on("SIGINT", () => void shutdown());

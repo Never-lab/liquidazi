@@ -17,7 +17,7 @@ export type AdminStats = {
   avgMonths: number;
   longestMonths: number;
   dataBytes: number;
-  storage: "volume" | "local";
+  storage: "volume" | "local" | "postgres";
   recent: {
     id: string;
     username: string;

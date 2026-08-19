@@ -1,27 +1,19 @@
 /**
  * Floatdesk API — auth + leaderboard runs + cloud saves.
- * Zero deps: node:http, crypto, fs.
  */
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import {
-  mkdirSync,
   readFileSync,
-  writeFileSync,
-  existsSync,
-  renameSync,
   createReadStream,
-  readdirSync,
   statSync,
 } from "node:fs";
 import { join, extname, sep, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { computeBalance } from "./balance.mjs";
 import { clientIp, createRateLimiter } from "./rateLimit.mjs";
-import { extractRunFromGame, syncRunsFromSaves, upsertRun } from "./runSync.mjs";
 import { robotsTxt, siteOrigin, sitemapXml } from "./seo.mjs";
 import {
   DEFAULT_EVENT_LOG_LIMIT,
-  appendEvent,
   requestPath,
   shouldSkipEvent,
   summarizeEvents,
@@ -35,7 +27,6 @@ import { historyMarket, quoteMarket, searchMarkets } from "./markets.mjs";
 
 const MAX_SAVE_BYTES = 1_000_000;
 const MAX_BODY_BYTES = 64_000;
-const MAX_FEEDBACK = 200;
 const MAX_FEEDBACK_MSG = 2_000;
 const MIN_PASSWORD = 8;
 /** Soft anti-cheat ceiling on self-reported money stats (€). */
@@ -168,96 +159,23 @@ const sendFile = (res, filePath, { head = false } = {}) => {
   createReadStream(filePath).pipe(res);
 };
 
-const emptySlots = () => [
-  { label: "Slot 1", game: null, updatedAt: null },
-  { label: "Slot 2", game: null, updatedAt: null },
-  { label: "Slot 3", game: null, updatedAt: null },
-];
-const emptySaves = () => ({
-  slots: emptySlots(),
-  activeSlot: 0,
-  preferredDifficulty: "normal",
-  coachOn: true,
-});
-
 /**
- * @param {{
- *   dataDir: string,
- *   secret: string,
- *   distDir: string | null,
- *   storage?: "volume" | "local",
- *   adminUsernames?: string[],
- *   eventLogLimit?: number,
- * }} opts
- * @returns {(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse) => void}
+ * @param {{ store: object, secret: string, distDir: string | null, adminUsernames?: string[], eventLogLimit?: number }} opts
  */
 export function createHandler({
-  dataDir,
+  store,
   secret,
   distDir,
-  storage = "local",
   adminUsernames = [],
   eventLogLimit = DEFAULT_EVENT_LOG_LIMIT,
 }) {
-  mkdirSync(dataDir, { recursive: true });
+  const storage = store.storage;
   const adminSet = new Set(
     adminUsernames.map((u) => String(u).trim().toLowerCase()).filter(Boolean),
   );
   const isAdmin = (user) => Boolean(user && adminSet.has(user.username.toLowerCase()));
   const rateLimit = createRateLimiter();
-
-  const load = (name, fallback) => {
-    const p = join(dataDir, name);
-    if (!existsSync(p)) return fallback;
-    try {
-      return JSON.parse(readFileSync(p, "utf8"));
-    } catch {
-      return fallback;
-    }
-  };
-  const writeJson = (path, data, space) => {
-    const tmp = `${path}.tmp`;
-    writeFileSync(tmp, JSON.stringify(data, null, space));
-    renameSync(tmp, path);
-  };
-  const save = (name, data) => writeJson(join(dataDir, name), data, 2);
-
-  /** @type {{ id: string, username: string, hash: string, salt: string }[]} */
-  let users = load("users.json", []);
-  /** @type {Run[]} */
-  let runs = load("runs.json", []);
-  /** @type {{ id: string, kind: string, message: string, contact: string | null, username: string | null, createdAt: string }[]} */
-  let feedback = load("feedback.json", []);
-  /** @type {{ id: string, at: string, method: string, path: string, status: number, username: string | null }[]} */
-  let events = load("events.json", []);
-  if (!Array.isArray(events)) events = [];
-
-  const savePath = (userId) => join(dataDir, "saves", `${userId}.json`);
   const newRunId = () => randomBytes(8).toString("hex");
-
-  const loadUserSaves = (userId) => {
-    const p = savePath(userId);
-    if (!existsSync(p)) return emptySaves();
-    try {
-      return JSON.parse(readFileSync(p, "utf8"));
-    } catch {
-      return emptySaves();
-    }
-  };
-
-  /** Backfill / realign leaderboard from cloud saves (long runs past soft-win 24m). */
-  const realignRunsFromSaves = () => {
-    const result = syncRunsFromSaves(users, runs, loadUserSaves, newRunId);
-    if (result.synced > 0) {
-      runs = result.runs;
-      save("runs.json", runs);
-      console.info(
-        `[liquidazi] runs realigned from saves: ${result.synced} upsert(s), ${result.touchedUsers} user(s)`,
-      );
-    }
-    return result;
-  };
-  realignRunsFromSaves();
 
   const hashPassword = (password, salt = randomBytes(16).toString("hex")) => {
     const hash = scryptSync(password, salt, 32).toString("hex");
@@ -270,12 +188,12 @@ export function createHandler({
     return h.length === expected.length && timingSafeEqual(h, expected);
   };
 
-  const authorize = (req) => {
+  const authorize = async (req) => {
     const header = req.headers.authorization;
     if (!header?.startsWith("Bearer ")) return null;
     const session = readSessionToken(header.slice(7), secret);
     if (!session) return null;
-    const user = users.find((u) => u.id === session.userId) ?? null;
+    const user = await store.findUserById(session.userId);
     if (!user) return null;
     return { user, session };
   };
@@ -284,19 +202,32 @@ export function createHandler({
     const method = req.method || "GET";
     const path = requestPath(new URL(req.url || "/", "http://local").pathname);
     if (shouldSkipEvent(method, path)) return;
-    events = appendEvent(
-      events,
-      {
-        id: randomBytes(8).toString("hex"),
-        at: new Date().toISOString(),
-        method,
-        path,
-        status: Number(status) || 0,
-        username: authorize(req)?.user?.username ?? null,
-      },
-      eventLogLimit,
-    );
-    save("events.json", events);
+    void (async () => {
+      try {
+        let username = null;
+        const header = req.headers.authorization;
+        if (header?.startsWith("Bearer ")) {
+          const session = readSessionToken(header.slice(7), secret);
+          if (session) {
+            const user = await store.findUserById(session.userId);
+            username = user?.username ?? null;
+          }
+        }
+        await store.recordEvent(
+          {
+            id: randomBytes(8).toString("hex"),
+            at: new Date().toISOString(),
+            method,
+            path,
+            status: Number(status) || 0,
+            username,
+          },
+          eventLogLimit,
+        );
+      } catch (err) {
+        console.error("[liquidazi] event log failed:", err);
+      }
+    })();
   };
 
   const SECURITY_HEADERS = {
@@ -449,13 +380,12 @@ export function createHandler({
         if (password.length < MIN_PASSWORD) {
           return json(res, 400, { error: `Password minimo ${MIN_PASSWORD} caratteri` });
         }
-        if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
+        if (await store.findUserByUsername(username)) {
           return json(res, 409, { error: "Username già preso" });
         }
         const { hash, salt } = hashPassword(password);
         const user = { id: randomBytes(8).toString("hex"), username, hash, salt };
-        users.push(user);
-        save("users.json", users);
+        await store.insertUser(user);
         return json(res, 201, {
           token: makeSessionToken(user.id, secret),
           username: user.username,
@@ -486,7 +416,7 @@ export function createHandler({
         }
         const username = String(body.username || "").trim();
         const password = String(body.password || "");
-        const user = users.find((u) => u.username.toLowerCase() === username.toLowerCase());
+        const user = await store.findUserByUsername(username);
         if (!user || !checkPassword(password, user.salt, user.hash)) {
           return json(res, 401, { error: "Credenziali non valide" });
         }
@@ -498,7 +428,7 @@ export function createHandler({
       }
 
       if (req.method === "GET" && path === "/api/auth/me") {
-        const authz = authorize(req);
+        const authz = await authorize(req);
         if (!authz) return json(res, 401, { error: "Non autenticato" });
         const { user, session } = authz;
         return jsonAuthed(res, 200, {
@@ -509,7 +439,7 @@ export function createHandler({
       }
 
       if (req.method === "POST" && path === "/api/auth/achievements") {
-        const authz = authorize(req);
+        const authz = await authorize(req);
         if (!authz) return json(res, 401, { error: "Non autenticato" });
         const { user, session } = authz;
         let body;
@@ -527,17 +457,24 @@ export function createHandler({
         const prev = Array.isArray(user.achievements) ? user.achievements : [];
         const merged = [...new Set([...prev, ...filtered])];
         user.achievements = merged;
-        const idx = users.findIndex((u) => u.id === user.id);
-        if (idx >= 0) users[idx] = user;
-        save("users.json", users);
+        await store.updateUser(user);
         return jsonAuthed(res, 200, { achievements: merged }, session);
       }
 
       if (req.method === "GET" && path === "/api/admin/stats") {
-        const authz = authorize(req);
+        const authz = await authorize(req);
         if (!authz) return json(res, 401, { error: "Non autenticato" });
         const { user, session } = authz;
         if (!isAdmin(user)) return jsonAuthed(res, 403, { error: "Solo admin" }, session);
+
+        const [users, runs, feedback, events, cloudSaves, dataBytes] = await Promise.all([
+          store.listUsers(),
+          store.listRuns(),
+          store.listFeedback(),
+          store.listEvents(),
+          store.countCloudSaves(),
+          store.estimateDataBytes(),
+        ]);
 
         const now = Date.now();
         const dayMs = 86_400_000;
@@ -550,27 +487,6 @@ export function createHandler({
                 (runs.reduce((s, r) => s + r.monthsPlayed, 0) / runs.length) * 10,
               ) / 10;
         const longest = runs.reduce((m, r) => Math.max(m, r.monthsPlayed), 0);
-
-        const savesDir = join(dataDir, "saves");
-        let cloudSaves = 0;
-        let dataBytes = 0;
-        const sizeOf = (p) => {
-          try {
-            return statSync(p).size;
-          } catch {
-            return 0;
-          }
-        };
-        for (const name of ["users.json", "runs.json", "feedback.json", "events.json"]) {
-          dataBytes += sizeOf(join(dataDir, name));
-        }
-        if (existsSync(savesDir)) {
-          for (const name of readdirSync(savesDir)) {
-            if (!name.endsWith(".json")) continue;
-            cloudSaves += 1;
-            dataBytes += sizeOf(join(savesDir, name));
-          }
-        }
 
         const recent = [...runs]
           .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -609,7 +525,7 @@ export function createHandler({
       }
 
       if (req.method === "DELETE" && path.startsWith("/api/admin/runs/")) {
-        const authz = authorize(req);
+        const authz = await authorize(req);
         if (!authz) return json(res, 401, { error: "Non autenticato" });
         const { user, session } = authz;
         if (!isAdmin(user)) return jsonAuthed(res, 403, { error: "Solo admin" }, session);
@@ -617,13 +533,12 @@ export function createHandler({
         if (!runId || runId.includes("/")) {
           return json(res, 400, { error: "id run non valido" });
         }
-        const before = runs.length;
-        runs = runs.filter((r) => r.id !== runId);
-        if (runs.length === before) {
+        const deleted = await store.deleteRunById(runId);
+        if (!deleted) {
           return json(res, 404, { error: "Run non trovata" });
         }
-        save("runs.json", runs);
-        return jsonAuthed(res, 200, { ok: true, id: runId, runs: runs.length }, session);
+        const runsLeft = (await store.listRuns()).length;
+        return jsonAuthed(res, 200, { ok: true, id: runId, runs: runsLeft }, session);
       }
 
       if (req.method === "POST" && path === "/api/feedback") {
@@ -637,7 +552,7 @@ export function createHandler({
             { "Retry-After": String(rl.retryAfterSec) },
           );
         }
-        const authz = req.headers.authorization ? authorize(req) : null;
+        const authz = req.headers.authorization ? await authorize(req) : null;
         const user = authz?.user ?? null;
         const session = authz?.session ?? null;
         let body;
@@ -670,24 +585,20 @@ export function createHandler({
           username: user?.username ?? null,
           createdAt: new Date().toISOString(),
         };
-        feedback.push(entry);
-        if (feedback.length > MAX_FEEDBACK) {
-          feedback = feedback.slice(-MAX_FEEDBACK);
-        }
-        save("feedback.json", feedback);
+        await store.addFeedback(entry);
         if (session) return jsonAuthed(res, 201, { id: entry.id }, session);
         return json(res, 201, { id: entry.id });
       }
 
       if (req.method === "GET" && path === "/api/saves") {
-        const authz = authorize(req);
+        const authz = await authorize(req);
         if (!authz) return json(res, 401, { error: "Non autenticato" });
         const { user, session } = authz;
-        return jsonAuthed(res, 200, loadUserSaves(user.id), session);
+        return jsonAuthed(res, 200, await store.loadUserSaves(user.id), session);
       }
 
       if (req.method === "PUT" && path === "/api/saves") {
-        const authz = authorize(req);
+        const authz = await authorize(req);
         if (!authz) return json(res, 401, { error: "Non autenticato" });
         const { user, session } = authz;
         let body;
@@ -712,37 +623,25 @@ export function createHandler({
           preferredDifficulty: body.preferredDifficulty,
           coachOn: body.coachOn,
         };
-        mkdirSync(join(dataDir, "saves"), { recursive: true });
-        writeJson(savePath(user.id), payload);
-        // Keep leaderboard/dashboard in sync for continued / long runs.
-        const slots = Array.isArray(payload.slots) ? payload.slots : [];
-        let changed = false;
-        for (let i = 0; i < slots.length; i++) {
-          const extracted = extractRunFromGame(slots[i]?.game, user, i);
-          if (!extracted) continue;
-          const result = upsertRun(runs, extracted, newRunId);
-          runs = result.runs;
-          if (result.upserted) changed = true;
-        }
-        if (changed) save("runs.json", runs);
+        await store.putUserSavesWithRunSync(user, payload, newRunId);
         return jsonAuthed(res, 200, payload, session);
       }
 
       if (req.method === "POST" && path === "/api/admin/resync-runs") {
-        const authz = authorize(req);
+        const authz = await authorize(req);
         if (!authz) return json(res, 401, { error: "Non autenticato" });
         const { user, session } = authz;
         if (!isAdmin(user)) return jsonAuthed(res, 403, { error: "Solo admin" }, session);
-        const result = realignRunsFromSaves();
+        const result = await store.realignRunsFromSaves();
         return jsonAuthed(res, 200, {
           synced: result.synced,
           touchedUsers: result.touchedUsers,
-          runs: runs.length,
+          runs: result.runs,
         }, session);
       }
 
       if (req.method === "POST" && path === "/api/runs") {
-        const authz = authorize(req);
+        const authz = await authorize(req);
         if (!authz) return json(res, 401, { error: "Login richiesto" });
         const { user, session } = authz;
         let body;
@@ -803,9 +702,7 @@ export function createHandler({
           slotIndex,
           source: "end",
         };
-        const result = upsertRun(runs, candidate, newRunId);
-        runs = result.runs;
-        save("runs.json", runs);
+        const result = await store.upsertRunFromCandidate(candidate, newRunId);
         return jsonAuthed(res, result.upserted ? 201 : 200, { id: result.id, upserted: result.upserted }, session);
       }
 
@@ -814,6 +711,7 @@ export function createHandler({
         const conf = BOARDS[board];
         if (!conf) return json(res, 400, { error: "Board sconosciuta", boards: Object.keys(BOARDS) });
         const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit") || 20)));
+        const runs = await store.listRuns();
 
         // Keep only the best run per user for this board
         const bestByUser = new Map();
@@ -855,9 +753,10 @@ export function createHandler({
       }
 
       if (req.method === "GET" && path === "/api/runs/me") {
-        const authz = authorize(req);
+        const authz = await authorize(req);
         if (!authz) return json(res, 401, { error: "Login richiesto" });
         const { user, session } = authz;
+        const runs = await store.listRuns();
         const mine = runs
           .filter((r) => r.userId === user.id)
           .sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
