@@ -506,7 +506,7 @@ export const useGameStore = create<GameStore>()(
         const game = orderEmergencySupply(get().game);
         set({ game, slots: syncSlot(get().slots, get().activeSlot, game) });
         if ((game.supplyMonths ?? 0) > before) {
-          get().flashToast("Fornitura d'emergenza ordinata (+2 mesi scorte)", "good");
+          get().flashToast("Fornitura d'emergenza ordinata (+2 mesi, arrivo mese prossimo)", "good");
           sfxGood();
         }
       },

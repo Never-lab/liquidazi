@@ -22,6 +22,7 @@ describe("forced shocks", () => {
 
   it("shock incendio toglie scorte", () => {
     let s = createInitialGameState();
+    s.supplyStock = [{ quality: 65, months: 4 }];
     s.supplyMonths = 4;
     s.company.cash = 10000;
     s.pendingEvent = {
@@ -38,6 +39,8 @@ describe("forced shocks", () => {
 
   it("shock incendio a scorte zero aggiunge premium stockout", () => {
     let s = createInitialGameState();
+    s.supplyStock = [];
+    s.pendingSupply = [];
     s.supplyMonths = 0;
     s.company.cash = 10000;
     s.pendingEvent = {
@@ -55,6 +58,8 @@ describe("forced shocks", () => {
 
   it("shock fornitore già a zero: −700 + premium lost=2", () => {
     let s = createInitialGameState();
+    s.supplyStock = [];
+    s.pendingSupply = [];
     s.supplyMonths = 0;
     s.company.cash = 10000;
     s.pendingEvent = {
@@ -84,6 +89,7 @@ describe("forced shocks", () => {
 
   it("shock fornitore azzera scorte", () => {
     let s = createInitialGameState();
+    s.supplyStock = [{ quality: 65, months: 5 }];
     s.supplyMonths = 5;
     s.company.cash = 10000;
     s.pendingEvent = {
@@ -150,6 +156,8 @@ describe("forced shocks", () => {
 
   it("shock pesca tesoreria se cassa va sotto zero", () => {
     let s = createInitialGameState();
+    s.supplyStock = [];
+    s.pendingSupply = [];
     s.supplyMonths = 0;
     s.company.cash = 100;
     s.treasury = 2000;

@@ -19,6 +19,7 @@ import {
   type GameState,
   type PendingEvent,
 } from "./types";
+import { loseSupplyMonths, warehouseMonths } from "./supplies";
 
 const pushLog = (
   state: GameState,
@@ -436,13 +437,9 @@ type SupplyShockOpts = {
 };
 
 const applySupplyShock = (s: GameState, opts: SupplyShockOpts): void => {
-  const before = s.supplyMonths ?? 0;
+  const before = warehouseMonths(s);
   const cashBefore = Math.max(0, s.company.cash);
-  if (opts.wipeSupply) {
-    s.supplyMonths = 0;
-  } else {
-    s.supplyMonths = Math.max(0, before - opts.lostMonths);
-  }
+  loseSupplyMonths(s, opts.lostMonths, opts.wipeSupply);
 
   let baseHit = 0;
   if (opts.baseFlat != null && opts.baseFlat > 0) {
@@ -480,7 +477,7 @@ const applySupplyShock = (s: GameState, opts: SupplyShockOpts): void => {
     pushLog(
       s,
       "bad",
-      `${opts.label}: scorte ${before}→${s.supplyMonths}, −${total.toLocaleString("it-IT")} €.`,
+      `${opts.label}: scorte ${before}→${warehouseMonths(s)}, −${total.toLocaleString("it-IT")} €.`,
     );
   }
 };

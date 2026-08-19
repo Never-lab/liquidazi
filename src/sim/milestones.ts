@@ -1,6 +1,7 @@
 import { HOLDING_SLOT_BASE, HOLDING_SLOT_MAX } from "../config/holding";
 import { UPGRADE_LIST, upgradeLevel, type UpgradeId } from "../config/upgrades";
 import { migrateUpgradeState } from "./migrateUpgrades";
+import { warehouseMonths } from "./supplies";
 import { pressureBand } from "./rival";
 import type { GameState, MilestoneId, MonthCloseSummary } from "./types";
 
@@ -171,7 +172,7 @@ export const unlockMilestones = (
   if (next.employees.some((e) => e.role === "Responsabile")) add("hire_responsabile");
   if (UPGRADE_LIST.some((u) => lvl(next, u.id) >= 1)) add("first_upgrade");
   if (treasury > 0) add("first_treasury");
-  if ((next.supplyMonths ?? 0) >= 3) add("supply_stocked");
+  if (warehouseMonths(next) >= 3) add("supply_stocked");
   if (peak >= 10_000) add("cash_10k");
   if (next.monthsPlayed >= 3) add("survive_3");
 

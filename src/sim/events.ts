@@ -5,6 +5,11 @@ import { getProjectDef } from "../config/projects";
 import { capacityPointsFor } from "../config/staffPay";
 import { workforceRequiredForSale } from "../config/workforce";
 import { supplyCapMonths, upgradeLevel } from "../config/upgrades";
+import {
+  HIGH_QUALITY_DEMAND_MIN,
+  HIGH_QUALITY_SALE_CHANCE,
+  qualityLabel,
+} from "../config/supplies";
 import { migrateUpgradeState } from "./migrateUpgrades";
 import { rng } from "./rng";
 import {
@@ -36,8 +41,23 @@ import {
   pickMarketLayer,
   repDemandMult,
 } from "./reputation";
+import {
+  applyHighQualityRepPenalty,
+  applySupplyToSaleNet,
+  bestWarehouseQuality,
+  canAddSupplyMonths,
+  consumeSupplyAfterSale,
+  hasWarehouseStock,
+  meetsQualityDemand,
+  pendingMonths,
+  pickSupplyTier,
+  queuePendingSupply,
+  rollSupplyNet,
+  rollSupplyQuality,
+  supplyMonthsFromNet,
+} from "./supplies";
 
-export { rng };
+export { rng, supplyMonthsFromNet };
 
 const CLIENT_NAMES = [
   "Rossi Snc", "Bianchi SRL", "Verdi & C.", "Neri Group", "Blu Servizi",
@@ -143,7 +163,7 @@ export const maxDealNet = (state: GameState): number => {
   const competition = dens > 1 ? Math.max(0.7, 1 - (dens - 1) * 0.12) : 1 + (1 - dens) * 0.08;
   const ticketMult = DIFFICULTIES[state.difficulty ?? "normal"].ticketMult;
   const commercialeMult = [1, 1.08, 1.12, 1.16][upgradeLevel(upgradeLevels, "commerciale")]!;
-  const supplyMult = (state.supplyMonths ?? 0) > 0 ? 1 : 0.72;
+  const supplyMult = hasWarehouseStock(state) ? 1 : 0.72;
   const pressureTicket = ticketFactorFromPressure(state);
   const capped = round2(
     Math.min(
@@ -238,26 +258,32 @@ const pushSale = (
     termMonths,
     marketLayer: "local",
   };
+  if ((state.highQualityExpectationMonths ?? 0) > 0 && rand() < HIGH_QUALITY_SALE_CHANCE) {
+    raw.qualityRequired = HIGH_QUALITY_DEMAND_MIN;
+    raw.title = `Commessa premium · ${pick(CLIENT_NAMES, rand)} · ${home.label}`;
+  }
   ops.push(withWorkforceRequired(maybeMakeContract(raw, rand, state.company.reputation)));
   return id + 1;
 };
 
 const pushSupply = (
   ops: Opportunity[],
-  cap: number,
+  _cap: number,
   rand: () => number,
   id: number,
 ): number => {
-  const sizeFactor = 0.35 + rand() * 0.65;
-  const net = round2(Math.max(300, Math.min(cap, cap * sizeFactor)));
+  const tier = pickSupplyTier(rand);
+  const net = rollSupplyNet(tier, rand);
+  const quality = rollSupplyQuality(net, rand);
   const months = supplyMonthsFromNet(net);
   ops.push({
     id,
     kind: "supply",
-    title: `Fornitura · ${pick(SUPPLIER_NAMES, rand)} · +${months} mesi`,
+    title: `Fornitura · ${pick(SUPPLIER_NAMES, rand)} · ${qualityLabel(quality)} · +${months} m`,
     net,
     expiresInMonths: 1,
     termMonths: 1,
+    supplyQuality: quality,
   });
   return id + 1;
 };
@@ -280,7 +306,7 @@ export const generateOpportunities = (
   let saleTarget = clampSaleTarget(raw, regime);
   let supplyTarget = Math.max(0, Math.round(saleTarget * (0.28 + rand() * 0.1)));
   // Never soft-lock: if scorte are empty, always offer at least one supply.
-  if ((state.supplyMonths ?? 0) <= 0) {
+  if (!hasWarehouseStock(state) && pendingMonths(state) <= 0) {
     supplyTarget = Math.max(1, supplyTarget);
   }
   const boardCap = boardCapFor(regime);
@@ -294,7 +320,7 @@ export const generateOpportunities = (
       saleTarget = Math.max(1, saleTarget);
     }
     supplyTarget = Math.max(
-      (state.supplyMonths ?? 0) <= 0 ? 1 : 0,
+      !hasWarehouseStock(state) && pendingMonths(state) <= 0 ? 1 : 0,
       boardCap - saleTarget,
     );
     if (saleTarget + supplyTarget > boardCap) {
@@ -319,25 +345,23 @@ export const generateOpportunities = (
 /** Floor for emergency restock net (early-game). */
 export const EMERGENCY_SUPPLY_FLOOR = 1500;
 
-/** Months of coverage gained from a board supply offer. */
-export const supplyMonthsFromNet = (net: number): number => (net >= 1200 ? 2 : 1);
-
 /** Emergency restock cost: 10% of cash, never below floor. */
 export const emergencySupplyNet = (state: GameState): number =>
   Math.max(EMERGENCY_SUPPLY_FLOOR, Math.round(state.company.cash * 0.1));
 
 export const orderEmergencySupply = (state: GameState): GameState => {
-  if ((state.supplyMonths ?? 0) > 0) return state;
+  if (hasWarehouseStock(state) || pendingMonths(state) > 0) return state;
   const cost = emergencySupplyNet(state);
   let next = recordSupplierCost(state, cost, 1);
   next = structuredClone(next);
   const cap = supplyCapMonths(migrateUpgradeState(next));
-  next.supplyMonths = Math.min(cap, (next.supplyMonths ?? 0) + 2);
+  if (!canAddSupplyMonths(next, 2, cap)) return state;
+  queuePendingSupply(next, 65, 2);
   next.log.unshift({
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),
     tone: "good",
-    text: `Fornitura d'emergenza ordinata · ${cost.toLocaleString("it-IT")} € + IVA. Scorte ${next.supplyMonths} mesi.`,
+    text: `Fornitura d'emergenza ordinata · ${cost.toLocaleString("it-IT")} € + IVA. Arrivo mese prossimo (+2 mesi, qualità media).`,
   });
   next.log = next.log.slice(0, 12);
   return next;
@@ -389,7 +413,7 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
   if (op.kind === "supply") {
     const add = supplyMonthsFromNet(op.net);
     const cap = supplyCapMonths(migrateUpgradeState(state));
-    if ((state.supplyMonths ?? 0) + add > cap) {
+    if (!canAddSupplyMonths(state, add, cap)) {
       const blocked = structuredClone(state);
       blocked.lastUiHint = {
         text: `Magazzino pieno (max ${cap} mesi). Potenzia Magazzino scorte o consuma scorte prima di ordinare.`,
@@ -399,9 +423,29 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
     }
   }
 
+  let saleNet = op.net;
+  let supplyNote: string | undefined;
+  let qualityUsed: number | null = null;
+  if (op.kind === "sale") {
+    if (op.qualityRequired && !meetsQualityDemand(state, op.qualityRequired)) {
+      const penalized = structuredClone(state);
+      applyHighQualityRepPenalty(penalized);
+      state = penalized;
+    } else {
+      qualityUsed = bestWarehouseQuality(state);
+      const applied = applySupplyToSaleNet(state, op.net);
+      saleNet = applied.net;
+      supplyNote = applied.note;
+      if (applied.defectCost != null && applied.defectCost > 0) {
+        state.company.cash = round2(state.company.cash - applied.defectCost);
+        state.ytd.otherCosts = round2(state.ytd.otherCosts + applied.defectCost);
+      }
+    }
+  }
+
   let next =
     op.kind === "sale"
-      ? issueCustomerInvoice(state, op.net, {
+      ? issueCustomerInvoice(state, saleNet, {
           clientType: op.clientType ?? "private",
           termMonths: op.termMonths,
           marketLayer: op.marketLayer ?? (op.clientType === "pa" ? "municipal" : "local"),
@@ -410,11 +454,12 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
       : recordSupplierCost(state, op.net, op.termMonths);
   next = structuredClone(next);
   next.opportunities = next.opportunities.filter((o) => o.id !== opportunityId);
-  if (op.kind !== "sale") {
-    next.supplyMonths = Math.min(
-      supplyCapMonths(migrateUpgradeState(next)),
-      (next.supplyMonths ?? 0) + supplyMonthsFromNet(op.net),
-    );
+  if (op.kind === "sale") {
+    consumeSupplyAfterSale(next, qualityUsed);
+  } else {
+    const add = supplyMonthsFromNet(op.net);
+    const quality = op.supplyQuality ?? rollSupplyQuality(op.net, () => 0.5);
+    queuePendingSupply(next, quality, add);
   }
   const termNote =
     op.kind === "sale"
@@ -422,14 +467,18 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
         ? ` PA, pagamento ~${op.termMonths} mesi`
         : ` pagamento ${op.termMonths} mese/i`
       : "";
+  const supplyLog =
+    op.kind === "supply"
+      ? `Ordinata ${op.title} · ${op.net.toLocaleString("it-IT")} € + IVA. Arrivo mese prossimo (+${supplyMonthsFromNet(op.net)} mesi).`
+      : null;
   next.log.unshift({
     id: next.nextId++,
     monthIdx: toMonthIndex(next.calendar),
     tone: "good",
     text:
       op.kind === "sale"
-        ? `Accettata ${op.title} · ${op.net.toLocaleString("it-IT")} € + IVA.${termNote}`
-        : `Ordinata ${op.title} · ${op.net.toLocaleString("it-IT")} € + IVA. Scorte ${next.supplyMonths} mesi.`,
+        ? `Accettata ${op.title} · ${saleNet.toLocaleString("it-IT")} € + IVA.${termNote}${supplyNote ? ` · ${supplyNote}` : ""}`
+        : supplyLog!,
   });
   next.log = next.log.slice(0, 12);
   return next;

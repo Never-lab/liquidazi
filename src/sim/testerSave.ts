@@ -24,6 +24,7 @@ export const createTesterGameState = (): GameState => {
   g.company.reputation = 72;
   g.treasury = 4_000;
   g.supplyMonths = 2;
+  g.supplyStock = [{ quality: 65, months: 2 }];
   g.compliance = 85;
   g.staffMorale = 68;
   g.monthsTaxOverdue = 0;
