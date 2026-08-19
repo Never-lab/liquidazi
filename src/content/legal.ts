@@ -24,11 +24,11 @@ export const LEGAL_PAGES: Record<LegalPageId, LegalDoc> = {
       },
       {
         heading: "Sul tuo dispositivo",
-        body: "In localStorage restano la cache di gioco, la sessione, il consenso ads e se hai visto l’intro. L’ospite non ha account: i salvataggi restano solo sul dispositivo.",
+        body: "In localStorage restano la cache di gioco, la sessione e se hai visto l’intro. L’ospite non ha account: i salvataggi restano solo sul dispositivo.",
       },
       {
         heading: "Misurazione e ads",
-        body: "Plausible (se configurato) è senza cookie. Google AdSense carica solo se accetti il banner «Cookie e storage»; se rifiuti vedi i segnaposto. Puoi cambiare idea dal link Cookie in fondo alla pagina. Non vendiamo i tuoi dati.",
+        body: "Plausible (se configurato) è senza cookie. Per Google AdSense usiamo la CMP certificata di Google (Privacy e messaggi in AdSense): utenti SEE, UK e Svizzera vedono il messaggio Google con Consenti, Nega il consenso e Gestisci le opzioni. Puoi riaprire le scelte con «Preferenze annunci» in fondo alla pagina. Non vendiamo i tuoi dati.",
       },
     ],
   },

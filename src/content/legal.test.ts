@@ -8,6 +8,7 @@ describe("legal copy", () => {
     expect(text).toMatch(/localStorage/i);
     expect(text).toMatch(/Plausible/i);
     expect(text).toMatch(/AdSense/i);
+    expect(text).toMatch(/CMP/i);
     expect(text).toMatch(/Feedback/i);
     expect(text).toMatch(/log tecnico/i);
     expect(text).toMatch(/IP/);
