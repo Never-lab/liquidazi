@@ -782,7 +782,21 @@ export function createHandler({
         const conf = BOARDS[board];
         if (!conf) return json(res, 400, { error: "Board sconosciuta", boards: Object.keys(BOARDS) });
         const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit") || 20)));
-        const sorted = [...runs].sort((a, b) => {
+
+        // Keep only the best run per user for this board
+        const bestByUser = new Map();
+        for (const r of runs) {
+          const prev = bestByUser.get(r.userId);
+          if (!prev) { bestByUser.set(r.userId, r); continue; }
+          const rv = r[conf.key];
+          const pv = prev[conf.key];
+          const better = rv === pv
+            ? r.createdAt > prev.createdAt
+            : conf.dir * (rv < pv ? -1 : 1) < 0;
+          if (better) bestByUser.set(r.userId, r);
+        }
+
+        const sorted = [...bestByUser.values()].sort((a, b) => {
           const av = a[conf.key];
           const bv = b[conf.key];
           if (av === bv) return b.createdAt.localeCompare(a.createdAt);
@@ -806,6 +820,32 @@ export function createHandler({
             createdAt: r.createdAt,
           })),
         });
+      }
+
+      if (req.method === "GET" && path === "/api/runs/me") {
+        const authz = authorize(req);
+        if (!authz) return json(res, 401, { error: "Login richiesto" });
+        const { user, session } = authz;
+        const mine = runs
+          .filter((r) => r.userId === user.id)
+          .sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+          .map((r) => ({
+            id: r.id,
+            companyName: r.companyName,
+            city: r.city,
+            sector: r.sector,
+            monthsPlayed: r.monthsPlayed,
+            peakCash: r.peakCash,
+            peakDebt: r.peakDebt,
+            lifetimeRevenue: r.lifetimeRevenue,
+            finalCash: r.finalCash,
+            difficulty: r.difficulty ?? null,
+            outcome: r.outcome ?? "lost",
+            slotIndex: r.slotIndex ?? null,
+            createdAt: r.createdAt,
+            updatedAt: r.updatedAt ?? null,
+          }));
+        return jsonAuthed(res, 200, { runs: mine }, session);
       }
 
       if (req.method === "GET" && path === "/api/leaderboard/boards") {

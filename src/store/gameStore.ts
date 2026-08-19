@@ -94,6 +94,7 @@ export type Screen =
   | "gameover"
   | "leaderboard"
   | "saves"
+  | "my-runs"
   | "feedback";
 
 export type ToastTone = "good" | "bad" | "neutral";

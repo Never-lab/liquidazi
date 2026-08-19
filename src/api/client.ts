@@ -109,6 +109,23 @@ export type LeaderboardEntry = {
   createdAt: string;
 };
 
+export type PersonalRun = {
+  id: string;
+  companyName: string;
+  city: string;
+  sector: string;
+  monthsPlayed: number;
+  peakCash: number;
+  peakDebt: number;
+  lifetimeRevenue: number;
+  finalCash: number;
+  difficulty: string | null;
+  outcome: "won" | "lost";
+  slotIndex: number | null;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
 export type RunPayload = {
   companyName: string;
   city: string;
@@ -235,3 +252,6 @@ export const fetchLeaderboard = (board: LeaderboardBoard, limit = 20) =>
 
 export const fetchBoards = () =>
   api<{ id: LeaderboardBoard; label: string }[]>("/api/leaderboard/boards");
+
+export const fetchMyRuns = (token: string) =>
+  api<{ runs: PersonalRun[] }>("/api/runs/me", { token });
