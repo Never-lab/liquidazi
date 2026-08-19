@@ -88,6 +88,8 @@ export const SUPPLY_EMPTY_TICKET_MULT_EARLY = 0.88;
 export const SUPPLY_EMPTY_TICKET_MULT = 0.82;
 /** Primi mesi: almeno una commessa locale entro ~90% FL disponibile. */
 export const EARLY_FL_BOARD_MONTHS = 8;
+/** Netto minimo commesse locali/privati (early game più sostenibile). */
+export const LOCAL_SALE_NET_MIN = 1250;
 
 export const rollDemandRegime = (rand: () => number): DemandRegime => {
   const u = rand();
@@ -189,7 +191,7 @@ export const maxDealNet = (state: GameState): number => {
     Math.min(
       ticketCeiling(state),
       Math.max(
-        350,
+        LOCAL_SALE_NET_MIN,
         profile.baseTicket *
           season *
           growth *
@@ -265,7 +267,7 @@ const pushSale = (
   }
 
   const sizeFactor = 0.35 + rand() * 0.65;
-  let net = round2(Math.max(300, Math.min(cap, cap * sizeFactor)));
+  let net = round2(Math.max(LOCAL_SALE_NET_MIN, Math.min(cap, cap * sizeFactor)));
   if (state.monthsPlayed < EARLY_FL_BOARD_MONTHS) {
     const flCap = Math.floor(availableWorkforce(state) * 0.9);
     net = Math.min(net, maxNetForWorkforceBudget(flCap));

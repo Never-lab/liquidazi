@@ -3,6 +3,7 @@ import { createInitialGameState } from "./types";
 import {
   acceptOpportunity,
   generateOpportunities,
+  LOCAL_SALE_NET_MIN,
   maxDealNet,
   seedNewGame,
 } from "./events";
@@ -12,7 +13,21 @@ describe("deal caps and opportunities", () => {
   it("caps early-game deals well below 500k", () => {
     const s = seedNewGame(createInitialGameState({ city: "058091", sector: "commercio" }));
     expect(maxDealNet(s)).toBeLessThan(5000);
-    expect(maxDealNet(s)).toBeGreaterThan(300);
+    expect(maxDealNet(s)).toBeGreaterThanOrEqual(LOCAL_SALE_NET_MIN);
+  });
+
+  it("local sales never fall below the early-game floor", () => {
+    const sectors = ["commercio", "servizi", "artigianato", "ristorazione"] as const;
+    for (const sector of sectors) {
+      const s = createInitialGameState({ city: "015146", sector });
+      const { ops } = generateOpportunities(s, { forceRegime: "normale" });
+      const localSales = ops.filter(
+        (o) => o.kind === "sale" && (o.marketLayer ?? "local") === "local",
+      );
+      for (const sale of localSales) {
+        expect(sale.net).toBeGreaterThanOrEqual(LOCAL_SALE_NET_MIN);
+      }
+    }
   });
 
   it("blocks absurd free-typed invoices", () => {
