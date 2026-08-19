@@ -5,6 +5,7 @@ import { DisclaimerFooter } from "./components/DisclaimerFooter";
 import { PlausibleAnalytics } from "./components/PlausibleAnalytics";
 import { ToastHost } from "./components/Toast";
 import { DemandPopupHost } from "./components/DemandPopup";
+import { EventChoiceBanner } from "./components/EventChoiceBanner";
 import { AchievementPopupHost } from "./components/AchievementPopup";
 import { AuthScreen } from "./screens/AuthScreen";
 import { FeedbackScreen } from "./screens/FeedbackScreen";
@@ -104,6 +105,7 @@ function App() {
 
       <ToastHost />
       <DemandPopupHost />
+      <EventChoiceBanner />
       <AchievementPopupHost />
       <CloudSavePill />
       <AdsConsentBanner />

@@ -1385,6 +1385,14 @@ export const runWorldEvents = (state: GameState): GameState => {
   // Don't stack a new choice if one is somehow still pending
   if (next.pendingEvent) return next;
 
+  // Personale (scelta): priorità prima di shock/auto — RNG dedicato
+  if (next.employees.length > 0) {
+    const staffRand = rng(toMonthIndex(next.calendar) * 9001 + next.monthsPlayed * 13 + next.employees.length);
+    if (tryQueueStaffEvent(next, staffRand)) {
+      return next;
+    }
+  }
+
   // Comfort shocks first — applied immediately
   if (!next.quietMode && tryQueueShock(next, rand)) {
     return next;
@@ -1416,14 +1424,6 @@ export const runWorldEvents = (state: GameState): GameState => {
       pushLog(next, "neutral", `Decisione: ${pending.title}`);
       return next;
     }
-  }
-
-  // Staff events when there is a team (choice popup, blocks month close)
-  if (
-    next.employees.length > 0 &&
-    tryQueueStaffEvent(next, rand)
-  ) {
-    return next;
   }
 
   if (rand() < diff.choiceChance) {

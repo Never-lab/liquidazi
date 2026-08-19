@@ -6,6 +6,7 @@ import { rng } from "./rng";
 import {
   toMonthIndex,
   type Employee,
+  type EventPopup,
   type GameState,
   type PendingEvent,
   type StaffAbsenceKind,
@@ -91,25 +92,30 @@ const eligibleEmployees = (
     return true;
   });
 
+const setStaffPopup = (state: GameState, popup: EventPopup): void => {
+  state.lastEventPopup = popup;
+};
+
 /** Roll weighted staff event; mutates state.pendingEvent when queued. */
-export const tryQueueStaffEvent = (state: GameState, rand: () => number): boolean => {
+export const tryQueueStaffEvent = (state: GameState, rand?: () => number): boolean => {
   if (state.pendingEvent || state.quietMode) return false;
   if (state.employees.length === 0) return false;
 
+  const roll = rand ?? rng(toMonthIndex(state.calendar) * 9001 + state.monthsPlayed * 13 + state.employees.length);
   const head = state.employees.length;
-  const chance = Math.min(0.28, 0.12 + head * 0.02);
-  if (rand() > chance) return false;
+  const chance = Math.min(0.45, 0.22 + head * 0.03);
+  if (roll() > chance) return false;
 
   const candidates: { tpl: StaffEventTemplate; emp: Employee; months: number }[] = [];
   for (const tpl of STAFF_EVENT_TEMPLATES) {
-    const months = resolveMonths(tpl, rand);
+    const months = resolveMonths(tpl, roll);
     for (const emp of eligibleEmployees(state, tpl, months)) {
       candidates.push({ tpl, emp, months });
     }
   }
   if (candidates.length === 0) return false;
 
-  const pick = candidates[Math.floor(rand() * candidates.length)]!;
+  const pick = candidates[Math.floor(roll() * candidates.length)]!;
   const { tpl, emp, months } = pick;
   const pending: PendingEvent = {
     id: tpl.id,
@@ -120,7 +126,7 @@ export const tryQueueStaffEvent = (state: GameState, rand: () => number): boolea
     options: [{ id: "ok", label: tpl.optionLabel }],
   };
   state.pendingEvent = pending;
-  pushLog(state, "neutral", `Personale: ${pending.title}`);
+  pushLog(state, "neutral", `Decisione personale: ${pending.title}`);
   return true;
 };
 
@@ -140,13 +146,31 @@ export const tickStaffEvents = (state: GameState): GameState => {
   if (MALATTIA_MONTHS.has(month) && rand() < MALATTIA_CHANCE) {
     next.workforceMalattiaMonthIdx = idx;
     pushLog(next, "bad", "Malattie in azienda: forza lavoro −15% questo mese.");
+    setStaffPopup(next, {
+      title: "Malattie in azienda",
+      body: "Picco stagionale (ottobre–marzo): forza lavoro −15% questo mese.",
+      family: "personale",
+      tone: "bad",
+    });
   }
 
   if (month === 7 || month === 8) {
     pushLog(next, "neutral", "Ferie estive: forza lavoro −50% (luglio–agosto).");
+    setStaffPopup(next, {
+      title: "Ferie estive",
+      body: "Luglio–agosto: forza lavoro −50%. Meno capacità operativa in tabellone.",
+      family: "personale",
+      tone: "neutral",
+    });
   }
   if (month === 12) {
     pushLog(next, "neutral", "Festività natalizie: forza lavoro −10% (dicembre).");
+    setStaffPopup(next, {
+      title: "Festività natalizie",
+      body: "Dicembre: forza lavoro −10% per chiusure e permessi.",
+      family: "personale",
+      tone: "neutral",
+    });
   }
 
   return next;
