@@ -27,14 +27,14 @@ export const STAFF_ROLES: ReadonlyArray<{
   role: StaffRole;
   blurb: string;
 }> = [
-  { role: "Operaio", blurb: "+1 slot consegne" },
+  { role: "Operaio", blurb: "+5 forza lavoro" },
   {
     role: "Impiegato",
-    blurb: "+0.35 slot, più lead e ticket più alti",
+    blurb: "+8 FL, più lead e ticket più alti",
   },
   {
     role: "Responsabile",
-    blurb: "+0.5 slot, +compliance/mese, −pressione rivale",
+    blurb: "+12 FL, +compliance/mese, −pressione rivale",
   },
 ];
 

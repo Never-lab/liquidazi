@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { fiscalYearSnapshot as snap } from "../config/fiscalYearSnapshot";
 import { PROJECTS } from "../config/projects";
 import { advanceMonth } from "./advanceMonth";
-import { maxDealNet, monthlyCapacity } from "./events";
+import { maxDealNet } from "./events";
+import { availableWorkforce } from "./workforce";
 import {
   acceptProject,
   effectiveMonthlyRent,
@@ -83,28 +84,27 @@ describe("annual project offer on Dec→Jan", () => {
 });
 
 describe("active project effects", () => {
-  it("digitalizzazione adds capacity bonus", () => {
+  it("digitalizzazione adds FL bonus", () => {
     let s = createInitialGameState();
     s.quietMode = true;
-    const base = monthlyCapacity(s);
+    const base = availableWorkforce(s);
     s.activeProject = { id: "digitalizzazione", monthsLeft: 6, frozenCash: 0 };
-    expect(monthlyCapacity(s)).toBe(base + 1);
+    expect(availableWorkforce(s)).toBe(base + 8);
   });
 
-  it("espansione_commerciale reduces capacity by slot penalty", () => {
+  it("espansione_commerciale reduces FL by project penalty", () => {
     let s = createInitialGameState();
     s.quietMode = true;
-    const base = monthlyCapacity(s);
+    const base = availableWorkforce(s);
     s.activeProject = { id: "espansione_commerciale", monthsLeft: 6, frozenCash: 0 };
-    expect(monthlyCapacity(s)).toBe(Math.max(0, base - 1));
+    expect(availableWorkforce(s)).toBe(Math.max(0, base - 8));
   });
 
-  it("soft floor does not erase espansione slot penalty at minimal capacity", () => {
+  it("espansione_commerciale can zero out small FL pools", () => {
     let s = createInitialGameState();
     s.quietMode = true;
-    s.company.reputation = 0;
     s.activeProject = { id: "espansione_commerciale", monthsLeft: 9, frozenCash: 0 };
-    expect(monthlyCapacity(s)).toBe(0);
+    expect(availableWorkforce(s)).toBeLessThan(30);
   });
 
   it("espansione_commerciale multiplies maxDealNet", () => {

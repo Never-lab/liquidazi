@@ -7,8 +7,10 @@ import {
   repDemandMult,
   repSlotBonus,
 } from "./reputation";
-import { monthlyCapacity, generateOpportunities } from "./events";
+import { generateOpportunities } from "./events";
+import { availableWorkforce } from "./workforce";
 import { createInitialGameState } from "./types";
+import { hireEmployee } from "./actions";
 import { CITIES, citiesInRegion, cityById } from "../config/market";
 import { advanceMonth } from "./advanceMonth";
 import { issueCustomerInvoice } from "./actions";
@@ -25,12 +27,12 @@ describe("reputation market helpers", () => {
     expect(repSlotBonus(100)).toBeGreaterThan(repSlotBonus(80));
   });
 
-  it("monthlyCapacity gains a slot from 80 → 100 rep", () => {
+  it("availableWorkforce gains FL from processi upgrade, not rep alone", () => {
     const low = createInitialGameState();
-    low.company.reputation = 80;
     low.staffMorale = 100;
-    const high = { ...low, company: { ...low.company, reputation: 100 } };
-    expect(monthlyCapacity(high)).toBe(monthlyCapacity(low) + 1);
+    const high = structuredClone(low);
+    high.upgradeLevels = { processi: 1 };
+    expect(availableWorkforce(high)).toBe(availableWorkforce(low) + 8);
   });
 
   it("repDemandMult matches locked table", () => {
@@ -143,9 +145,12 @@ describe("reputation layers", () => {
   });
 
   it("national jobs name a city outside the home region", () => {
-    const s = createInitialGameState({ city: "058091", sector: "servizi" });
-    s.company.repMunicipal = 100;
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.company.repMunicipal = 0;
     s.company.repNational = 20;
+    s.monthsPlayed = 6;
+    s.nextId = 120;
+    for (let i = 0; i < 6; i++) s = hireEmployee(s, "Operaio");
     const { ops } = generateOpportunities(s, { forceRegime: "boom" });
     const national = ops.filter((o) => o.marketLayer === "national");
     expect(national.length).toBeGreaterThan(0);

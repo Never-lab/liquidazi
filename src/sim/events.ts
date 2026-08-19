@@ -3,6 +3,7 @@ import { SECTOR_PROFILES } from "../config/sectorProfile";
 import { DIFFICULTIES } from "../config/difficulty";
 import { getProjectDef } from "../config/projects";
 import { capacityPointsFor } from "../config/staffPay";
+import { workforceRequiredForNet } from "../config/workforce";
 import { supplyCapMonths, upgradeLevel } from "../config/upgrades";
 import { migrateUpgradeState } from "./migrateUpgrades";
 import { rng } from "./rng";
@@ -14,14 +15,18 @@ import {
   type Opportunity,
 } from "./types";
 import { issueCustomerInvoice, recordSupplierCost } from "./actions";
-import { acceptAsContract, contractSlotsUsed, maybeMakeContract } from "./contracts";
+import { acceptAsContract, maybeMakeContract } from "./contracts";
 import {
-  capacityPressurePenalty,
+  canAcceptWorkforce,
+  countRole,
+  monthlyCapacity,
+  workforceBlockHint,
+} from "./workforce";
+import {
   rollPressure,
   shouldRollPressure,
   ticketFactorFromPressure,
 } from "./pressures";
-import { DEFAULT_STAFF_MORALE } from "./morale";
 import { applyRivalSteal, seedRival } from "./rival";
 import {
   MUNICIPAL_NET_MAX,
@@ -30,7 +35,6 @@ import {
   NATIONAL_NET_MIN,
   pickMarketLayer,
   repDemandMult,
-  repSlotBonus,
 } from "./reputation";
 
 export { rng };
@@ -84,53 +88,16 @@ export const clampSaleTarget = (raw: number, r: DemandRegime): number => {
 
 const pick = <T,>(arr: T[], rand: () => number): T => arr[Math.floor(rand() * arr.length)]!;
 
-/** Sum of per-role capacity points across all employees (Operaio 1, Impiegato 0.35, Responsabile 0.5). */
+const withWorkforceRequired = (op: Opportunity): Opportunity =>
+  op.kind === "sale"
+    ? { ...op, workforceRequired: workforceRequiredForNet(op.net) }
+    : op;
+
+/** Sum of per-role capacity points across all employees (legacy). */
 export const staffCapacityPoints = (state: GameState): number =>
   state.employees.reduce((s, e) => s + capacityPointsFor(e.role), 0);
 
-/** Count employees with a given role (e.g. "Impiegato"). */
-export const countRole = (state: GameState, role: string): number =>
-  state.employees.filter((e) => e.role === role).length;
-
-/**
- * Sale slots / month. First 8 capacity points count 1:1; extras count 1/2.
- * Morale scales slot count after soft-cap (not raw points). Processi adds +1 without headcount.
- */
-export const monthlyCapacity = (state: GameState): number => {
-  const upgradeLevels = migrateUpgradeState(state);
-  const points = staffCapacityPoints(state);
-  const core = Math.min(points, STAFF_FULL_VALUE);
-  const extra = Math.max(0, points - STAFF_FULL_VALUE);
-  const staffSlots = Math.floor(core + Math.floor(extra / 2));
-  const morale = state.staffMorale ?? DEFAULT_STAFF_MORALE;
-  const effectiveSlots = Math.max(
-    0,
-    Math.round(staffSlots * (0.75 + 0.25 * (morale / 100))),
-  );
-  const repBonus = repSlotBonus(state.company.reputation);
-  const procLv = upgradeLevel(upgradeLevels, "processi");
-  const processi = procLv;
-  const temp = (state.tempCapacityMonths ?? 0) > 0 ? 1 : 0;
-  const growth = state.growthCapacityBonus ?? 0;
-  const subCap = (state.subsidiaries ?? []).reduce((s, sub) => s + sub.capacityBonus, 0);
-  const projCap = state.activeProject
-    ? getProjectDef(state.activeProject.id).capacityBonus
-    : 0;
-  const projSlot = state.activeProject
-    ? getProjectDef(state.activeProject.id).slotPenalty
-    : 0;
-  const base =
-    1 + effectiveSlots + repBonus + processi + temp + growth + subCap + projCap;
-  const afterContracts = base - contractSlotsUsed(state);
-  const penalized = afterContracts - capacityPressurePenalty(state) - projSlot;
-  // Soft floor: don't soft-lock a board with 0 free slots when you have no contracts
-  // (pa_wave + scorte 0 still hurts via ticket ×0.72). slotPenalty still applies.
-  if (penalized <= 0 && contractSlotsUsed(state) === 0) {
-    const floored = Math.max(0, Math.min(1, afterContracts - capacityPressurePenalty(state)));
-    return Math.max(0, floored - projSlot);
-  }
-  return Math.max(0, penalized);
-};
+export { monthlyCapacity, countRole };
 
 export const salesAcceptedThisMonth = (state: GameState): number => {
   const idx = toMonthIndex(state.calendar);
@@ -215,16 +182,18 @@ const pushSale = (
     );
     const place = pickCityInHomeRegion(state.company.city, rand);
     const who = `${pick(["Comune", "ASL", "Provincia"], rand)} di ${place.label}`;
-    ops.push({
-      id,
-      kind: "sale",
-      title: `Appalto comunale · ${who}`,
-      net,
-      expiresInMonths: 1,
-      clientType: "pa",
-      termMonths: pick([6, 12, 12, 12], rand),
-      marketLayer: "municipal",
-    });
+    ops.push(
+      withWorkforceRequired({
+        id,
+        kind: "sale",
+        title: `Appalto comunale · ${who}`,
+        net,
+        expiresInMonths: 1,
+        clientType: "pa",
+        termMonths: pick([6, 12, 12, 12], rand),
+        marketLayer: "municipal",
+      }),
+    );
     return id + 1;
   }
 
@@ -234,16 +203,18 @@ const pushSale = (
     );
     const place = pickCityOutsideHomeRegion(state.company.city, rand);
     const who = pick(["Ministero", "Regione", "Università"], rand);
-    ops.push({
-      id,
-      kind: "sale",
-      title: `Appalto nazionale · ${who} · ${place.label}`,
-      net,
-      expiresInMonths: 1,
-      clientType: "pa",
-      termMonths: pick([24, 30, 36], rand),
-      marketLayer: "national",
-    });
+    ops.push(
+      withWorkforceRequired({
+        id,
+        kind: "sale",
+        title: `Appalto nazionale · ${who} · ${place.label}`,
+        net,
+        expiresInMonths: 1,
+        clientType: "pa",
+        termMonths: pick([24, 30, 36], rand),
+        marketLayer: "national",
+      }),
+    );
     return id + 1;
   }
 
@@ -261,7 +232,7 @@ const pushSale = (
     termMonths,
     marketLayer: "local",
   };
-  ops.push(maybeMakeContract(raw, rand, state.company.reputation));
+  ops.push(withWorkforceRequired(maybeMakeContract(raw, rand, state.company.reputation)));
   return id + 1;
 };
 
@@ -370,6 +341,9 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
   const op = state.opportunities.find((o) => o.id === opportunityId);
   if (!op) return state;
 
+  const saleFl =
+    op.kind === "sale" ? (op.workforceRequired ?? workforceRequiredForNet(op.net)) : 0;
+
   if (op.kind === "sale" && op.contractMonths && op.contractMonths >= 2) {
     if ((state.activeContracts ?? []).length >= 2) {
       const blocked = structuredClone(state);
@@ -379,10 +353,10 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
       };
       return blocked;
     }
-    if (salesAcceptedThisMonth(state) >= monthlyCapacity(state)) {
+    if (!canAcceptWorkforce(state, saleFl)) {
       const blocked = structuredClone(state);
       blocked.lastUiHint = {
-        text: `Capacità piena (${monthlyCapacity(state)} slot): non puoi bloccare un contratto.`,
+        text: workforceBlockHint(state, saleFl),
         tone: "bad",
       };
       return blocked;
@@ -391,14 +365,10 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
     return asContract ?? state;
   }
 
-  if (op.kind === "sale" && salesAcceptedThisMonth(state) >= monthlyCapacity(state)) {
+  if (op.kind === "sale" && !canAcceptWorkforce(state, saleFl)) {
     const blocked = structuredClone(state);
-    const cap = monthlyCapacity(state);
     blocked.lastUiHint = {
-      text:
-        cap <= 0
-          ? "Nessuno slot libero (contratti, pressione o scorte a zero). Libera capacità o ordina forniture."
-          : `Capacità piena (${cap} commesse/mese). Assumi o chiudi un contratto.`,
+      text: workforceBlockHint(state, saleFl),
       tone: "bad",
     };
     return blocked;
@@ -423,6 +393,7 @@ export const acceptOpportunity = (state: GameState, opportunityId: number): Game
           clientType: op.clientType ?? "private",
           termMonths: op.termMonths,
           marketLayer: op.marketLayer ?? (op.clientType === "pa" ? "municipal" : "local"),
+          workforceRequired: saleFl,
         })
       : recordSupplierCost(state, op.net, op.termMonths);
   next = structuredClone(next);

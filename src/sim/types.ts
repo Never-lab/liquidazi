@@ -71,6 +71,8 @@ export interface Invoice {
   defaulted?: boolean;
   /** Which reputation layer this AR feeds on settle */
   marketLayer?: MarketLayer;
+  /** FL impegnata accettando la commessa (solo AR). */
+  workforceRequired?: number;
 }
 
 export interface VatAccount {
@@ -90,6 +92,15 @@ export interface TaxLiability {
   penalized: boolean;
 }
 
+export type EmployeeGender = "M" | "F";
+
+export type StaffAbsenceKind = "maternita" | "paternita";
+
+export interface StaffAbsence {
+  kind: StaffAbsenceKind;
+  monthsLeft: number;
+}
+
 export interface Employee {
   id: number;
   role: string;
@@ -100,6 +111,9 @@ export interface Employee {
   tfrAccrued: number;
   /** Scatti anzianità (ogni 24 mesi di servizio, cap 5). */
   senioritySteps: number;
+  gender?: EmployeeGender;
+  /** Assenza individuale (maternità / paternità). */
+  absence?: StaffAbsence;
 }
 
 /** Aggregated monthly payroll result (cedolino semplificato). */
@@ -165,6 +179,8 @@ export interface Opportunity {
   contractMonths?: number;
   /** Sale market tier; supplies omit this */
   marketLayer?: MarketLayer;
+  /** FL necessaria per accettare (solo sale). */
+  workforceRequired?: number;
 }
 
 export type PressureId =
@@ -185,7 +201,13 @@ export interface ActiveContract {
   title: string;
   netPerMonth: number;
   monthsLeft: number;
-  slotCost: number;
+  /** @deprecated migrated to workforceLock */
+  slotCost?: number;
+  /** FL bloccata finché il contratto è attivo. */
+  workforceLock: number;
+  /** FL consumata al momento della firma (mese corrente). */
+  workforceAcceptCost?: number;
+  acceptedMonthIdx?: number;
   clientType: ClientType;
 }
 
@@ -439,6 +461,8 @@ export interface GameState {
   projectOfferYear: number | null;
   /** Company climate 0–100; scales staff capacity and drives turnover */
   staffMorale?: number;
+  /** Mese (idx assoluto) con malattie diffuse (−15% FL). */
+  workforceMalattiaMonthIdx?: number | null;
   /** Active fiscal collection case (cartella / rateazione / enforcement). */
   collectionCase: CollectionCase | null;
   /** Consecutive months with unpaid overdue F24 liabilities. */
@@ -659,6 +683,7 @@ export const createInitialGameState = (opts?: NewGameOptions): GameState => {
     projectOffer: null,
     projectOfferYear: null,
     staffMorale: 70,
+    workforceMalattiaMonthIdx: null,
     collectionCase: null,
     monthsTaxOverdue: 0,
     loseReason: null,

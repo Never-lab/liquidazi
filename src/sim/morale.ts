@@ -1,4 +1,4 @@
-import { countRole, monthlyCapacity } from "./events";
+import { countRole, monthlyCapacity } from "./workforce";
 import { round2, toMonthIndex, type GameState } from "./types";
 
 export const DEFAULT_STAFF_MORALE = 70;

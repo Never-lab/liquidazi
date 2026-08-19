@@ -17,6 +17,7 @@ import { f24BlockedByCollection } from "./collection";
 import { migrateLoansInPlace, MAX_OPEN_LOANS, openLoans } from "./loans";
 import { migrateUpgradeState } from "./migrateUpgrades";
 import { marketModifiersFromIndex } from "./market";
+import { rollEmployeeGender } from "./staffEvents";
 import { hasPressure } from "./pressures";
 import {
   round2,
@@ -35,6 +36,7 @@ export interface InvoiceOpts {
   /** months until settlement; default 1 */
   termMonths?: number;
   marketLayer?: MarketLayer;
+  workforceRequired?: number;
 }
 
 const addInvoice = (
@@ -64,6 +66,7 @@ const addInvoice = (
           splitPayment: (opts?.clientType ?? "private") === "pa",
           defaulted: false,
           marketLayer: opts?.marketLayer,
+          workforceRequired: opts?.workforceRequired,
         }
       : {}),
   });
@@ -115,6 +118,7 @@ export const hireEmployee = (state: GameState, role: string): GameState => {
     hireMonthIdx: toMonthIndex(next.calendar),
     tfrAccrued: 0,
     senioritySteps: 0,
+    gender: rollEmployeeGender(next),
   });
   return next;
 };
