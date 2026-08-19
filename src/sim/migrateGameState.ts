@@ -27,6 +27,7 @@ export const migrateGameState = (state: GameState): GameState => {
   next.monthsTaxOverdue ??= 0;
   next.logReadThruId ??= 0;
   next.demandRegime ??= "normale";
+  next.boardDryStreak ??= 0;
   next.lastUiHint ??= null;
   next.activeProject ??= null;
   next.projectOffer ??= null;

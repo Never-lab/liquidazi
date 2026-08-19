@@ -80,12 +80,12 @@ describe("applyRivalSteal bands", () => {
     expect(next.opportunities.filter((o) => o.kind === "sale")).toHaveLength(2);
   });
 
-  it("Guerra can steal two sales", () => {
+  it("Guerra can steal sales but leaves at least one on the board", () => {
     const base = createInitialGameState();
     base.quietMode = false;
     base.monthsPlayed = 10;
     base.rival = { name: "X", heat: 95 };
-    let stoleTwo = false;
+    let stole = false;
     for (let m = 0; m < 80; m++) {
       const s = {
         ...base,
@@ -97,13 +97,14 @@ describe("applyRivalSteal bands", () => {
       };
       const next = applyRivalSteal(s);
       const salesLeft = next.opportunities.filter((o) => o.kind === "sale").length;
-      if (salesLeft <= 0) {
-        stoleTwo = true;
+      expect(salesLeft).toBeGreaterThanOrEqual(1);
+      if (salesLeft === 1) {
+        stole = true;
         expect(next.log.some((e) => /pressione/.test(e.text))).toBe(true);
         break;
       }
     }
-    expect(stoleTwo).toBe(true);
+    expect(stole).toBe(true);
   });
 
   it("contained rival does not steal", () => {

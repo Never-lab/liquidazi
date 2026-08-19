@@ -503,6 +503,8 @@ export interface GameState {
   highQualityExpectationMonths?: number;
   /** Monthly board demand regime (sale offer count vs capacity). */
   demandRegime: DemandRegime;
+  /** Consecutive months with zero commesse on the board (anti dry-streak). */
+  boardDryStreak?: number;
   /** Breakdown of last month close for UI */
   lastCloseSummary: MonthCloseSummary | null;
   /** Mid-game goals completed */
