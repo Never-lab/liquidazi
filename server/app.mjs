@@ -782,7 +782,21 @@ export function createHandler({
         const conf = BOARDS[board];
         if (!conf) return json(res, 400, { error: "Board sconosciuta", boards: Object.keys(BOARDS) });
         const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit") || 20)));
-        const sorted = [...runs].sort((a, b) => {
+
+        // Keep only the best run per user for this board
+        const bestByUser = new Map();
+        for (const r of runs) {
+          const prev = bestByUser.get(r.userId);
+          if (!prev) { bestByUser.set(r.userId, r); continue; }
+          const rv = r[conf.key];
+          const pv = prev[conf.key];
+          const better = rv === pv
+            ? r.createdAt > prev.createdAt
+            : conf.dir * (rv < pv ? -1 : 1) < 0;
+          if (better) bestByUser.set(r.userId, r);
+        }
+
+        const sorted = [...bestByUser.values()].sort((a, b) => {
           const av = a[conf.key];
           const bv = b[conf.key];
           if (av === bv) return b.createdAt.localeCompare(a.createdAt);

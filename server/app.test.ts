@@ -343,6 +343,41 @@ describe("cloud saves", () => {
     expect(mine?.monthsPlayed).toBe(72);
   });
 
+  it("leaderboard shows only best run per user across slots", async () => {
+    const reg = await api("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "multi_slot", password: "secret12" }),
+    });
+    const token = (reg.data as { token: string }).token;
+
+    for (const [slot, months] of [[0, 30], [1, 50], [2, 10]] as const) {
+      await api("/api/runs", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyName: "Same Co",
+          city: "MI",
+          sector: "servizi",
+          monthsPlayed: months,
+          peakCash: 1000,
+          peakDebt: 0,
+          lifetimeRevenue: 5000,
+          finalCash: -100,
+          difficulty: "normal",
+          outcome: "lost",
+          slotIndex: slot,
+        }),
+      });
+    }
+
+    const board = await api("/api/leaderboard?board=longest&limit=50");
+    const entries = (board.data as { entries: { username: string; monthsPlayed: number }[] }).entries;
+    const mine = entries.filter((e) => e.username === "multi_slot");
+    expect(mine).toHaveLength(1);
+    expect(mine[0].monthsPlayed).toBe(50);
+  });
+
   it("rejects saves body over 1MB", async () => {
     const reg = await api("/api/auth/register", {
       method: "POST",
