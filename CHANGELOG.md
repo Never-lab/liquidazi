@@ -8,6 +8,21 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-08-19
+
+Scorte per qualità, chiarezza tabellone commesse e rebalance early game.
+
+### Added
+- Scorte a **quattro tier** (bassa/media/buona/ottima) con effetto introito e prezzi da tabellone; consegna mese successivo (pending → magazzino FIFO).
+- Pannello **SuppliesInbox** in HUD; copy tabellone e toast emergenza aggiornati.
+- Badge **Singola / Appalto PA / Contratto** su card tabellone; filtro tipo offerta; pannello **Contratti in corso (n/2)**; anteprima «Se accetti: …».
+
+### Changed
+- Curva FL più dolce in early game (`8 + net/90`, min 10); crescita ticket graduale; penalità scorte vuote ridotta; partenza con 2 mesi scorte; forniture tier più bassi e cap prezzo ~40% cassa.
+
+### Fixed
+- **Scorte idle**: niente consumo a mese senza vendite (solo fatture AR emesse); boom +1 mese extra solo se hai venduto nel mese.
+
 ## [1.1.9] — 2026-08-19
 
 Popup personale e taratura FL appalti PA.
