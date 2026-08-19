@@ -17,9 +17,21 @@ export const WORKFORCE_PER_LEGACY_SLOT = 8;
 export const workforceForRole = (role: string): number =>
   WORKFORCE_BY_ROLE[role as StaffRole] ?? 0;
 
+/** FL minima e divisore netto — curva più dolce per early game (30 FL base). */
+export const WORKFORCE_NET_FLOOR = 10;
+export const WORKFORCE_NET_OFFSET = 8;
+export const WORKFORCE_NET_DIVISOR = 90;
+
+/** Netto massimo accettabile con `flBudget` FL (inverso della curva locale). */
+export const maxNetForWorkforceBudget = (flBudget: number): number =>
+  Math.max(300, Math.round((flBudget - WORKFORCE_NET_OFFSET) * WORKFORCE_NET_DIVISOR));
+
 /** FL richiesta da commessa locale / privata (netto del mese). */
 export const workforceRequiredForNet = (net: number): number =>
-  Math.max(12, Math.round(10 + net / 70));
+  Math.max(
+    WORKFORCE_NET_FLOOR,
+    Math.round(WORKFORCE_NET_OFFSET + net / WORKFORCE_NET_DIVISOR),
+  );
 
 export type WorkforceSaleOpts = {
   marketLayer?: MarketLayer;

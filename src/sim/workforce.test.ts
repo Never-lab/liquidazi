@@ -23,9 +23,9 @@ describe("workforce config", () => {
     expect(workforceForRole("Responsabile")).toBe(12);
   });
 
-  it("2k net richiede ~35 FL", () => {
-    expect(workforceRequiredForNet(2000)).toBeGreaterThanOrEqual(33);
-    expect(workforceRequiredForNet(2000)).toBeLessThanOrEqual(40);
+  it("2k net richiede ~30 FL (curva ammorbidita)", () => {
+    expect(workforceRequiredForNet(2000)).toBeGreaterThanOrEqual(28);
+    expect(workforceRequiredForNet(2000)).toBeLessThanOrEqual(32);
   });
 });
 
@@ -81,12 +81,37 @@ describe("accettazione commesse per FL", () => {
   it("comunale generato ha FL umana (non centinaia)", () => {
     const s = createInitialGameState({ city: "058091", sector: "servizi" });
     s.company.repMunicipal = 80;
+    s.monthsPlayed = 20;
     const { ops } = generateOpportunities(s, { forceRegime: "normale" });
     const municipal = ops.filter((o) => o.marketLayer === "municipal");
     expect(municipal.length).toBeGreaterThan(0);
     for (const op of municipal) {
       expect(op.workforceRequired).toBeGreaterThan(0);
       expect(op.workforceRequired).toBeLessThanOrEqual(90);
+    }
+  });
+
+  it("early board: commesse locali rispettano il budget FL", () => {
+    const s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.monthsPlayed = 2;
+    const { ops } = generateOpportunities(s, { forceRegime: "normale" });
+    const localSales = ops.filter((o) => o.kind === "sale" && o.marketLayer === "local");
+    expect(localSales.length).toBeGreaterThan(0);
+    for (const op of localSales) {
+      expect(op.workforceRequired ?? 0).toBeLessThanOrEqual(
+        Math.floor(availableWorkforce(s) * 0.9),
+      );
+    }
+  });
+
+  it("early board: forniture non superano ~40% cassa", () => {
+    const s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.monthsPlayed = 1;
+    s.company.cash = 10000;
+    const { ops } = generateOpportunities(s, { forceRegime: "normale" });
+    const supplies = ops.filter((o) => o.kind === "supply");
+    for (const op of supplies) {
+      expect(op.net).toBeLessThanOrEqual(6500);
     }
   });
 });

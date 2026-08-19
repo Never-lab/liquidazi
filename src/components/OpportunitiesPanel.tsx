@@ -130,7 +130,7 @@ export const OpportunitiesPanel = () => {
           className={styles.statChip}
           title={
             emptyStock
-              ? "Scorte a zero: ticket −28% e più insoluti. Ordina forniture (arrivo mese prossimo) o emergenza."
+              ? "Scorte a zero: ticket più bassi e più insoluti. Ordina forniture (arrivo mese prossimo) o emergenza."
               : `Magazzino ${stockMonths} mesi${arrivingMonths > 0 ? ` · ${arrivingMonths} in arrivo` : ""}. Qualità scorte modifica l'introito commesse.`
           }
         >
@@ -168,7 +168,7 @@ export const OpportunitiesPanel = () => {
       </div>
       <p className={styles.muted}>
         {emptyStock
-          ? "Scorte a zero: ticket −28% e più insoluti. Le forniture arrivano il mese successivo all'ordine."
+          ? "Scorte a zero: ticket più bassi e più insoluti. Le forniture arrivano il mese successivo all'ordine."
           : "Forniture per qualità (bassa −10% … ottima +5%). Con scorte in magazzino l'introito commesse cambia."}
       </p>
       {emptyStock && (
