@@ -33,7 +33,7 @@ Do not skip to implementation on ambiguous “make everything clearer / build X�
 4. Never push straight to `main`. No force-push to `main`. Admin ruleset bypass = hotfixes only.
 5. Commit only when the user asks (or explicitly says “vai / fai commit / apri PR”).
 6. **Do not commit:** `.superpowers/sdd/*`, local session diffs/reports, secrets, `.env`.
-7. **Release:** update [`CHANGELOG.md`](CHANGELOG.md) (Keep a Changelog) + `package.json` version **before** tagging `vX.Y.Z`. Wiki = how-to; changelog = what changed. Tag on `main` after the PR merge.
+7. **Release:** update [`CHANGELOG.md`](CHANGELOG.md) (Keep a Changelog) + `package.json` version **before** tagging; merge to `main`, then `npm run release` (tag + GitHub Release + deploy prod). Wiki = how-to; changelog = what changed.
 
 ## ROADMAP
 
