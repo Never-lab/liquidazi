@@ -8,7 +8,7 @@ Simulazione educativa di impresa (SRL semplificata). Questa wiki è il riferimen
 |--------|-----------|
 | [Come si gioca](help/come-si-gioca.md) | Loop, cassa, domanda, rivale |
 | [Fisco e F24](help/fisco-e-f24.md) | Tasse, mora, cartella |
-| [Personale e capacità](help/personale-e-capacita.md) | Staff, slot, oneri |
+| [Personale e forza lavoro](help/personale-e-capacita.md) | Staff, FL, oneri |
 | [Finanza](help/finanza.md) | Prestiti, tesoreria, scorte, shock |
 | [FAQ](help/faq.md) | Blocchi frequenti |
 

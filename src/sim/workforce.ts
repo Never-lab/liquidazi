@@ -108,7 +108,7 @@ export const workforceBlockHint = (state: GameState, required: number): string =
   if (avail <= 0) {
     return "Forza lavoro insufficiente: assumi personale o attendi la fine delle assenze.";
   }
-  return `Servono ${required} FL (disponibili ${avail - used}/${avail}). Assumi o libera capacità.`;
+  return `Servono ${required} FL (disponibili ${avail - used}/${avail}). Assumi o libera FL.`;
 };
 
 /** Count employees with a given role (e.g. "Impiegato"). */

@@ -19,6 +19,7 @@ import { migrateUpgradeState } from "./migrateUpgrades";
 import { marketModifiersFromIndex } from "./market";
 import { rollEmployeeGender } from "./staffEvents";
 import { hasPressure } from "./pressures";
+import { WORKFORCE_PER_LEGACY_SLOT } from "../config/workforce";
 import {
   round2,
   toMonthIndex,
@@ -610,8 +611,8 @@ export const investGrowth = (state: GameState, amount: number): GameState => {
     tone: "good",
     text:
       gained > 0
-        ? `Reinvestimento crescita −${amt.toLocaleString("it-IT")} €: +${gained} slot capacità.`
-        : `Reinvestimento crescita −${amt.toLocaleString("it-IT")} € (verso il prossimo slot).`,
+        ? `Reinvestimento crescita −${amt.toLocaleString("it-IT")} €: +${gained * WORKFORCE_PER_LEGACY_SLOT} FL.`
+        : `Reinvestimento crescita −${amt.toLocaleString("it-IT")} € (verso i prossimi +${WORKFORCE_PER_LEGACY_SLOT} FL).`,
   });
   next.log = next.log.slice(0, 12);
   return next;

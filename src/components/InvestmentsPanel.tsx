@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getProjectDef } from "../config/projects";
+import { WORKFORCE_PER_LEGACY_SLOT } from "../config/workforce";
 import {
   GROWTH_CAPACITY_CAP,
   GROWTH_PER_SLOT,
@@ -36,7 +37,7 @@ export const InvestmentsPanel = () => {
   const profitHint =
     (game.lastYearReport?.profit ?? 0) > 0
       ? "Utile dell'anno scorso positivo: ha senso parcheggiare o reinvestire."
-      : "Tre strumenti: tesoreria (parcheggio), crescita (+slot), progetto annuale (a gennaio).";
+      : "Tre strumenti: tesoreria (parcheggio), crescita (+FL), progetto annuale (a gennaio).";
 
   return (
     <section className={styles.panelWide}>
@@ -114,9 +115,11 @@ export const InvestmentsPanel = () => {
         2 · Reinvestimento crescita
       </h3>
       <p className={styles.muted}>
-        Spendi cassa per capacità permanente sul tabellone. Ogni{" "}
-        {formatCash(GROWTH_PER_SLOT)} → +1 slot (max {GROWTH_CAPACITY_CAP}). Investito{" "}
-        {formatCash(invested)} · slot {growthSlots}/{GROWTH_CAPACITY_CAP}
+        Spendi cassa per **+8 FL** permanenti sul tabellone. Ogni{" "}
+        {formatCash(GROWTH_PER_SLOT)} → +{WORKFORCE_PER_LEGACY_SLOT} FL (max{" "}
+        {GROWTH_CAPACITY_CAP * WORKFORCE_PER_LEGACY_SLOT} FL bonus). Investito{" "}
+        {formatCash(invested)} · bonus {growthSlots * WORKFORCE_PER_LEGACY_SLOT}/
+        {GROWTH_CAPACITY_CAP * WORKFORCE_PER_LEGACY_SLOT} FL
         {growthSlots < GROWTH_CAPACITY_CAP
           ? ` · prossimo a ${formatCash(nextSlotAt)}`
           : " · tetto raggiunto"}

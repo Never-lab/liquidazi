@@ -68,10 +68,10 @@ export const growthInvestHint = (opts: {
   atCap: boolean;
   minLabel: string;
 }): string => {
-  if (opts.atCap) return "Tetto crescita raggiunto (+3 slot).";
-  if (opts.belowMin) return `Investimento minimo ${opts.minLabel} per uno slot.`;
+  if (opts.atCap) return `Tetto crescita raggiunto (+${3 * 8} FL bonus).`;
+  if (opts.belowMin) return `Investimento minimo ${opts.minLabel} per +8 FL.`;
   if (opts.shortCash) return "Cassa insufficiente per questo investimento crescita.";
-  return "Reinvesti in capacità (+1 slot vendita).";
+  return "Reinvesti in forza lavoro (+8 FL permanenti).";
 };
 
 export const projectOfferAcceptHint = (canAfford: boolean): string | null =>

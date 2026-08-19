@@ -10,11 +10,11 @@ La **cassa** è quello che hai in banca. L’utile contabile non è liquidità: 
 2. Premi **Chiudi il mese**: entrano ed escono le scadenze (fatture, affitto, stipendi, tasse).
 3. Guarda il Δ cassa, i banner (F24, decisioni) e la posta.
 
-Il tabellone non è sempre uguale: a volte è **secca** (poche vendite), a volte **boom** (più slot). Un popup compare solo quando entri in un regime estremo, non ogni mese secca/boom di fila.
+Il tabellone non è sempre uguale: a volte è **secca** (poche vendite), a volte **boom** (più commesse). Un popup compare solo quando entri in un regime estremo, non ogni mese secca/boom di fila.
 
 La **pressione rivale** (Calma / Tesa / Guerra) può farti rubare lead; rispondi agli eventi quando la concorrenza alza la voce.
 
-La reputazione è a tre layer: **locale** (privati, slot e insoluti), **comunale** e **nazionale** (appalti più grossi e pagamenti lunghi). I punti arrivano quando incassi, non quando accetti. Sul tabellone puoi filtrare per mercato.
+La reputazione è a tre layer: **locale** (privati, insoluti e qualità commesse), **comunale** e **nazionale** (appalti più grossi e pagamenti lunghi). I punti arrivano quando incassi, non quando accetti. Sul tabellone puoi filtrare per mercato.
 
 ## Obiettivo
 

@@ -24,7 +24,7 @@ export const PROJECTS: Record<ProjectId, ProjectDef> = {
   digitalizzazione: {
     id: "digitalizzazione",
     label: "Digitalizzazione",
-    blurb: "Gestionale e fatturazione elettronica: +1 slot e +1 compliance al mese.",
+    blurb: "Gestionale e fatturazione elettronica: +8 FL e +1 compliance al mese.",
     cost: 6000,
     durationMonths: 9,
     capacityBonus: 1,
@@ -63,7 +63,7 @@ export const PROJECTS: Record<ProjectId, ProjectDef> = {
   espansione_commerciale: {
     id: "espansione_commerciale",
     label: "Espansione commerciale",
-    blurb: "Nuove commesse: ticket ×1,06 ma −1 slot capacità per 9 mesi.",
+    blurb: "Nuove commesse: ticket ×1,06 ma −8 FL per 9 mesi.",
     cost: 7000,
     durationMonths: 9,
     capacityBonus: 0,

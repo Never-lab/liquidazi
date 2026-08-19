@@ -185,7 +185,7 @@ const CHOICE_POOL: ChoiceDef[] = [
     kind: "choice",
     id: "temp_hire",
     title: "Collaboratore temporaneo",
-    body: "Un temp può coprire 2 mesi (+1 slot capacità) per 1 800 € subito.",
+    body: "Un temp può coprire 2 mesi (+8 FL) per 1 800 € subito.",
     options: [
       {
         id: "hire",
@@ -194,14 +194,14 @@ const CHOICE_POOL: ChoiceDef[] = [
           s.company.cash = round2(s.company.cash - 1800);
           s.ytd.otherCosts = round2(s.ytd.otherCosts + 1800);
           s.tempCapacityMonths = Math.max(s.tempCapacityMonths, 2);
-          pushLog(s, "good", "Temp in forza: +1 capacità per 2 mesi.");
+          pushLog(s, "good", "Temp in forza: +8 FL per 2 mesi.");
         },
       },
       {
         id: "skip",
         label: "No, restiamo snelli",
         apply: (s) => {
-          pushLog(s, "neutral", "Niente temp: capacity invariata.");
+          pushLog(s, "neutral", "Niente temp: forza lavoro invariata.");
         },
       },
     ],
@@ -311,16 +311,16 @@ const CHOICE_POOL: ChoiceDef[] = [
     kind: "choice",
     id: "overtime",
     title: "Straordinari",
-    body: "Il team può fare straordinari questo mese (+1 slot) a fronte di un premio di 600 €.",
+    body: "Il team può fare straordinari questo mese (+8 FL) a fronte di un premio di 600 €.",
     options: [
       {
         id: "yes",
-        label: "Autorizza (+1 slot)",
+        label: "Autorizza (+8 FL)",
         apply: (s) => {
           s.company.cash = round2(s.company.cash - 600);
           s.ytd.payrollCost = round2(s.ytd.payrollCost + 600);
           s.tempCapacityMonths = Math.max(s.tempCapacityMonths, 1);
-          pushLog(s, "good", "Straordinari: +1 capacità per questo ciclo.");
+          pushLog(s, "good", "Straordinari: +8 FL per questo ciclo.");
         },
       },
       {
@@ -921,7 +921,7 @@ const SHOCK_POOL: ChoiceDef[] = [
     kind: "choice",
     id: "shock_contract_kill",
     title: "Recesso su contratto attivo",
-    body: "Un cliente chiude un contratto multi-mese. Perdi lo slot bloccato e una penale simbolica.",
+    body: "Un cliente chiude un contratto multi-mese. Perdi la FL bloccata e una penale simbolica.",
     options: [
       {
         id: "ok",
@@ -933,7 +933,7 @@ const SHOCK_POOL: ChoiceDef[] = [
             s.activeContracts = list.slice(1);
             s.company.cash = round2(s.company.cash - 800);
             s.ytd.otherCosts = round2(s.ytd.otherCosts + 800);
-            pushLog(s, "bad", `Recesso: chiuso «${dropped.title}», −800 €, slot liberato.`);
+            pushLog(s, "bad", `Recesso: chiuso «${dropped.title}», −800 €, FL liberata.`);
           } else {
             const hit = shockCash(s, 0.05, 800);
             pushLog(s, "bad", `Recesso (nessun contratto): contenzioso −${hit.toLocaleString("it-IT")} €.`);
@@ -1238,7 +1238,7 @@ const applyCalendar = (state: GameState, rand: () => number): void => {
     pushLog(
       state,
       "good",
-      "Settembre — ripresa: ticket in ripresa, clienti tornano. Buon mese per riempire gli slot.",
+      "Settembre — ripresa: ticket in ripresa, clienti tornano. Buon mese per riempire la forza lavoro.",
     );
     if (rand() < 0.55) {
       const bonus = round2(maxDealNet(state) * (0.55 + rand() * 0.35));

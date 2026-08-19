@@ -1,4 +1,5 @@
 import { CAPEX_EBITDA_MULT } from "../config/holding";
+import { WORKFORCE_PER_LEGACY_SLOT } from "../config/workforce";
 import { estimateSubsidiaryValue } from "../sim/acquisitions";
 import { migrateHoldingState } from "../sim/migrateHolding";
 import { capexHint } from "../ui/controlHints";
@@ -149,7 +150,7 @@ export const HoldingPanel = () => {
               ? `Slot holding pieni (${subs.length}/${cap}).`
               : shortCash
                 ? `Cassa insufficiente (servono ${formatCash(t.price)}).`
-                : `Acquista per ${formatCash(t.price)} (usa 1 slot).`;
+                : `Acquista per ${formatCash(t.price)} (usa 1 posto in portfolio).`;
             return (
               <article key={t.id} className={styles.deal}>
                 <div>
@@ -157,7 +158,7 @@ export const HoldingPanel = () => {
                   <p className={styles.dealMeta}>
                     {t.sector} · {formatCash(t.price)} · EBITDA {formatCash(t.monthlyEbitda)}/mese ·
                     rischio {RISK_LABEL[t.risk]}
-                    {t.capacityBonus ? " · +1 slot" : ""}
+                    {t.capacityBonus ? ` · +${WORKFORCE_PER_LEGACY_SLOT} FL` : ""}
                   </p>
                 </div>
                 <div className={styles.dealActions}>

@@ -51,7 +51,7 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
     return {
       id: "commesse-legend",
       title: "Cosa significano i numeri sopra le commesse",
-      body: "Capacità = vendite accettate / slot del mese; Tetto max = limite per una singola vendita; Scorte = mesi di magazzino. Su desktop, passa sui chip per il dettaglio.",
+      body: "FL = forza lavoro usata / disponibile nel mese; Tetto max = limite per una singola vendita; Scorte = mesi di magazzino. Su desktop, passa sui chip per il dettaglio.",
     };
   }
   if (
@@ -62,14 +62,14 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
     return {
       id: "staff-clima",
       title: "Clima del personale",
-      body: "Clima basso in Personale: rischio dimissioni e meno capacità. Migliora con utili, F24 in regola, Responsabile e progetto Formazione.",
+      body: "Clima basso in Personale: rischio dimissioni e meno FL effettiva. Migliora con utili, F24 in regola, Responsabile e progetto Formazione.",
     };
   }
   if (game.monthsPlayed >= 2 && game.employees.length === 0 && game.monthsPlayed < 6) {
     return {
       id: "hire",
-      title: "Capacità",
-      body: "Assumi se il tabellone ha slot vuoti. I primi 6 dipendenti contano pieno; oltre rendono meno. Oppure compra «Processi».",
+      title: "Forza lavoro",
+      body: "Assumi se manca FL per le commesse in tabellone. I primi 6 dipendenti contano pieno; oltre rendono meno. Oppure compra «Processi» (+8 FL).",
     };
   }
   const migratedLevels = migrateUpgradeState(game);
@@ -80,7 +80,7 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
     return {
       id: "upgrade",
       title: "Migliora l'azienda",
-      body: "In Upgrade: gestionale F24 automatico, commerciale (+commesse), sede (−affitto), processi (+slot).",
+      body: "In Upgrade: gestionale F24 automatico, commerciale (+commesse), sede (−affitto), processi (+8 FL).",
     };
   }
   if (
@@ -91,7 +91,7 @@ export const coachTipFor = (game: GameState): CoachTip | null => {
     return {
       id: "invest",
       title: "Investi l'utile",
-      body: "In Investimenti: parcheggia in tesoreria o reinvesti in crescita (+slot). In Holding: acquisisci partecipate.",
+      body: "In Investimenti: parcheggia in tesoreria o reinvesti in crescita (+8 FL). In Holding: acquisisci partecipate.",
     };
   }
   if (game.calendar.month === 5 || game.calendar.month === 10) {

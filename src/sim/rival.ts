@@ -6,7 +6,7 @@ export type PressureBand = "calma" | "tesa" | "guerra";
 export type RivalPhase = "arrivo" | "caldo" | "resa";
 
 export const RIVAL_PRESSURE_TOOLTIP =
-  "Pressione rivale: sale se prendi poche commesse o le lasci scadere; scende se riempi la capacità e con Responsabile / campagne. In Guerra ruba più lead e forza eventi.";
+  "Pressione rivale: sale se prendi poche commesse o le lasci scadere; scende se usi bene la FL e con Responsabile / campagne. In Guerra ruba più lead e forza eventi.";
 
 export const pressureBand = (heat: number): PressureBand => {
   if (heat < 40) return "calma";
