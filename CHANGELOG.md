@@ -8,6 +8,15 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.3.2] — 2026-08-19
+
+### Added
+- Endpoint `/ads.txt` per verifica Google AdSense su `floatdesk.cc` (publisher `pub-9163410629777799`).
+
+### Fixed
+- Tabellone commesse: niente offerte vuote in early game e streak secca più coerente.
+- Eventi personale: compaiono solo con almeno 2 dipendenti in azienda.
+
 ## [1.3.1] — 2026-08-19
 
 ### Fixed
@@ -165,7 +174,8 @@ Sim educativo di SRL semplificata (cassa, IVA, F24, personale, prestiti). Non è
 
 - Hardening runtime (rate limit, clamp sulle run) e UX F24/collection.
 
-[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/Never-lab/liquidazi/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Never-lab/liquidazi/releases/tag/v1.3.1
 [1.3.0]: https://github.com/Never-lab/liquidazi/releases/tag/v1.3.0
 [1.2.0]: https://github.com/Never-lab/liquidazi/releases/tag/v1.2.0
