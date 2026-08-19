@@ -76,6 +76,9 @@ export const MenuScreen = () => {
         <NavItem icon="save" label="Salvataggi" onClick={() => setScreen("saves")} />
         <NavItem icon="trophy" label="Classifiche" onClick={() => setScreen("leaderboard")} />
         {auth && (
+          <NavItem icon="chart" label="Le tue run" onClick={() => setScreen("my-runs")} />
+        )}
+        {auth && (
           <NavItem icon="trophy" label="Trofei" onClick={() => setScreen("trophies")} />
         )}
         {auth?.admin && (

@@ -20,6 +20,7 @@ import { SetupScreen } from "./screens/SetupScreen";
 import { TrophiesScreen } from "./screens/TrophiesScreen";
 import { TutorialScreen } from "./screens/TutorialScreen";
 import { GuideScreen } from "./screens/GuideScreen";
+import { MyRunsScreen } from "./screens/MyRunsScreen";
 import { LegalScreen } from "./screens/LegalScreen";
 import { BRAND_NAME } from "./config/brand";
 import { useGameStore } from "./store/gameStore";
@@ -92,6 +93,7 @@ function App() {
             {screen === "gameover" && <EndScreen />}
             {screen === "leaderboard" && <LeaderboardScreen />}
             {screen === "saves" && <SavesScreen />}
+            {screen === "my-runs" && <MyRunsScreen />}
             {screen === "feedback" && <FeedbackScreen />}
           </>
         )}

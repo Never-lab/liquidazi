@@ -822,6 +822,32 @@ export function createHandler({
         });
       }
 
+      if (req.method === "GET" && path === "/api/runs/me") {
+        const authz = authorize(req);
+        if (!authz) return json(res, 401, { error: "Login richiesto" });
+        const { user, session } = authz;
+        const mine = runs
+          .filter((r) => r.userId === user.id)
+          .sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+          .map((r) => ({
+            id: r.id,
+            companyName: r.companyName,
+            city: r.city,
+            sector: r.sector,
+            monthsPlayed: r.monthsPlayed,
+            peakCash: r.peakCash,
+            peakDebt: r.peakDebt,
+            lifetimeRevenue: r.lifetimeRevenue,
+            finalCash: r.finalCash,
+            difficulty: r.difficulty ?? null,
+            outcome: r.outcome ?? "lost",
+            slotIndex: r.slotIndex ?? null,
+            createdAt: r.createdAt,
+            updatedAt: r.updatedAt ?? null,
+          }));
+        return jsonAuthed(res, 200, { runs: mine }, session);
+      }
+
       if (req.method === "GET" && path === "/api/leaderboard/boards") {
         return json(
           res,
