@@ -51,18 +51,37 @@ export const rollSupplyQuality = (net: number, rand: () => number): number => {
   return Math.round(tier.qualityMin + rand() * span);
 };
 
-export const rollSupplyNet = (tier: SupplyTier, rand: () => number): number => {
+export const rollSupplyNet = (
+  tier: SupplyTier,
+  rand: () => number,
+  opts?: { maxNet?: number },
+): number => {
   const span = tier.priceMax - tier.priceMin;
-  return round2(tier.priceMin + rand() * span);
+  let net = round2(tier.priceMin + rand() * span);
+  if (opts?.maxNet != null) net = Math.min(net, opts.maxNet);
+  return net;
 };
 
-export const pickSupplyTier = (rand: () => number): SupplyTier => {
+export const pickSupplyTier = (
+  rand: () => number,
+  opts?: { earlyGame?: boolean },
+): SupplyTier => {
   const r = rand();
+  if (opts?.earlyGame) {
+    if (r < 0.58) return tierForQuality(40);
+    if (r < 0.86) return tierForQuality(65);
+    if (r < 0.96) return tierForQuality(80);
+    return tierForQuality(92);
+  }
   if (r < 0.38) return tierForQuality(40);
   if (r < 0.68) return tierForQuality(65);
   if (r < 0.88) return tierForQuality(80);
   return tierForQuality(92);
 };
+
+/** Tetto prezzo forniture quando cassa ancora stretta (early game). */
+export const earlySupplyPriceCap = (state: GameState): number =>
+  Math.max(800, Math.min(Math.round(state.company.cash * 0.4), 6500));
 
 export const canAddSupplyMonths = (
   state: GameState,

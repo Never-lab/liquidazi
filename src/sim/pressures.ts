@@ -108,6 +108,7 @@ export const paChanceBoost = (state: GameState): number =>
   hasPressure(state, "pa_wave") ? 0.25 : 0;
 
 export const capacityPressurePenalty = (state: GameState): number => {
+  if ((state.monthsPlayed ?? 0) < 6) return 0;
   if (hasPressure(state, "pa_wave") && !hasWarehouseStock(state)) return 1;
   return 0;
 };
