@@ -8,6 +8,18 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.1.5] — 2026-08-19
+
+Dark theme: colori hardcoded sostituiti con variabili CSS theme-aware.
+
+### Fixed
+- Banner F24 da versare, banner rescue e KO ora leggibili in dark mode (niente più testo nero su sfondo scuro).
+- Inbox notifiche: badge, sfondo e bordi tonali adattati al tema.
+- Overlay (sheet, dialog, popup) usano toni grafite/dark-silver invece di nero pece.
+- Testo su pulsanti colorati (danger, accent, toast) ora usa `--color-on-filled` invece di `#fff`.
+- Pallini "run in corso" (leaderboard/storico) e dot dei grafici adattati al tema.
+- Ombre unificate su `--color-shadow` con intensità adeguata per entrambi i temi.
+
 ## [1.1.1] — 2026-08-18
 
 Reputazione a tre layer, Privacy/Termini, sessione account, cookie banner, cache asset, 404 e log ops.
