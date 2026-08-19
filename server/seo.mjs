@@ -1,6 +1,37 @@
 /**
- * SEO helpers — robots.txt + sitemap.xml from request host or PUBLIC_SITE_URL.
+ * SEO helpers — robots.txt, sitemap.xml, ads.txt from env or defaults.
  */
+
+/** Google AdSense certification authority id (standard for all publishers). */
+export const GOOGLE_ADS_CERT_ID = "f08c47fec0942fa0";
+
+/** Default publisher when no VITE_ADSENSE_CLIENT / ADSENSE_CLIENT is set. */
+export const DEFAULT_ADSENSE_PUBLISHER = "pub-9163410629777799";
+
+/**
+ * @param {string | undefined} client ca-pub-* or pub-* from AdSense
+ * @returns {string | null}
+ */
+export const normalizeAdsPublisher = (client) => {
+  const raw = client?.trim();
+  if (!raw) return null;
+  const pub = raw.startsWith("ca-") ? raw.slice(3) : raw;
+  return pub.startsWith("pub-") ? pub : null;
+};
+
+/**
+ * @param {{ adsenseClient?: string | undefined }} [opts]
+ * @returns {string}
+ */
+export const adsTxt = (opts = {}) => {
+  const fromEnv = normalizeAdsPublisher(
+    opts.adsenseClient ??
+      process.env.VITE_ADSENSE_CLIENT ??
+      process.env.ADSENSE_CLIENT,
+  );
+  const pub = fromEnv ?? DEFAULT_ADSENSE_PUBLISHER;
+  return `google.com, ${pub}, DIRECT, ${GOOGLE_ADS_CERT_ID}\n`;
+};
 
 /**
  * @param {{ publicSiteUrl?: string | undefined, host?: string | undefined, forwardedProto?: string | undefined }} opts

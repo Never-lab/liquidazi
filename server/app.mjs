@@ -11,7 +11,7 @@ import { join, extname, sep, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { computeBalance } from "./balance.mjs";
 import { clientIp, createRateLimiter } from "./rateLimit.mjs";
-import { robotsTxt, siteOrigin, sitemapXml } from "./seo.mjs";
+import { adsTxt, robotsTxt, siteOrigin, sitemapXml } from "./seo.mjs";
 import {
   DEFAULT_EVENT_LOG_LIMIT,
   requestPath,
@@ -792,7 +792,11 @@ export function createHandler({
       }
 
       if (req.method === "GET" || req.method === "HEAD") {
-        if (path === "/robots.txt" || path === "/sitemap.xml") {
+        if (
+          path === "/robots.txt" ||
+          path === "/sitemap.xml" ||
+          path === "/ads.txt"
+        ) {
           const host = req.headers["x-forwarded-host"] || req.headers.host;
           const forwardedProto = req.headers["x-forwarded-proto"];
           const origin = siteOrigin({
@@ -801,11 +805,15 @@ export function createHandler({
               typeof forwardedProto === "string" ? forwardedProto : undefined,
           });
           const body =
-            path === "/robots.txt" ? robotsTxt(origin) : sitemapXml(origin);
-          const type =
             path === "/robots.txt"
-              ? "text/plain; charset=utf-8"
-              : "application/xml; charset=utf-8";
+              ? robotsTxt(origin)
+              : path === "/sitemap.xml"
+                ? sitemapXml(origin)
+                : adsTxt();
+          const type =
+            path === "/sitemap.xml"
+              ? "application/xml; charset=utf-8"
+              : "text/plain; charset=utf-8";
           res.writeHead(200, {
             "Content-Type": type,
             "Cache-Control": "public, max-age=3600",

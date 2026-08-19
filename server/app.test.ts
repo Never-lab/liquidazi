@@ -111,7 +111,7 @@ describe("ops html", () => {
 });
 
 describe("SEO endpoints", () => {
-  it("serves robots.txt and sitemap.xml", async () => {
+  it("serves robots.txt, sitemap.xml, and ads.txt", async () => {
     const robots = await fetch(`${base}/robots.txt`);
     expect(robots.status).toBe(200);
     const robotsBody = await robots.text();
@@ -123,6 +123,14 @@ describe("SEO endpoints", () => {
     const smBody = await sm.text();
     expect(smBody).toContain("<urlset");
     expect(smBody).toContain("<loc>");
+
+    const ads = await fetch(`${base}/ads.txt`);
+    expect(ads.status).toBe(200);
+    expect(ads.headers.get("content-type")).toMatch(/text\/plain/);
+    const adsBody = await ads.text();
+    expect(adsBody).toBe(
+      "google.com, pub-9163410629777799, DIRECT, f08c47fec0942fa0\n",
+    );
   });
 });
 
