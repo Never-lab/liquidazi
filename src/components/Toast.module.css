@@ -9,7 +9,7 @@
   font-size: 14px;
   font-weight: 600;
   border: 1px solid transparent;
-  box-shadow: 0 8px 24px rgba(20, 26, 22, 0.14);
+  box-shadow: 0 8px 24px var(--color-shadow);
   animation: toastIn 0.28s ease-out;
   max-width: min(90vw, 420px);
   text-align: center;
@@ -17,17 +17,17 @@
 
 .good {
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-on-filled);
 }
 
 .bad {
   background: var(--color-danger);
-  color: #fff;
+  color: var(--color-on-filled);
 }
 
 .neutral {
   background: var(--color-text);
-  color: #f4f7f5;
+  color: var(--color-on-neutral);
 }
 
 @keyframes toastIn {

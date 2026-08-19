@@ -37,7 +37,7 @@
 
 .danger {
   background: var(--color-danger);
-  color: #fff;
+  color: var(--color-on-filled);
   border-color: var(--color-danger);
 }
 
@@ -101,7 +101,7 @@
   inset: 0;
   border: none;
   padding: 0;
-  background: rgba(20, 26, 22, 0.35);
+  background: var(--color-overlay);
   cursor: pointer;
 }
 
@@ -116,7 +116,7 @@
   border: 1px solid var(--color-border-strong);
   border-bottom: none;
   border-radius: 12px 12px 0 0;
-  box-shadow: 0 -8px 32px rgba(20, 26, 22, 0.12);
+  box-shadow: 0 -8px 32px var(--color-shadow);
   animation: sheetUp 0.28s ease-out;
 }
 
@@ -203,7 +203,7 @@
   inset: 0;
   border: none;
   padding: 0;
-  background: rgba(20, 26, 22, 0.42);
+  background: var(--color-overlay-heavy);
   cursor: pointer;
   animation: dialogScrimIn 0.2s ease-out;
 }
@@ -216,7 +216,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  box-shadow: 0 12px 40px rgba(20, 26, 22, 0.16);
+  box-shadow: 0 12px 40px var(--color-shadow);
   animation: dialogIn 0.22s ease-out;
 }
 
@@ -298,7 +298,7 @@
   font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 14px var(--color-shadow);
   pointer-events: none;
 }
 

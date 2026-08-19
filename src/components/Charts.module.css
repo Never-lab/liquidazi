@@ -147,7 +147,7 @@
 
 .cashDot {
   fill: var(--color-accent);
-  stroke: #fff;
+  stroke: var(--color-surface);
   stroke-width: 1.5;
 }
 
@@ -174,7 +174,7 @@
 
 .hoverDot {
   fill: var(--color-accent);
-  stroke: #fff;
+  stroke: var(--color-surface);
   stroke-width: 1.5;
   pointer-events: none;
 }

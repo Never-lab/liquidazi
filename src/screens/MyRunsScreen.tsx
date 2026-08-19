@@ -57,7 +57,7 @@ export const MyRunsScreen = () => {
               <span className={styles.leaderMain}>
                 <strong>
                   {r.outcome === "won" && (
-                    <span style={{ color: "#22c55e", marginRight: 4 }} title="Run in corso">●</span>
+                    <span style={{ color: "var(--color-badge-good)", marginRight: 4 }} title="Run in corso">●</span>
                   )}
                   {r.companyName}
                 </strong>

@@ -15,6 +15,20 @@
   --color-warning-soft: #f7f1e0;
   --color-info: #1e3f5c;
   --color-info-soft: #e8eef4;
+  --color-overlay: rgba(20, 26, 22, 0.35);
+  --color-overlay-heavy: rgba(20, 26, 22, 0.42);
+  --color-shadow: rgba(20, 26, 22, 0.14);
+  --color-on-filled: #ffffff;
+  --color-on-neutral: #f4f7f5;
+  --color-surface-2: #f7f5f0;
+  --color-surface-2-hover: #f3f1ec;
+  --color-badge-danger: #b54a3c;
+  --color-badge-good: #3d7a52;
+  --color-f24-border: #c4a84a;
+  --color-f24-text: #3a3218;
+  --color-rescue-border: #c48a82;
+  --color-rescue-text: #3a2218;
+  --color-ko-border: #d4a8a3;
 
   --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
   --font-display: "Fraunces", "Times New Roman", serif;
@@ -55,6 +69,20 @@
   --color-warning-soft: #2a2410;
   --color-info: #60a5fa;
   --color-info-soft: #151f2e;
+  --color-overlay: rgba(226, 232, 228, 0.18);
+  --color-overlay-heavy: rgba(226, 232, 228, 0.24);
+  --color-shadow: rgba(0, 0, 0, 0.32);
+  --color-on-filled: #f0f2f1;
+  --color-on-neutral: #e2e8e4;
+  --color-surface-2: #222a25;
+  --color-surface-2-hover: #283029;
+  --color-badge-danger: #e5736b;
+  --color-badge-good: #4ade80;
+  --color-f24-border: #d4b85a;
+  --color-f24-text: #e8dfc8;
+  --color-rescue-border: #d49a92;
+  --color-rescue-text: #e8d2c8;
+  --color-ko-border: #d4a8a3;
 
   background-image:
     linear-gradient(rgba(226, 232, 228, 0.03) 1px, transparent 1px),

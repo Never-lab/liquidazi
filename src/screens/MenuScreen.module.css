@@ -227,7 +227,7 @@
 
 .ko {
   animation: koIn 0.4s ease-out;
-  border-color: #d4a8a3;
+  border-color: var(--color-ko-border);
 }
 
 .postmortem {

@@ -190,7 +190,7 @@
 
 .buttonDanger {
   background: var(--color-danger);
-  color: #fff;
+  color: var(--color-on-filled);
   border: 1px solid var(--color-danger);
   border-radius: var(--radius-md);
   padding: 10px 14px;
