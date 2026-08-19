@@ -14,7 +14,12 @@ export const EventChoiceBanner = () => {
 
   return (
     <div className={`${demand.backdrop} ${demand.backdropStatic} ${demand.choiceLayer}`} role="presentation">
-      <div className={`${demand.card} ${demand.cardInteractive} ${demand.secca}`} role="dialog" aria-labelledby="event-title">
+      <div
+        className={`${demand.card} ${demand.cardInteractive} ${demand.secca}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="event-title"
+      >
         <p className={demand.kicker}>{kicker}</p>
         <h3 id="event-title" className={demand.title}>
           {pending.title}

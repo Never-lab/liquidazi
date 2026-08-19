@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { AdSlot } from "../components/AdSlot";
 import { CashSparkline, ChartsPanel } from "../components/Charts";
 import { CoachBanner } from "../components/CoachBanner";
-import { EventChoiceBanner } from "../components/EventChoiceBanner";
 import { ProjectOfferBanner } from "../components/ProjectOfferBanner";
 import { NotificationInbox } from "../components/NotificationInbox";
 import { ObjectivesInbox } from "../components/ObjectivesInbox";
@@ -218,7 +217,6 @@ export const GameHUD = () => {
 
       <div className={styles.alerts}>
         <CoachBanner />
-        <EventChoiceBanner />
         <ProjectOfferBanner />
 
         {summary && game.monthsPlayed > 0 && (

@@ -17,6 +17,8 @@ describe("staffEvents", () => {
     s.quietMode = false;
     s = tickStaffEvents(s);
     expect(availableWorkforce(s)).toBe(Math.round(30 * 0.5));
+    expect(s.lastEventPopup?.title).toBe("Ferie estive");
+    expect(s.lastEventPopup?.family).toBe("personale");
   });
 
   it("maternità azzera FL del dipendente", () => {
