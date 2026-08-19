@@ -8,6 +8,12 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.3.3] — 2026-08-19
+
+### Changed
+- AdSense: sostituito il banner consenso first-party con la **CMP certificata Google** (TCF). Consent Mode v2 default, script AdSense precaricato, link «Preferenze annunci» nel footer.
+- Privacy aggiornata per il messaggio Google a 3 opzioni (Consenti / Nega / Gestisci).
+
 ## [1.3.2] — 2026-08-19
 
 ### Added
@@ -174,7 +180,8 @@ Sim educativo di SRL semplificata (cassa, IVA, F24, personale, prestiti). Non è
 
 - Hardening runtime (rate limit, clamp sulle run) e UX F24/collection.
 
-[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.3.2...HEAD
+[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.3.3...HEAD
+[1.3.3]: https://github.com/Never-lab/liquidazi/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/Never-lab/liquidazi/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Never-lab/liquidazi/releases/tag/v1.3.1
 [1.3.0]: https://github.com/Never-lab/liquidazi/releases/tag/v1.3.0
