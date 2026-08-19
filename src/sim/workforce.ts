@@ -5,7 +5,7 @@ import {
   workforceRequiredForNet,
   workforceRequiredForSale,
 } from "../config/workforce";
-import { absenceFlMult } from "../config/staffAbsences";
+import { absenceFlMult, staffEventsEligible } from "../config/staffAbsences";
 import { getProjectDef } from "../config/projects";
 import { upgradeLevel } from "../config/upgrades";
 import { migrateUpgradeState } from "./migrateUpgrades";
@@ -24,13 +24,16 @@ export const contractWorkforceLocked = (state: GameState): number =>
     0,
   );
 
-const seasonalMult = (month: number): number => {
+const seasonalMult = (state: GameState): number => {
+  if (!staffEventsEligible(state.employees.length)) return 1;
+  const month = state.calendar.month;
   if (month === 12) return 0.9;
   if (month === 7 || month === 8) return 0.5;
   return 1;
 };
 
 const malattiaMult = (state: GameState): number => {
+  if (!staffEventsEligible(state.employees.length)) return 1;
   const idx = toMonthIndex(state.calendar);
   return state.workforceMalattiaMonthIdx === idx ? 0.85 : 1;
 };
@@ -76,7 +79,7 @@ export const availableWorkforce = (state: GameState): number => {
     projWorkforcePenalty(state) -
     capacityPressurePenalty(state) * WORKFORCE_PER_LEGACY_SLOT;
 
-  total = round2(total * seasonalMult(state.calendar.month) * malattiaMult(state));
+  total = round2(total * seasonalMult(state) * malattiaMult(state));
   return Math.max(0, Math.round(total));
 };
 
