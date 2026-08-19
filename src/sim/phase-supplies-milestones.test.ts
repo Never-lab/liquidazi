@@ -4,6 +4,7 @@ import { advanceMonth } from "./advanceMonth";
 import { acceptOpportunity } from "./events";
 import { maxDealNet } from "./events";
 import { unlockMilestones } from "./milestones";
+import { warehouseMonths } from "./supplies";
 import { createInitialGameState } from "./types";
 
 describe("Supplies + milestones", () => {
@@ -172,5 +173,37 @@ describe("Supplies + milestones", () => {
     s = acceptOpportunity(s, 1);
     expect(s.supplyMonths).toBe(14);
     expect(s.lastUiHint).toBeNull();
+  });
+
+  it("mese idle: scorte non calano senza commesse né contratti", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.quietMode = true;
+    s.supplyStock = [{ quality: 65, months: 2 }];
+    s.supplyMonths = 2;
+    s = advanceMonth(s);
+    expect(warehouseMonths(s)).toBe(2);
+  });
+
+  it("mese con commessa: scorte calano di 1", () => {
+    let s = createInitialGameState({ city: "058091", sector: "servizi" });
+    s.quietMode = true;
+    s.supplyStock = [{ quality: 65, months: 2 }];
+    s.supplyMonths = 2;
+    s.opportunities = [
+      {
+        id: 1,
+        kind: "sale",
+        title: "Commessa test",
+        net: 800,
+        workforceRequired: 18,
+        expiresInMonths: 1,
+        clientType: "private",
+        termMonths: 1,
+        marketLayer: "local",
+      },
+    ];
+    s = acceptOpportunity(s, 1);
+    s = advanceMonth(s);
+    expect(warehouseMonths(s)).toBe(1);
   });
 });

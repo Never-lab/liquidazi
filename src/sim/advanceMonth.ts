@@ -622,12 +622,11 @@ export const advanceMonth = (state: GameState): GameState => {
     next.tempCapacityMonths -= 1;
   }
 
-  // Consume supply if you sold this month; boom eats extra
+  // Consume supply only when commesse vendute nel mese (incl. tranche contratti attivi)
   const salesClosed = next.invoices.filter(
     (i) => i.kind === "AR" && i.issuedIdx === closedIdx,
   ).length;
-  const consume =
-    (salesClosed > 0 || next.employees.length > 0 ? 1 : 0) + supplyConsumeExtra(next);
+  const consume = salesClosed > 0 ? 1 + supplyConsumeExtra(next) : 0;
   if (consume > 0) {
     if (hasWarehouseStock(next)) {
       consumeSupplyMonthly(next, consume);
