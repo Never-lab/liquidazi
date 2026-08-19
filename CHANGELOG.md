@@ -8,6 +8,20 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.1.8] — 2026-08-19
+
+Forza lavoro (FL) al posto degli slot per commesse e personale, con catalogo eventi dipendenti a scelta.
+
+### Added
+- Modello **forza lavoro (FL)**: base 30 senza assunzioni; ruoli Operaio/Impiegato/Responsabile +5/+8/+12 FL; ogni commessa mostra la FL richiesta.
+- Famiglia eventi **Personale** (popup a scelta): malattia, permesso, ferie, maternità, paternità, allattamento, congedo parentale, permesso 104.
+- Tetto malattia individuale: max **6 mesi/anno** per dipendente (reset a gennaio).
+
+### Changed
+- Copy player-facing, wiki e guida in-app allineati da slot/capacità a FL.
+- Maternità e paternità passano da auto-tick mensile a evento scelta del giocatore.
+- Bonus legacy (crescita, processi, progetti, holding) espressi in **+8 FL** per ex-slot.
+
 ## [1.1.7] — 2026-08-19
 
 Home menu più largo e meno verticale per gli utenti loggati su desktop.
