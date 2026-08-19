@@ -53,36 +53,36 @@
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #0f1210;
-  --color-bg-ink: #181d1a;
-  --color-surface: #1a201c;
-  --color-border: #2e3830;
-  --color-border-strong: #4a5a50;
-  --color-text: #e2e8e4;
-  --color-text-muted: #97a39b;
-  --color-accent: #4ade80;
-  --color-accent-soft: #1a2e22;
-  --color-accent-contrast: #0f1210;
-  --color-danger: #f87171;
-  --color-danger-soft: #2a1515;
-  --color-warning: #fbbf24;
-  --color-warning-soft: #2a2410;
-  --color-info: #60a5fa;
-  --color-info-soft: #151f2e;
-  --color-overlay: rgba(226, 232, 228, 0.18);
-  --color-overlay-heavy: rgba(226, 232, 228, 0.24);
-  --color-shadow: rgba(0, 0, 0, 0.32);
-  --color-on-filled: #f0f2f1;
-  --color-on-neutral: #e2e8e4;
-  --color-surface-2: #222a25;
-  --color-surface-2-hover: #283029;
-  --color-badge-danger: #e5736b;
-  --color-badge-good: #4ade80;
-  --color-f24-border: #d4b85a;
-  --color-f24-text: #e8dfc8;
-  --color-rescue-border: #d49a92;
-  --color-rescue-text: #e8d2c8;
-  --color-ko-border: #d4a8a3;
+  --color-bg: #1e2420;
+  --color-bg-ink: #262e28;
+  --color-surface: #2a322c;
+  --color-border: #3e4a42;
+  --color-border-strong: #5a6860;
+  --color-text: #d8ddd9;
+  --color-text-muted: #919c95;
+  --color-accent: #6ec28e;
+  --color-accent-soft: #283830;
+  --color-accent-contrast: #1e2420;
+  --color-danger: #d4756e;
+  --color-danger-soft: #352525;
+  --color-warning: #c8a24e;
+  --color-warning-soft: #332e1e;
+  --color-info: #7aa4cc;
+  --color-info-soft: #222e3a;
+  --color-overlay: rgba(30, 36, 32, 0.55);
+  --color-overlay-heavy: rgba(30, 36, 32, 0.65);
+  --color-shadow: rgba(0, 0, 0, 0.28);
+  --color-on-filled: #eef0ef;
+  --color-on-neutral: #d8ddd9;
+  --color-surface-2: #323c35;
+  --color-surface-2-hover: #384238;
+  --color-badge-danger: #c87a74;
+  --color-badge-good: #6ec28e;
+  --color-f24-border: #b8a258;
+  --color-f24-text: #d8d0b8;
+  --color-rescue-border: #b88a82;
+  --color-rescue-text: #d8c4ba;
+  --color-ko-border: #b89a94;
 
   background-image:
     linear-gradient(rgba(226, 232, 228, 0.03) 1px, transparent 1px),

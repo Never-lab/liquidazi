@@ -8,6 +8,17 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.1.6] — 2026-08-19
+
+Palette dark theme rivista: da nero pece + neon a silver/antracite elegante.
+
+### Changed
+- Sfondo dark alzato da `#0f1210` a `#1e2420` (antracite caldo).
+- Superfici e bordi più chiari e leggibili.
+- Accent da verde neon `#4ade80` a verde salvia `#6ec28e`.
+- Danger, warning, info smorzati: toni naturali, non fluorescenti.
+- Overlay scrim più densi e coerenti col fondo rialzato.
+
 ## [1.1.5] — 2026-08-19
 
 Dark theme: colori hardcoded sostituiti con variabili CSS theme-aware.
