@@ -1,6 +1,7 @@
 import type { SVGProps } from "react";
 
 export type IconName =
+  | "theme"
   | "play"
   | "resume"
   | "save"
@@ -45,6 +46,8 @@ const pathProps = {
 
 const Glyph = ({ name }: { name: IconName }) => {
   switch (name) {
+    case "theme":
+      return <path d="M12 3a9 9 0 1 0 9 9c0-1-.2-2-.5-2.8A7 7 0 0 1 14.8 3.5C14 3.2 13 3 12 3z" {...pathProps} />;
     case "play":
       return <path d="M8 6.5v11l9-5.5-9-5.5z" {...pathProps} />;
     case "resume":

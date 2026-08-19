@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { BRAND_NAME } from "../config/brand";
 import { useGameStore } from "../store/gameStore";
 import { Button } from "../components/ui/Button";
 import { Icon } from "../ui/icons";
+import { type Theme, loadThemePref, saveThemePref } from "../ui/theme";
 import styles from "./MenuScreen.module.css";
 
 const NavItem = ({
@@ -29,6 +31,16 @@ export const MenuScreen = () => {
   const slots = useGameStore((s) => s.slots);
   const activeSlot = useGameStore((s) => s.activeSlot);
   const selectSlot = useGameStore((s) => s.selectSlot);
+
+  const [themePref, setThemePref] = useState<Theme>(loadThemePref);
+  const THEME_LABELS: Record<Theme, string> = { light: "Chiaro", dark: "Scuro", system: "Sistema" };
+  const themeLabel = THEME_LABELS[themePref];
+  const CYCLE: Theme[] = ["system", "light", "dark"];
+  const cycleTheme = () => {
+    const next = CYCLE[(CYCLE.indexOf(themePref) + 1) % CYCLE.length];
+    saveThemePref(next);
+    setThemePref(next);
+  };
 
   const resumableIndex = slots.findIndex(
     (s) => s.game && s.game.monthsPlayed > 0 && s.game.status === "running",
@@ -93,6 +105,7 @@ export const MenuScreen = () => {
         <NavItem icon="book" label="Tutorial" onClick={() => setScreen("tutorial")} />
         <NavItem icon="book" label="Guida" onClick={() => setScreen("guide")} />
         <NavItem icon="feedback" label="Segnala / migliora" onClick={() => setScreen("feedback")} />
+        <NavItem icon="theme" label={`Tema: ${themeLabel}`} onClick={cycleTheme} />
         {auth ? (
           <NavItem icon="logout" label={`Esci (${auth.username})`} onClick={logout} />
         ) : (
