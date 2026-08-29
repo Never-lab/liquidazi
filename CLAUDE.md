@@ -60,3 +60,10 @@ Do not skip to implementation on ambiguous “make everything clearer / build X�
 - Prefer one clear clarifying question over speculative multi-path implementation when scope is huge (“all UI”, “comment everything”).
 - If the design is already approved in this chat (or the user says «ok / procedi / implementa come approvato»): skip Superpowers brainstorm, wiki INDEX, graphify, and claude-mem search. Implement from this thread.
 - Do not re-read this file, the wiki, or skill docs mid-slice once the task is clear.
+
+## Shared agent block (Never-lab)
+
+- Chat: Italian. Code/PR/issue text: English (Floatdesk player UI: Italian).
+- Before posting PR bodies or issue comments: skill **`no-ai-slop`**.
+- Never `Co-authored-by: Cursor`.
+- Prefer `ponytail` + Karpathy; Superpowers only when the slice is new/ambiguous. No default `docs/superpowers/specs|plans` MD — decisions in chat/claude-mem (liquidazi style).
