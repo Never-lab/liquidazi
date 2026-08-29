@@ -14,6 +14,7 @@ Concise rules for agents working in this repo. [`AGENTS.md`](./AGENTS.md) is a s
 2. Code map: `graphify-out/` (regenerate with graphify if missing). Never `graphify update .` on unrelated monorepos.
 3. Slice history: `docs/superpowers/specs/` + `plans/` — not the live wiki.
 4. Status queue: [`ROADMAP.md`](ROADMAP.md).
+5. Deterministic SVG mascots (later game/UI assets): [`vendor/mascot-avatars/`](./vendor/mascot-avatars/) — `renderAvatar({ seed })`. Not an AI image fallback. Skill: `.cursor/skills/ip-as-logo`.
 
 ## Creative / multi-step work (Superpowers)
 

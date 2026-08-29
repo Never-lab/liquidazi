@@ -1,0 +1,47 @@
+{
+  "name": "mascot-avatars",
+  "version": "0.2.0",
+  "description": "Procedural SVG mascot avatars in the IP-as-Logo style: rounded shapes, two colors, solid background, deterministic from a seed. Companion to the AI skill — not an SVG fallback for image models.",
+  "main": "avatar.js",
+  "module": "avatar.mjs",
+  "types": "avatar.d.ts",
+  "exports": {
+    ".": {
+      "types": "./avatar.d.ts",
+      "import": "./avatar.mjs",
+      "require": "./avatar.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "avatar.js",
+    "avatar.mjs",
+    "avatar.d.ts",
+    "README.md",
+    "NOTICE"
+  ],
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "avatar",
+    "svg",
+    "mascot",
+    "logo",
+    "identicon",
+    "generator",
+    "procedural",
+    "ip-as-logo"
+  ],
+  "author": "Ato Augustine (otatechie); vendored by Never-lab",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Never-lab/ip-as-logo-skill.git",
+    "directory": "generator"
+  },
+  "homepage": "https://github.com/Never-lab/ip-as-logo-skill/tree/main/generator",
+  "bugs": {
+    "url": "https://github.com/Never-lab/ip-as-logo-skill/issues"
+  }
+}
