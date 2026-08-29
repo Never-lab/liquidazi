@@ -1,0 +1,12 @@
+Mascot Avatars (generator/)
+===========================
+
+Vendored from https://github.com/otatechie/mascot-avatars
+Author: Ato Augustine (otatechie)
+Discussed in: https://github.com/s1dashu/ip-as-logo-skill/issues/1
+
+Original package implements the design rules from ip-as-logo-skill as
+deterministic SVG (no AI). MIT License — see LICENSE in this directory.
+
+Upstream skill: https://github.com/s1dashu/ip-as-logo-skill
+This fork: https://github.com/Never-lab/ip-as-logo-skill
