@@ -251,7 +251,7 @@ export const GameHUD = () => {
                     ? " — pochi mesi alla chiusura per insolvenza fiscale."
                     : game.collectionCase.stage === "cartella"
                       ? " — scegli se pagare, rateizzare o ignorare."
-                      : " — prelievo forzato su cassa e tesoreria."}
+                      : " — prelievo forzato su cassa e tesoreria!."}
                 </p>
               </div>
             </div>
