@@ -8,6 +8,18 @@ Note di release di **Floatdesk**. Formato [Keep a Changelog](https://keepachange
 
 ## [Unreleased]
 
+## [1.3.4] — 2026-08-30
+
+Risposta AdSense (contenuti di valore + niente ads su UI di gioco) e hub sottile.
+
+### Added
+- Wiki pubblica crawlable: `/wiki` e `/wiki/:slug` in HTML da `docs/wiki/help`, in sitemap.
+- Landing hub: account + scelta **Floatdesk** / **LocalManager** (URL default Railway, override `VITE_LOCALMANAGER_URL`).
+- Vendor `mascot-avatars` + skill `ip-as-logo` (asset SVG deterministici, non ancora wired in UI).
+
+### Changed
+- AdSense: allowlist vuota su landing / rail / end; script ads non precaricato finché non ci sono placement; un unit solo sotto gli articoli wiki.
+
 ## [1.3.3] — 2026-08-19
 
 ### Changed
@@ -180,7 +192,8 @@ Sim educativo di SRL semplificata (cassa, IVA, F24, personale, prestiti). Non è
 
 - Hardening runtime (rate limit, clamp sulle run) e UX F24/collection.
 
-[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.3.3...HEAD
+[Unreleased]: https://github.com/Never-lab/liquidazi/compare/v1.3.4...HEAD
+[1.3.4]: https://github.com/Never-lab/liquidazi/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/Never-lab/liquidazi/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/Never-lab/liquidazi/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Never-lab/liquidazi/releases/tag/v1.3.1
