@@ -62,17 +62,26 @@ export const robotsTxt = (origin) => {
 };
 
 /**
- * SPA: homepage + legal URLs (client-rendered).
+ * SPA: homepage + legal + publisher wiki URLs.
  * @param {string | null} origin
+ * @param {{ wikiIds?: string[] }} [opts]
  */
-export const sitemapXml = (origin) => {
+export const sitemapXml = (origin, opts = {}) => {
   const base = origin ? origin.replace(/\/$/, "") : "";
   const lastmod = new Date().toISOString().slice(0, 10);
-  const urls = ["/", "/privacy", "/termini"];
+  const wikiIds = opts.wikiIds ?? [];
+  const urls = [
+    "/",
+    "/wiki",
+    ...wikiIds.map((id) => `/wiki/${id}`),
+    "/privacy",
+    "/termini",
+  ];
   const body = urls
     .map((path) => {
       const loc = base ? `${base}${path}` : path;
-      const priority = path === "/" ? "1.0" : "0.4";
+      const priority =
+        path === "/" ? "1.0" : path.startsWith("/wiki") ? "0.8" : "0.4";
       return `  <url>
     <loc>${loc}</loc>
     <lastmod>${lastmod}</lastmod>

@@ -20,16 +20,11 @@ describe("adsStubEnabled", () => {
 });
 
 describe("shouldRenderAdSlot", () => {
-  it("shows landing slots in development by default", () => {
-    expect(shouldRenderAdSlot("landing-mid", { PROD: false })).toBe(true);
-    expect(shouldRenderAdSlot("landing-footer", { PROD: false })).toBe(true);
-  });
-
-  it("hides landing slots when VITE_ADS_STUB=0", () => {
-    expect(shouldRenderAdSlot("landing-mid", { PROD: true, VITE_ADS_STUB: "0" })).toBe(false);
-  });
-
-  it("keeps in-game rails off in development by default", () => {
-    expect(shouldRenderAdSlot("rail-left", { PROD: false })).toBe(false);
+  it("hides all current placements while AdSense allowlist is empty (Phase 0)", () => {
+    expect(shouldRenderAdSlot("landing-mid", { PROD: true, VITE_ADS_STUB: "1" })).toBe(false);
+    expect(shouldRenderAdSlot("landing-footer", { PROD: false })).toBe(false);
+    expect(shouldRenderAdSlot("rail-left", { PROD: true, VITE_ADS_STUB: "1" })).toBe(false);
+    expect(shouldRenderAdSlot("rail-right", { PROD: true })).toBe(false);
+    expect(shouldRenderAdSlot("end-banner", { PROD: true, VITE_ADS_STUB: "1" })).toBe(false);
   });
 });

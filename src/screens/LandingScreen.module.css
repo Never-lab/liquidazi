@@ -62,6 +62,77 @@
   animation: landRise 0.7s ease-out 0.08s both;
 }
 
+.modes {
+  padding: 28px 0 8px;
+}
+
+.modeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.modeCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.modeTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.modeBody {
+  margin: 0;
+  flex: 1;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.modeLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.modeLink:hover {
+  filter: brightness(1.05);
+}
+
+.modeHint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.wikiCue {
+  margin: 16px 0 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.wikiCue a {
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
 .points {
   padding: 28px 0 8px;
 }
@@ -180,6 +251,10 @@ a.linkBtn {
 }
 
 @media (max-width: 520px) {
+  .modeGrid {
+    grid-template-columns: 1fr;
+  }
+
   .stats {
     grid-template-columns: 1fr;
   }

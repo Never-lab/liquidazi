@@ -10,6 +10,12 @@ type AdsEnv = {
   VITE_ADS_STUB?: string;
 };
 
+/**
+ * AdSense only next to publisher content (wiki). Empty until `/wiki` slots ship —
+ * landing / game chrome / end screen must not serve Google ads (AdSense policy).
+ */
+export const ADSENSE_ALLOWED_PLACEMENTS: readonly AdPlacement[] = [];
+
 /** Kill switch: explicit VITE_ADS_STUB wins; else on only in production builds. */
 export const adsStubEnabled = (env?: AdsEnv): boolean => {
   const e = env ?? {
@@ -21,16 +27,8 @@ export const adsStubEnabled = (env?: AdsEnv): boolean => {
   return Boolean(e.PROD);
 };
 
-/**
- * Landing slots reserve layout for future ads — show in all builds unless
- * explicitly forced off (`VITE_ADS_STUB=0`). In-game rails/end-banner keep prod default.
- */
+/** Renders an ad unit only if the placement is allowlisted and the stub/live switch is on. */
 export const shouldRenderAdSlot = (placement: AdPlacement, env?: AdsEnv): boolean => {
-  if (placement === "landing-mid" || placement === "landing-footer") {
-    const e = env ?? {
-      VITE_ADS_STUB: import.meta.env.VITE_ADS_STUB as string | undefined,
-    };
-    return e.VITE_ADS_STUB !== "0";
-  }
+  if (!ADSENSE_ALLOWED_PLACEMENTS.includes(placement)) return false;
   return adsStubEnabled(env);
 };

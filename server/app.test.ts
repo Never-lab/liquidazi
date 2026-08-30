@@ -132,6 +132,28 @@ describe("SEO endpoints", () => {
       "google.com, pub-9163410629777799, DIRECT, f08c47fec0942fa0\n",
     );
   });
+
+  it("serves crawlable wiki HTML with publisher content", async () => {
+    const index = await fetch(`${base}/wiki`);
+    expect(index.status).toBe(200);
+    expect(index.headers.get("content-type")).toContain("text/html");
+    const indexHtml = await index.text();
+    expect(indexHtml).toMatch(/Guida Floatdesk/i);
+    expect(indexHtml).toContain("/wiki/come-si-gioca");
+
+    const page = await fetch(`${base}/wiki/come-si-gioca`);
+    expect(page.status).toBe(200);
+    const html = await page.text();
+    expect(html).toMatch(/Cassa e utile/i);
+    expect(html).toContain("adsbygoogle");
+    expect(html).not.toContain('<div id="root"></div>');
+
+    const sm = await fetch(`${base}/sitemap.xml`);
+    expect(await sm.text()).toContain("/wiki/come-si-gioca");
+
+    const missing = await fetch(`${base}/wiki/nope`);
+    expect(missing.status).toBe(404);
+  });
 });
 
 describe("cloud saves", () => {
