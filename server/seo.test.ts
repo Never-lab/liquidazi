@@ -72,9 +72,14 @@ describe("robotsTxt / sitemapXml", () => {
     expect(robotsTxt(null)).not.toContain("Sitemap:");
   });
 
-  it("emits homepage plus privacy and termini", () => {
-    const xml = sitemapXml("https://a.example");
+  it("emits homepage, wiki, privacy and termini", () => {
+    const xml = sitemapXml("https://a.example", {
+      wikiIds: ["come-si-gioca", "faq"],
+    });
     expect(xml).toContain("<loc>https://a.example/</loc>");
+    expect(xml).toContain("<loc>https://a.example/wiki</loc>");
+    expect(xml).toContain("<loc>https://a.example/wiki/come-si-gioca</loc>");
+    expect(xml).toContain("<loc>https://a.example/wiki/faq</loc>");
     expect(xml).toContain("<loc>https://a.example/privacy</loc>");
     expect(xml).toContain("<loc>https://a.example/termini</loc>");
     expect(xml).toContain("urlset");

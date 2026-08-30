@@ -12,6 +12,13 @@ import { fileURLToPath } from "node:url";
 import { computeBalance } from "./balance.mjs";
 import { clientIp, createRateLimiter } from "./rateLimit.mjs";
 import { adsTxt, robotsTxt, siteOrigin, sitemapXml } from "./seo.mjs";
+import { WIKI_PAGE_IDS, loadWikiPage, loadWikiPages } from "./wikiContent.mjs";
+import {
+  renderWikiBody,
+  wikiIndexDocument,
+  wikiNavHtml,
+  wikiPageDocument,
+} from "./wikiHtml.mjs";
 import {
   DEFAULT_EVENT_LOG_LIMIT,
   requestPath,
@@ -808,7 +815,7 @@ export function createHandler({
             path === "/robots.txt"
               ? robotsTxt(origin)
               : path === "/sitemap.xml"
-                ? sitemapXml(origin)
+                ? sitemapXml(origin, { wikiIds: WIKI_PAGE_IDS })
                 : adsTxt();
           const type =
             path === "/sitemap.xml"
@@ -821,6 +828,46 @@ export function createHandler({
           });
           if (req.method === "HEAD") return res.end();
           return res.end(body);
+        }
+
+        const wikiMatch = path.match(/^\/wiki(?:\/([^/]+))?\/?$/);
+        if (wikiMatch) {
+          const slug = wikiMatch[1];
+          const host = req.headers["x-forwarded-host"] || req.headers.host;
+          const forwardedProto = req.headers["x-forwarded-proto"];
+          const origin = siteOrigin({
+            host: typeof host === "string" ? host : undefined,
+            forwardedProto:
+              typeof forwardedProto === "string" ? forwardedProto : undefined,
+          });
+          const pages = loadWikiPages();
+          let html;
+          if (!slug) {
+            html = wikiIndexDocument(pages, origin ?? "");
+          } else {
+            const page = loadWikiPage(slug);
+            if (!page) {
+              return sendNotFoundPage(res, { head: req.method === "HEAD" });
+            }
+            const canonical = origin
+              ? `${origin}/wiki/${page.id}`
+              : `/wiki/${page.id}`;
+            html = wikiPageDocument({
+              title: page.title,
+              bodyHtml: renderWikiBody(page.body),
+              navHtml: wikiNavHtml(pages, page.id),
+              canonical,
+              includeAd: true,
+            });
+          }
+          res.writeHead(200, {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "public, max-age=300",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+          });
+          if (req.method === "HEAD") return res.end();
+          return res.end(html);
         }
       }
 
